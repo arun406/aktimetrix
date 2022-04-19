@@ -1,18 +1,19 @@
 package com.aktimetrix.service.meter;
 
 import com.aktimetrix.service.meter.core.meter.MeasurementService;
+import com.aktimetrix.service.meter.core.transferobjects.Event;
 import com.aktimetrix.service.meter.core.transferobjects.Measurement;
-import com.aktimetrix.service.meter.core.transferobjects.Step;
-import com.aktimetrix.service.meter.core.transferobjects.StepEvent;
+import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;
 import com.aktimetrix.service.meter.core.transferobjects.StepMeasurementEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.kstream.KStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -21,15 +22,15 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@ComponentScan({"com.aktimetrix.service.meter", "com.aktimetrix.service.meter.core", "com.aktimetrix.service.meter.referencedata"})
+@ComponentScan({"com.aktimetrix.service.meter",
+        "com.aktimetrix.service.meter.core",
+        "com.aktimetrix.service.meter.referencedata"})
 @SpringBootApplication
 @Slf4j
 public class MeterApplication {
 
     @Autowired
     private MeasurementService meterService;
-
-
 
     public static void main(String[] args) {
         SpringApplication.run(MeterApplication.class, args);
@@ -41,20 +42,23 @@ public class MeterApplication {
      * @return
      */
     @Bean
-    public java.util.function.Function<KStream<String, StepEvent>, KStream<String, StepMeasurementEvent>> measure() {
+    public java.util.function.Function<Event<StepInstanceDTO, Void>, List<Message<StepMeasurementEvent>>> measure() {
         return input -> {
             log.debug("event: {}", input);
-            return input
-//                    .filter((s, stepEvent) -> "BKD".equalsIgnoreCase(stepEvent.getEventDetails().getCode()))
-                    .flatMap((key, value) -> {
-                        final List<Measurement> measurements = getStepMeasurements(value.getTenantKey(), value.getEventDetails());
-                        return measurements.stream()
-                                .map(this::getStepMeasurementEvent)
-                                .map(this::getKeyValue)
-                                .collect(Collectors.toList());
-                    });
+            final List<Measurement> measurements = getStepMeasurements(input.getTenantKey(), input.getEntity());
+            return measurements.stream()
+                    .map(this::getStepMeasurementEvent)
+                    .map(this::getMessage)
+                    .collect(Collectors.toList());
         };
     }
+
+    private Message<StepMeasurementEvent> getMessage(StepMeasurementEvent stepMeasurementEvent) {
+        return MessageBuilder.withPayload(stepMeasurementEvent)
+//                .setHeader(KafkaHeaders.MESSAGE_KEY, stepMeasurementEvent.getEventId())
+                .build();
+    }
+
 
     /**
      * generates the KeyValue of Measurement Id and Measurement Instance
@@ -71,7 +75,7 @@ public class MeterApplication {
      * @param step      step
      * @return List of Measurement
      */
-    private List<Measurement> getStepMeasurements(String tenantKey, Step step) {
+    private List<Measurement> getStepMeasurements(String tenantKey, StepInstanceDTO step) {
         return meterService.generateMeasurements(tenantKey, step);
     }
 

@@ -1,8 +1,14 @@
 package com.aktimetrix.service.meter.core.meter.impl;
 
-import com.aktimetrix.service.meter.core.model.MeasurementInstance;
+import com.aktimetrix.service.meter.core.api.Constants;
 import com.aktimetrix.service.meter.core.meter.api.Meter;
-import com.aktimetrix.service.meter.core.transferobjects.Measurement;
+import com.aktimetrix.service.meter.core.model.MeasurementInstance;
+import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;
+import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.ZonedDateTime;
 
 /**
  * Base class for all Meters
@@ -11,28 +17,30 @@ import com.aktimetrix.service.meter.core.transferobjects.Measurement;
  */
 public abstract class AbstractMeter implements Meter {
 
-    private final com.aktimetrix.service.meter.core.stereotypes.Measurement annotation;
+    private static final Logger logger = LoggerFactory.getLogger(AbstractMeter.class);
 
-    public AbstractMeter() {
-        annotation = getClass().getAnnotation(com.aktimetrix.service.meter.core.stereotypes.Measurement.class);
+    private final com.aktimetrix.service.meter.core.stereotypes.Measurement annotation = getClass().getAnnotation(com.aktimetrix.service.meter.core.stereotypes.Measurement.class);
+
+
+
+    /**
+     * @param tenant tenant code
+     * @param step   step instance
+     * @return Measurement instance
+     */
+    @Override
+    public MeasurementInstance measure(String tenant, StepInstanceDTO step) {
+        return new MeasurementInstance(tenant, code(),
+                getMeasurementValue(tenant, step), getMeasurementUnit(tenant, step), new ObjectId(step.getProcessInstanceId()),
+                new ObjectId(step.getId()), stepCode(), Constants.PLAN_MEASUREMENT_TYPE,
+                step.getLocationCode(), ZonedDateTime.now());
     }
 
+    protected abstract String getMeasurementUnit(String tenant, StepInstanceDTO step);
 
-    public com.aktimetrix.service.meter.core.transferobjects.Measurement getMeasurement(MeasurementInstance mi) {
-        return Measurement.builder()
-                .type(mi.getType())
-                .tenant(mi.getTenant())
-                .code(mi.getCode())
-                .id(mi.getId().toString())
-                .measuredAt(mi.getMeasuredAt())
-                .createdOn(mi.getCreatedOn())
-                .stepCode(mi.getStepCode())
-                .processInstanceId(mi.getProcessInstanceId().toString())
-                .stepInstanceId(mi.getStepInstanceId().toString())
-                .unit(mi.getUnit())
-                .value(mi.getValue())
-                .build();
-    }
+    protected abstract String getMeasurementValue(String tenant, StepInstanceDTO step);
+
+
 
     /**
      * returns the annotation name;

@@ -25,5 +25,4 @@ public class Step implements Serializable {
     private int version;
     private int sequence;
     private Map<String, Object> metadata;
-
 }

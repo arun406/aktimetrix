@@ -1,10 +1,10 @@
 package com.aktimetrix.service.processor.core.resource;
 
 import com.aktimetrix.service.processor.core.Constants;
-import com.aktimetrix.service.processor.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.service.processor.core.api.EventHandler;
 import com.aktimetrix.service.processor.core.api.Registry;
 import com.aktimetrix.service.processor.core.event.EventType;
+import com.aktimetrix.service.processor.core.exception.EventHandlerNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

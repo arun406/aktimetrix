@@ -1,7 +1,7 @@
 package com.aktimetrix.service.meter.core.meter;
 
 import com.aktimetrix.service.meter.core.transferobjects.Measurement;
-import com.aktimetrix.service.meter.core.transferobjects.Step;
+import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;
 
 import java.util.List;
 
@@ -18,5 +18,5 @@ public interface MeasurementService {
      * @param step      step
      * @return list of measurement
      */
-    List<Measurement> generateMeasurements(String tenantKey, Step step);
+    List<Measurement> generateMeasurements(String tenantKey, StepInstanceDTO step);
 }

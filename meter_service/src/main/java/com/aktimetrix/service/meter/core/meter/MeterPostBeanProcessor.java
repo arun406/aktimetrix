@@ -1,8 +1,8 @@
 package com.aktimetrix.service.meter.core.meter;
 
 import com.aktimetrix.service.meter.core.api.Constants;
-import com.aktimetrix.service.meter.core.meter.api.Meter;
 import com.aktimetrix.service.meter.core.api.Registry;
+import com.aktimetrix.service.meter.core.meter.api.Meter;
 import com.aktimetrix.service.meter.core.stereotypes.Measurement;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

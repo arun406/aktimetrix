@@ -9,7 +9,7 @@ import java.util.List;
 
 @Data
 @ToString
-@Document(collection = "stepDefinitions")
+@Document(collection = "step-definition")
 public class StepDefinition {
 
     private String tenant;

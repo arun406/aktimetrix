@@ -2,8 +2,8 @@ package com.aktimetrix.service.processor.core.impl;
 
 
 import com.aktimetrix.service.processor.core.Constants;
-import com.aktimetrix.service.processor.core.exception.UnknownNameException;
 import com.aktimetrix.service.processor.core.api.Registry;
+import com.aktimetrix.service.processor.core.exception.UnknownNameException;
 import com.aktimetrix.service.processor.core.util.LogUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +22,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static com.aktimetrix.service.processor.core.util.LogUtil.warn;
 
 
 /**

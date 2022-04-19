@@ -1,6 +1,6 @@
 package com.aktimetrix.service.meter.core.meter.generators;
 
-import com.aktimetrix.service.meter.core.transferobjects.Step;
+import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,7 +27,7 @@ public class CDMPCImportStepMeasurementValueCalculator {
      * @param stepCode step code
      * @return measurement value
      */
-    public String calculate(String tenant, Step step, String stepCode) {
+    public String calculate(String tenant, StepInstanceDTO step, String stepCode) {
         final Map<String, Object> metadata = step.getMetadata();
 
         long offset = this.offsetCalculator.getOffset(tenant, metadata, stepCode);
@@ -35,8 +35,8 @@ public class CDMPCImportStepMeasurementValueCalculator {
 
         // ARR plan time is STA + offset
         final LocalDateTime planTime = ((LocalDateTime) metadata.get("sta")).plusMinutes(offset);
-        final String planTimeStr = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(planTime);
-        log.info("  Plan Time: " + planTimeStr);
+        final String planTimeStr = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(planTime);
+        log.info("measurement : {} ", planTimeStr);
         return planTimeStr;
     }
 

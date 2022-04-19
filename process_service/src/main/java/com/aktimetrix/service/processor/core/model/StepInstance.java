@@ -1,7 +1,6 @@
 package com.aktimetrix.service.processor.core.model;
 
 import lombok.Data;
-import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 

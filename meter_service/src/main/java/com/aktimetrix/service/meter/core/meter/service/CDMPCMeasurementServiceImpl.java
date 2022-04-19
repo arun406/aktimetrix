@@ -4,16 +4,19 @@ import com.aktimetrix.service.meter.core.api.Constants;
 import com.aktimetrix.service.meter.core.api.Registry;
 import com.aktimetrix.service.meter.core.meter.MeasurementService;
 import com.aktimetrix.service.meter.core.meter.api.Meter;
+import com.aktimetrix.service.meter.core.model.MeasurementInstance;
 import com.aktimetrix.service.meter.core.transferobjects.Measurement;
-import com.aktimetrix.service.meter.core.transferobjects.Step;
+import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;
 import com.aktimetrix.service.meter.core.util.CollectionUtil;
 import com.aktimetrix.service.meter.referencedata.model.ProcessDefinition;
 import com.aktimetrix.service.meter.referencedata.model.StepDefinition;
+import com.aktimetrix.service.meter.referencedata.model.StepMeasurement;
 import com.aktimetrix.service.meter.referencedata.service.StepDefinitionService;
 import com.aktimetrix.service.meter.referencedata.transferobjects.MeasurementType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -38,6 +41,8 @@ public class CDMPCMeasurementServiceImpl implements MeasurementService {
 
     private final Registry registry;
     private final StepDefinitionService stepDefinitionService;
+    @Autowired
+    private MeasurementInstanceService measurementInstanceService;
 
     /**
      * Return applicable meter instance
@@ -67,51 +72,42 @@ public class CDMPCMeasurementServiceImpl implements MeasurementService {
      * @param step      step
      * @return measurement instance
      */
-    public List<Measurement> generateMeasurements(String tenantKey, Step step) {
-        List<Measurement> measurements = new ArrayList<>();
-
-        final String stepCode = step.getCode();
-
+    public List<Measurement> generateMeasurements(String tenantKey, StepInstanceDTO step) {
+        final String stepCode = step.getStepCode();
         // Get the applicable steps in the process
         // get the measurement codes
-        log.debug(" Tenant : {}, step code : {}, measurement code: {}",
-                tenantKey, stepCode, "TIME");
-       /* final ProcessDefinition processDefinition = this.processDefinitionService.list().stream().filter(pd -> step
-                        .getProcessCode().equalsIgnoreCase(pd.getProcessCode()))
-                .findFirst().orElse(null);
-
-        Objects.requireNonNull(processDefinition);
-        Objects.requireNonNull(processDefinition.getSteps());*/
+        log.debug(" Tenant : {}, step code : {}, measurement code: {}", tenantKey, stepCode, "TIME");
 
         final Map<String, Object> metadata = step.getMetadata();
-        metadata.forEach((key, value) -> {
-            log.debug("key :{} value :{}", key, value);
-        });
+        if (metadata != null)
+            metadata.forEach((key, value) -> log.debug("key :{} value :{}", key, value));
         // applicable step definitions
         log.debug("finding applicable step definition for the {} step", stepCode);
 //        final List<StepDefinition> stepDefinitions = getStepDefinitions(processDefinition, boardPoint, offPoint, origin, destination);
-        StepDefinition stepDefinition = getStepDefinition(tenantKey, step.getCode());
+        StepDefinition stepDefinition = getStepDefinition(tenantKey, step.getStepCode());
 
-//        stepDefinitions.forEach(stepDefinition -> {
         if (stepDefinition != null && !CollectionUtil.isEmptyOrNull(stepDefinition.getMeasurements())) {
-            stepDefinition.getMeasurements().stream()
-                    .filter(m -> MeasurementType.P == m.getType())
-                    .forEach(m -> {
-                        log.info("Step Code: {}, Measurement Code: {} ",
+            List<MeasurementInstance> measurements = new ArrayList<>();
+            for (StepMeasurement m : stepDefinition.getMeasurements()) {
+                if (MeasurementType.P == m.getType()) {
+                    log.info("Step Code: {}, Measurement Code: {} ", stepDefinition.getStepCode(), m.getMeasurementCode());
+                    Meter meter = getMeter(tenantKey, stepDefinition.getStepCode(), m.getMeasurementCode());
+                    if (meter != null) {
+                        final MeasurementInstance measurement = meter.measure(tenantKey, step);
+                        log.debug("measurement instance found for " + meter.getClass().getName());
+                        measurements.add(measurement);
+                    } else {
+                        log.info(" Meter is not defined for this step : {} and measurement code : {}",
                                 stepDefinition.getStepCode(), m.getMeasurementCode());
-                        Meter meter = getMeter(tenantKey, stepDefinition.getStepCode(), m.getMeasurementCode());
-                        if (meter != null) {
-                            final Measurement measurement = meter.measure(tenantKey, step);
-                            measurements.add(measurement);
-                            log.debug("measurement instance found for " + meter.getClass().getName());
-                        } else {
-                            log.info(" Meter is not defined for this step : {} and measurement code : {}",
-                                    stepDefinition.getStepCode(), m.getMeasurementCode());
-                        }
-                    });
+                    }
+                }
+            }
+            if (!measurements.isEmpty()) {
+                this.measurementInstanceService.saveMeasurementInstances(measurements);
+                return measurements.stream().map(this::getMeasurement).collect(Collectors.toList());
+            }
         }
-//        });
-        return measurements;
+        return new ArrayList<>();
     }
 
     /**
@@ -183,5 +179,21 @@ public class CDMPCMeasurementServiceImpl implements MeasurementService {
                 .collect(Collectors.joining(","))));
 
         return stepDefinitions;
+    }
+
+    public com.aktimetrix.service.meter.core.transferobjects.Measurement getMeasurement(MeasurementInstance mi) {
+        return Measurement.builder()
+                .type(mi.getType())
+                .tenant(mi.getTenant())
+                .code(mi.getCode())
+                .id(mi.getId().toString())
+                .measuredAt(mi.getMeasuredAt())
+                .createdOn(mi.getCreatedOn())
+                .stepCode(mi.getStepCode())
+                .processInstanceId(mi.getProcessInstanceId().toString())
+                .stepInstanceId(mi.getStepInstanceId().toString())
+                .unit(mi.getUnit())
+                .value(mi.getValue())
+                .build();
     }
 }

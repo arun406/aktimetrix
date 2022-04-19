@@ -1,14 +1,14 @@
 package com.aktimetrix.service.meter.core.meter.api;
 
-import com.aktimetrix.service.meter.core.transferobjects.Measurement;
-import com.aktimetrix.service.meter.core.transferobjects.Step;
+import com.aktimetrix.service.meter.core.model.MeasurementInstance;
+import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;
 
 public interface Meter {
 
     /**
      * @param tenant tenant code
      * @param step   step instance
-     * @return Measurement instance
+     * @return Measurement
      */
-    Measurement measure(String tenant, Step step);
+    MeasurementInstance measure(String tenant, StepInstanceDTO step);
 }

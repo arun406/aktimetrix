@@ -11,7 +11,7 @@ import java.util.List;
 @Data
 @ToString
 @NoArgsConstructor
-@Document(collection = "processDefinitions")
+@Document(collection = "process-definition")
 public class ProcessDefinition {
     private String tenant;
     @Id

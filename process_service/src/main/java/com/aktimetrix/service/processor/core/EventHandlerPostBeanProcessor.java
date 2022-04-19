@@ -1,9 +1,7 @@
 package com.aktimetrix.service.processor.core;
 
 import com.aktimetrix.service.processor.core.api.EventHandler;
-import com.aktimetrix.service.processor.core.api.Processor;
 import com.aktimetrix.service.processor.core.api.Registry;
-import com.aktimetrix.service.processor.core.stereotypes.ProcessHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;

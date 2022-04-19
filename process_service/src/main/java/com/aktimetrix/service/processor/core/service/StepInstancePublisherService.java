@@ -8,6 +8,9 @@ import com.aktimetrix.service.processor.core.transferobjects.StepInstanceDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,7 +30,10 @@ public class StepInstancePublisherService implements PostProcessor {
             StepEventGenerator eventGenerator = new StepEventGenerator(step);
             Event<StepInstanceDTO, Void> event = eventGenerator.generate();
             log.debug("step instance event : {}", event);
-            this.streamBridge.send("step-instance-out-0", event);
+            final Message<Event<StepInstanceDTO, Void>> message = MessageBuilder.withPayload(event)
+                    .setHeader(KafkaHeaders.MESSAGE_KEY, event.getEntityId())
+                    .build();
+            this.streamBridge.send("step-instance-out-0", message);
         });
     }
 }

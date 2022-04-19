@@ -83,9 +83,9 @@ public class StepInstanceService {
             logger.info("step code: " + stepCode + ", step group code: " + groupCode);
             StepInstance stepInstance = prepareStepInstanceObject(tenant, processInstanceId, stepCode, functionalCtx,
                     groupCode, Constants.DEFAULT_VERSION, Constants.STATUS_CREATED);
-            if (StringUtils.equalsIgnoreCase(Constants.FLIGHT_GROUP_CODE, groupCode)) {
-                stepInstance.setMetadata(metadata);
-            }
+//            if (StringUtils.equalsIgnoreCase(Constants.FLIGHT_GROUP_CODE, groupCode)) {
+            stepInstance.setMetadata(metadata);
+//            }
 //            setStepLocation(itinerary, stepDefinition, stepInstance);
             steps.add(stepInstance);
         }

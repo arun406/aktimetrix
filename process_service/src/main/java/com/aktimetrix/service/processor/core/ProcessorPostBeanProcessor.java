@@ -1,6 +1,5 @@
 package com.aktimetrix.service.processor.core;
 
-import com.aktimetrix.service.processor.core.api.EventHandler;
 import com.aktimetrix.service.processor.core.api.Processor;
 import com.aktimetrix.service.processor.core.api.Registry;
 import com.aktimetrix.service.processor.core.stereotypes.ProcessHandler;
