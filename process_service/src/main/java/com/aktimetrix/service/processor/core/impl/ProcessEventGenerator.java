@@ -2,13 +2,18 @@ package com.aktimetrix.service.processor.core.impl;
 
 import com.aktimetrix.service.processor.core.api.EventGenerator;
 import com.aktimetrix.service.processor.core.model.ProcessInstance;
+import com.aktimetrix.service.processor.core.model.StepInstance;
 import com.aktimetrix.service.processor.core.transferobjects.Event;
 import com.aktimetrix.service.processor.core.transferobjects.ProcessInstanceDTO;
+import com.aktimetrix.service.processor.core.transferobjects.StepInstanceDTO;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class ProcessEventGenerator implements EventGenerator {
 
@@ -45,6 +50,9 @@ public class ProcessEventGenerator implements EventGenerator {
     }
 
     private ProcessInstanceDTO getProcessInstanceDTO(ProcessInstance processInstance) {
+
+        final List<StepInstanceDTO> stepInstanceDTOS = new ArrayList<>(processInstance.getSteps().stream().map(this::getStepInstanceDTO).collect(Collectors.toList()));
+
         return ProcessInstanceDTO.builder()
                 .entityId(processInstance.getEntityId())
                 .active(processInstance.isActive())
@@ -59,8 +67,23 @@ public class ProcessEventGenerator implements EventGenerator {
                 .valid(processInstance.isValid())
                 .version(processInstance.getVersion())
                 .metadata(processInstance.getMetadata())
+                .steps(stepInstanceDTOS)
                 .build();
     }
 
-
+    private StepInstanceDTO getStepInstanceDTO(StepInstance instance) {
+        return StepInstanceDTO.builder()
+                .id(instance.getId().toString())
+                .tenant(instance.getTenant())
+                .status(instance.getStatus())
+                .functionalCtx(instance.getFunctionalCtx())
+                .groupCode(instance.getGroupCode())
+                .version(instance.getVersion())
+                .stepCode(instance.getStepCode())
+                .locationCode(instance.getLocationCode())
+                .metadata(instance.getMetadata())
+                .processInstanceId(instance.getProcessInstanceId().toString())
+                .createdOn(instance.getCreatedOn())
+                .build();
+    }
 }

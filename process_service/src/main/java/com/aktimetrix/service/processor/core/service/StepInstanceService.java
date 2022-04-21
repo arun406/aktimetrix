@@ -80,7 +80,7 @@ public class StepInstanceService {
             final String stepCode = stepDefinition.getStepCode();
             final String groupCode = stepDefinition.getGroupCode();
             final String functionalCtx = stepDefinition.getFunctionalCtxCode();
-            logger.info("step code: " + stepCode + ", step group code: " + groupCode);
+            logger.info("step code: {}, step group code: {} ", stepCode, groupCode);
             StepInstance stepInstance = prepareStepInstanceObject(tenant, processInstanceId, stepCode, functionalCtx,
                     groupCode, Constants.DEFAULT_VERSION, Constants.STATUS_CREATED);
 //            if (StringUtils.equalsIgnoreCase(Constants.FLIGHT_GROUP_CODE, groupCode)) {

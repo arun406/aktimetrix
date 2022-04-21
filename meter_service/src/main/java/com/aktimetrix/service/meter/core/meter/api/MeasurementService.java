@@ -1,4 +1,4 @@
-package com.aktimetrix.service.meter.core.meter;
+package com.aktimetrix.service.meter.core.meter.api;
 
 import com.aktimetrix.service.meter.core.transferobjects.Measurement;
 import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;

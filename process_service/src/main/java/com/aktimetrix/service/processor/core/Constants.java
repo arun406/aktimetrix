@@ -38,4 +38,9 @@ public class Constants {
     public static final String ATT_PROCESS_TYPE = "process-type";
     public static final String ATT_EVENT_HANDLER_VERSION = "event-handler-type";
     public static final String ATT_PROCESS_HANDLER_VERSION = "process-handler-type";
+
+    public final static String PROCESS_DEFINITION = "processDefinition";
+    public final static String ENTITY_ID = "entityId";
+    public final static String EVENT_DATA = "eventData";
+    public final static String ENTITY = "entity";
 }

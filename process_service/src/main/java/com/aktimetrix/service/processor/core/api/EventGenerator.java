@@ -8,5 +8,5 @@ public interface EventGenerator {
      *
      * @return Event
      */
-    public Event<?, ?> generate();
+    Event<?, ?> generate();
 }

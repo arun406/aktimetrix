@@ -1,6 +1,6 @@
 package com.aktimetrix.service.meter;
 
-import com.aktimetrix.service.meter.core.meter.MeasurementService;
+import com.aktimetrix.service.meter.core.meter.api.MeasurementService;
 import com.aktimetrix.service.meter.core.transferobjects.Event;
 import com.aktimetrix.service.meter.core.transferobjects.Measurement;
 import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;

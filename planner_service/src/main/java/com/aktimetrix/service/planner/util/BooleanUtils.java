@@ -1,4 +1,4 @@
-package com.aktimetrix.service.meter.core.util;
+package com.aktimetrix.service.planner.util;
 
 public class BooleanUtils {
 

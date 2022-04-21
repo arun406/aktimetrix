@@ -4,18 +4,15 @@ import com.aktimetrix.service.processor.core.api.DefinitionProvider;
 import com.aktimetrix.service.processor.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.service.processor.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.service.processor.core.referencedata.model.StepDefinition;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
-@Slf4j
 public class DefaultStepDefinitionProvider implements DefinitionProvider<StepDefinition> {
 
-    private ProcessDefinition processDefinition;
+    private final ProcessDefinition processDefinition;
 
-    public DefaultStepDefinitionProvider() {
+    public DefaultStepDefinitionProvider(ProcessDefinition processDefinition) {
+        this.processDefinition = processDefinition;
     }
 
     /**

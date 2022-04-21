@@ -60,7 +60,7 @@ public class CiQStepDefinitionProvider implements DefinitionProvider<StepDefinit
 
         String finalBoardPointFnCtx = getFnCtx(itinerary.getBoardPoint(), cargo.getOrigin(), cargo.getDestination());
         String finalOffPointFnCtx = getFnCtx(itinerary.getOffPoint(), cargo.getOrigin(), cargo.getDestination());
-        log.info(" Boarding Point Functional Context : " + finalBoardPointFnCtx + ", Off Point Functional Context : " + finalOffPointFnCtx);
+        log.info("Boarding Point Functional Context : " + finalBoardPointFnCtx + ", Off Point Functional Context : " + finalOffPointFnCtx);
         // remove the duplicates also
         final List<StepDefinition> stepDefinitions = steps.stream()
                 .filter(sd ->
@@ -82,7 +82,7 @@ public class CiQStepDefinitionProvider implements DefinitionProvider<StepDefinit
                 }
             }
         }
-        log.info(String.format(" step codes : %s", stepDefinitions.stream()
+        log.info(String.format("step codes : %s", stepDefinitions.stream()
                 .map(StepDefinition::getStepCode)
                 .collect(Collectors.joining(","))));
 
