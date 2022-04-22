@@ -34,7 +34,7 @@ public class ProcessorPostBeanProcessor implements BeanPostProcessor {
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 
         if (bean instanceof Processor) {
-            logger.debug("Called postProcessBeforeInitialization() for : {}", beanName);
+            logger.trace("Called postProcessBeforeInitialization() for : {}", beanName);
 
             ProcessHandler annotation =
                     AnnotationUtils.findAnnotation(bean.getClass(), ProcessHandler.class);

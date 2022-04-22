@@ -1,16 +1,16 @@
 package com.aktimetrix.service.processor.ciq.cdmpc.service;
 
+import com.aktimetrix.core.api.Constants;
+import com.aktimetrix.core.api.MetadataProvider;
+import com.aktimetrix.core.api.ProcessContext;
+import com.aktimetrix.core.api.ProcessType;
+import com.aktimetrix.core.exception.DefinitionNotFoundException;
+import com.aktimetrix.core.impl.AbstractProcessor;
+import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.core.stereotypes.ProcessHandler;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Itinerary;
 import com.aktimetrix.service.processor.ciq.cdmpc.impl.CiQStepDefinitionProvider;
-import com.aktimetrix.service.processor.core.Constants;
-import com.aktimetrix.service.processor.core.api.MetadataProvider;
-import com.aktimetrix.service.processor.core.api.ProcessContext;
-import com.aktimetrix.service.processor.core.exception.DefinitionNotFoundException;
-import com.aktimetrix.service.processor.core.impl.AbstractProcessor;
-import com.aktimetrix.service.processor.core.process.ProcessType;
-import com.aktimetrix.service.processor.core.referencedata.model.StepDefinition;
-import com.aktimetrix.service.processor.core.stereotypes.ProcessHandler;
-import com.aktimetrix.service.processor.core.transferobjects.Cargo;
-import com.aktimetrix.service.processor.core.transferobjects.Itinerary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ import java.util.Map;
  * @author arun kumar kandakatla
  */
 @Component
-@ProcessHandler(processType = ProcessType.CDMP_C)
+@ProcessHandler(processType = ProcessType.A2ATRANSPORT)
 public class CiQA2AProcessor extends AbstractProcessor {
 
     final private static Logger logger = LoggerFactory.getLogger(CiQA2AProcessor.class);

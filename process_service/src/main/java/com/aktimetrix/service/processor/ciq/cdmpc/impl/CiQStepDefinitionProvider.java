@@ -1,11 +1,11 @@
 package com.aktimetrix.service.processor.ciq.cdmpc.impl;
 
-import com.aktimetrix.service.processor.core.api.DefinitionProvider;
-import com.aktimetrix.service.processor.core.exception.DefinitionNotFoundException;
-import com.aktimetrix.service.processor.core.referencedata.model.StepDefinition;
-import com.aktimetrix.service.processor.core.transferobjects.Cargo;
-import com.aktimetrix.service.processor.core.transferobjects.Itinerary;
-import com.aktimetrix.service.processor.core.transferobjects.StationInfo;
+import com.aktimetrix.core.api.DefinitionProvider;
+import com.aktimetrix.core.exception.DefinitionNotFoundException;
+import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Itinerary;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.StationInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 

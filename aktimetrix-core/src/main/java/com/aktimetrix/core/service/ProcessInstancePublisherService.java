@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@com.aktimetrix.core.stereotypes.PostProcessor(code = "PI_PUBLISHER", processType = ProcessType.CDMP_C)
+@com.aktimetrix.core.stereotypes.PostProcessor(code = "PI_PUBLISHER", processType = ProcessType.A2ATRANSPORT)
 public class ProcessInstancePublisherService implements PostProcessor {
 
     final private StreamBridge streamBridge;

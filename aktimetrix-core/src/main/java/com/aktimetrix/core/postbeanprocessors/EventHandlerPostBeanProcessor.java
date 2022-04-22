@@ -33,7 +33,7 @@ public class EventHandlerPostBeanProcessor implements BeanPostProcessor {
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 
         if (bean instanceof EventHandler) {
-            logger.debug("Called postProcessBeforeInitialization() for : {}", beanName);
+            logger.trace("Called postProcessBeforeInitialization() for : {}", beanName);
 
             com.aktimetrix.core.stereotypes.EventHandler annotation =
                     AnnotationUtils.findAnnotation(bean.getClass(), com.aktimetrix.core.stereotypes.EventHandler.class);

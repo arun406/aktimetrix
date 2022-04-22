@@ -1,6 +1,6 @@
 package com.aktimetrix.service.processor.ciq.cdmpc.impl;
 
-import com.aktimetrix.service.processor.core.model.StepInstance;
+import com.aktimetrix.core.model.StepInstance;
 import org.bson.Document;
 import org.springframework.stereotype.Component;
 

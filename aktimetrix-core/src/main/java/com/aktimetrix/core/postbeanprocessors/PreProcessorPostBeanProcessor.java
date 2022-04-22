@@ -32,7 +32,7 @@ public class PreProcessorPostBeanProcessor implements BeanPostProcessor {
 
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 
-        logger.debug("Called postProcessBeforeInitialization() for : {}", beanName);
+        logger.trace("Called postProcessBeforeInitialization() for : {}", beanName);
         PreProcessor annotation = AnnotationUtils.findAnnotation(bean.getClass(), PreProcessor.class);
         if (annotation == null) {
             return bean;
@@ -43,6 +43,7 @@ public class PreProcessorPostBeanProcessor implements BeanPostProcessor {
         attributes.put(Constants.ATT_PRE_PROCESSOR_CODE, annotation.code());
         attributes.put(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE, annotation.processType().name());
         attributes.put(Constants.ATT_PRE_PROCESSOR_NAME, annotation.name());
+        attributes.put(Constants.ATT_PRE_PROCESSOR_PRIORITY, String.valueOf(annotation.priority()));
         attributes.put(Constants.ATT_PRE_PROCESSOR_VERSION, annotation.version());
         attributes.put(Constants.ATT_PRE_PROCESSOR_DEFAULT, annotation.isDefault());
 

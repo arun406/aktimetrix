@@ -20,6 +20,8 @@ public @interface PreProcessor {
 
     String name() default "";
 
+    int priority() default 1;
+
     String version() default Constants.DEFAULT_VERSION;
 
     String isDefault() default Constants.VAL_NO;// No

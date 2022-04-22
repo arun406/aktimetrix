@@ -1,7 +1,7 @@
 package com.aktimetrix.service.processor.ciq.cdmpc.impl;
 
-import com.aktimetrix.service.processor.core.api.MetadataProvider;
-import com.aktimetrix.service.processor.core.transferobjects.Itinerary;
+import com.aktimetrix.core.api.MetadataProvider;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Itinerary;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;

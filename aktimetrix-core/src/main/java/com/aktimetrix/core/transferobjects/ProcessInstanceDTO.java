@@ -1,5 +1,6 @@
 package com.aktimetrix.core.transferobjects;
 
+import com.aktimetrix.core.transferobjects.StepInstanceDTO;
 import lombok.Builder;
 import lombok.Data;
 

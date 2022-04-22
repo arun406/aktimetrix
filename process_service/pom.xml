@@ -10,7 +10,7 @@
     <artifactId>process_service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>process_service</name>
-    <description>Demo project for Spring Boot</description>
+    <description>Processor Application</description>
     <properties>
         <java.version>11</java.version>
         <spring-cloud.version>2021.0.0</spring-cloud.version>
@@ -41,7 +41,7 @@
         </dependency>
         <dependency>
             <groupId>org.jgrapht</groupId>
-            <artifactId>jgrapht-com.aktimetrix.core</artifactId>
+            <artifactId>jgrapht-core</artifactId>
             <version>1.5.1</version>
         </dependency>
         <dependency>
@@ -85,6 +85,11 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-stream-binder-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aktimetrix</groupId>
+            <artifactId>aktimetrix-core</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <dependencyManagement>

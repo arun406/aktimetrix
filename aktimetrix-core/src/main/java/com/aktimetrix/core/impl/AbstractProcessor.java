@@ -68,7 +68,7 @@ public abstract class AbstractProcessor implements Processor {
         // get the preprocessors from registry
         log.debug("executing the preprocessors");
 
-        final List<PreProcessor> preProcessors = getPreProcessor(ProcessType.CDMP_C); // TODO remove the hard coding
+        final List<PreProcessor> preProcessors = getPreProcessor(ProcessType.A2ATRANSPORT); // TODO remove the hard coding
         preProcessors.forEach(preProcessor -> preProcessor.process(context));
     }
 
@@ -116,7 +116,7 @@ public abstract class AbstractProcessor implements Processor {
         // publish the process instance event
 //        this.processInstancePublisherService.process(context);
 //        this.stepInstancePublisherService.process(context);
-        final List<PostProcessor> postProcessors = getPostProcessor(ProcessType.CDMP_C); // TODO remove the hard coding
+        final List<PostProcessor> postProcessors = getPostProcessor(ProcessType.A2ATRANSPORT); // TODO remove the hard coding
         postProcessors.forEach(postProcessor -> postProcessor.process(context));
     }
 

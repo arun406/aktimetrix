@@ -43,6 +43,7 @@ public class Constants {
 
     public static final String ATT_PRE_PROCESSOR_SERVICE = "pre-process-service";
     public static final String ATT_PRE_PROCESSOR_CODE = "code";
+    public static final String ATT_PRE_PROCESSOR_PRIORITY = "priority";
     public static final String ATT_PRE_PROCESSOR_PROCESS_TYPE = "process-type";
     public static final String ATT_PRE_PROCESSOR_NAME = "pre-processor-name";
     public static final String ATT_PRE_PROCESSOR_VERSION = "pre-processor-version";
@@ -50,6 +51,7 @@ public class Constants {
 
     public static final String ATT_POST_PROCESSOR_SERVICE = "post-process-service";
     public static final String ATT_POST_PROCESSOR_CODE = "code";
+    public static final String ATT_POST_PROCESSOR_PRIORITY = "priority";
     public static final String ATT_POST_PROCESSOR_PROCESS_TYPE = "process-type";
     public static final String ATT_POST_PROCESSOR_NAME = "post-processor-name";
     public static final String ATT_POST_PROCESSOR_VERSION = "post-processor-version";

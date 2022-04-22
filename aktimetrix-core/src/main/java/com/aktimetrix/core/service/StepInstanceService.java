@@ -4,9 +4,7 @@ import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.repository.StepInstanceRepository;
-import com.aktimetrix.core.transferobjects.Itinerary;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -99,7 +97,7 @@ public class StepInstanceService {
      * @param itinerary
      * @param stepDefinition
      * @param stepInstance
-     */
+     *//*
     private void setStepLocation(Itinerary itinerary, StepDefinition stepDefinition, StepInstance stepInstance) {
         if (StringUtils.equalsIgnoreCase("E", stepDefinition.getFunctionalCtxCode())) {
             stepInstance.setLocationCode(itinerary.getBoardPoint().getCode());
@@ -113,7 +111,7 @@ public class StepInstanceService {
                 stepInstance.setLocationCode(itinerary.getOffPoint().getCode());
             }
         }
-    }
+    }*/
 
     /**
      * @param tenant
