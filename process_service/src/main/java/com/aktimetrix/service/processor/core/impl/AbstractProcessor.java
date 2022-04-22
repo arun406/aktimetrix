@@ -46,11 +46,12 @@ public abstract class AbstractProcessor implements Processor {
      */
     @Override
     public void process(ProcessContext context) {
-        // call pre processors
+        log.debug("calling the pre processors...");
         executePreProcessors(context);
         // call do process
         doProcess(context);
         // post processors
+        log.debug("calling the post processors...");
         executePostProcessors(context);
     }
 
@@ -66,7 +67,7 @@ public abstract class AbstractProcessor implements Processor {
         try {
             // get Step definitions
             final List<StepDefinition> stepDefinitions = getStepDefinitions(context);
-            logger.info("Saving Process Instance");
+            logger.info("saving Process Instance");
             final ProcessInstance savedProcessInstance = saveProcessInstance(processInstance);
             logger.debug("placing the process instance into context");
 //            context.setProcessInstance(savedProcessInstance);
@@ -149,7 +150,7 @@ public abstract class AbstractProcessor implements Processor {
     private List<StepInstance> saveStepInstances(String tenant, List<StepDefinition> stepDefinitions,
                                                  ObjectId processInstanceId, Map<String, Object> metadata) {
         return this.stepInstanceService
-                .createStepInstances(tenant, stepDefinitions, metadata, processInstanceId);
+                .saveStepInstances(tenant, stepDefinitions, metadata, processInstanceId); //TODO add default behaviour
     }
 
     public ProcessInstance getProcessInstance(ProcessContext context) {

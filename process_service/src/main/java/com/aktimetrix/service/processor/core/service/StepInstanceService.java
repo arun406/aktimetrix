@@ -31,7 +31,7 @@ public class StepInstanceService {
     /**
      * @param stepInstances step instance
      */
-    public void createStepInstances(List<StepInstance> stepInstances) {
+    public void saveStepInstances(List<StepInstance> stepInstances) {
         // Step Instance
         this.repository.saveAll(stepInstances);
         // log step instance ids;
@@ -72,8 +72,8 @@ public class StepInstanceService {
      * @param processInstanceId process instance id
      * @return step instance collection
      */
-    public List<StepInstance> createStepInstances(String tenant, List<StepDefinition> stepDefinitions,
-                                                  Map<String, Object> metadata, ObjectId processInstanceId) {
+    public List<StepInstance> saveStepInstances(String tenant, List<StepDefinition> stepDefinitions,
+                                                Map<String, Object> metadata, ObjectId processInstanceId) {
 
         List<StepInstance> steps = new ArrayList<>();
         for (StepDefinition stepDefinition : stepDefinitions) {
@@ -90,7 +90,7 @@ public class StepInstanceService {
             steps.add(stepInstance);
         }
         // save
-        this.createStepInstances(steps);
+        this.saveStepInstances(steps);
         return steps;
     }
 

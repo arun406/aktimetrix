@@ -129,7 +129,6 @@ public class BKDEventHandler implements com.aktimetrix.service.processor.core.ap
                         registryEntry.attribute(Constants.ATT_PROCESS_HANDLER_SERVICE).equals(Constants.VAL_YES) &&
                         (ProcessType.valueOf((String) registryEntry.attribute(Constants.ATT_PROCESS_TYPE)) == processType)
                 );
-
         logger.debug("Applicable handlers {}", handlers);
         Processor processHandler = null;
         for (Object m : handlers) {

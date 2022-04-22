@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @ComponentScan({"com.aktimetrix.service.meter",
-        "com.aktimetrix.service.meter.core",
+        "com.aktimetrix.service.meter.com.aktimetrix.core",
         "com.aktimetrix.service.meter.referencedata"})
 @SpringBootApplication
 @Slf4j

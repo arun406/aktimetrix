@@ -1,6 +1,7 @@
-package com.aktimetrix.service.processor;
+package com.aktimetrix.core.postbeanprocessors;
 
-import com.aktimetrix.service.processor.core.stereotypes.Loggable;
+import com.aktimetrix.core.stereotypes.Loggable;
+import com.aktimetrix.core.util.EntryExitDynamicInvocationHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;

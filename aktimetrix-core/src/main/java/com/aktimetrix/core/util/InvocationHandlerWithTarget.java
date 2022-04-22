@@ -1,4 +1,4 @@
-package com.aktimetrix.service.processor;
+package com.aktimetrix.core.util;
 
 import java.lang.reflect.InvocationHandler;
 

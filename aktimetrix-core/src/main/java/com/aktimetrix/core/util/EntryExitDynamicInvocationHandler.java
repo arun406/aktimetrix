@@ -1,6 +1,6 @@
-package com.aktimetrix.service.processor;
+package com.aktimetrix.core.util;
 
-import com.aktimetrix.service.processor.core.stereotypes.Loggable;
+import com.aktimetrix.core.stereotypes.Loggable;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
@@ -51,7 +51,7 @@ public class EntryExitDynamicInvocationHandler extends InvocationHandlerWithTarg
             methodArgs = args;
             log.trace("Logging the method with params :  [ methodName: {}, methodArgs: {}, parameters: {}, Level: {}, " +
                             "showArgs: {}, showResult: {}, showExecutionTime: {} ] ",
-                    new Object[]{methodName, methodArgs, parameters, level, showArgs, showResult, showExecutionTime});
+                    methodName, methodArgs, parameters, level, showArgs, showResult, showExecutionTime);
         }
         log(log, level, entry(methodName, showArgs, parameters, methodArgs));
         var start = Instant.now();
