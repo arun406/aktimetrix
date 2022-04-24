@@ -2,7 +2,7 @@ package com.aktimetrix.core.postbeanprocessors;
 
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Registry;
-import com.aktimetrix.core.stereotypes.PreProcessor;
+import com.aktimetrix.core.stereotypes.PostProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -32,7 +32,7 @@ public class PostProcessorPostBeanProcessor implements BeanPostProcessor {
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 
         logger.trace("Called postProcessBeforeInitialization() for : {}", beanName);
-        PreProcessor annotation = AnnotationUtils.findAnnotation(bean.getClass(), PreProcessor.class);
+        PostProcessor annotation = AnnotationUtils.findAnnotation(bean.getClass(), PostProcessor.class);
         if (annotation == null) {
             return bean;
         }

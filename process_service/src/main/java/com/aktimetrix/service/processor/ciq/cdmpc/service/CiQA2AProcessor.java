@@ -8,6 +8,7 @@ import com.aktimetrix.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.core.impl.AbstractProcessor;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.stereotypes.ProcessHandler;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.BKDEventDetails;
 import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
 import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Itinerary;
 import com.aktimetrix.service.processor.ciq.cdmpc.impl.CiQStepDefinitionProvider;
@@ -45,7 +46,9 @@ public class CiQA2AProcessor extends AbstractProcessor {
      */
     @Override
     protected Map<String, Object> getStepMetadata(ProcessContext context) {
-        return this.stepMetadataProvider.getMetadata((Itinerary) context.getProperty(Constants.EVENT_DATA));
+        final BKDEventDetails eventDetails = (BKDEventDetails) context.getProperty(Constants.EVENT_DATA);
+        final Itinerary itinerary = eventDetails.getItineraries().get(0);
+        return this.stepMetadataProvider.getMetadata(itinerary);
     }
 
     /**
@@ -69,8 +72,11 @@ public class CiQA2AProcessor extends AbstractProcessor {
     @Override
     public List<StepDefinition> getStepDefinitions(ProcessContext context) throws DefinitionNotFoundException {
         final List<StepDefinition> stepDefinitions = super.getStepDefinitions(context);
-        return new CiQStepDefinitionProvider(stepDefinitions, (Cargo) context.getProperty(Constants.ENTITY),
-                (Itinerary) context.getProperty(Constants.EVENT_DATA))
-                .getDefinitions();
+        final BKDEventDetails eventDetails = (BKDEventDetails) context.getProperty(Constants.EVENT_DATA);
+        final Cargo entity = (Cargo) context.getProperty(Constants.ENTITY);
+
+        final Itinerary itinerary = eventDetails.getItineraries().get(0);
+
+        return new CiQStepDefinitionProvider(stepDefinitions, entity, itinerary).getDefinitions();
     }
 }

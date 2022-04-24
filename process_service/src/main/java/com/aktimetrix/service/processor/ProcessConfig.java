@@ -9,6 +9,8 @@ import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
 import com.aktimetrix.core.exception.ProcessorException;
 import com.aktimetrix.core.impl.RegistryEntry;
 import com.aktimetrix.core.transferobjects.Event;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.BKDEventDetails;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,15 +32,13 @@ import java.util.function.Predicate;
 public class ProcessConfig {
 
     final private static Logger logger = LoggerFactory.getLogger(ProcessConfig.class);
-
     @Autowired
     private ObjectMapper objectMapper;
-
     @Autowired
     private Registry registry;
 
     @Bean
-    public Consumer<Message<String>> processor_dup() throws ProcessorException {
+    public Consumer<Message<String>> processor() throws ProcessorException {
         return message -> {
             final String payload = message.getPayload();
             final Acknowledgment acknowledgment = message.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT, Acknowledgment.class);
@@ -50,7 +50,7 @@ public class ProcessConfig {
                 String eventType = node.get("eventType").asText();
                 logger.info("Event Code: {}, Event Type: {}", eventCode, eventType);
 
-                final Event<?, ?> event = objectMapper.readValue(payload, new TypeReference<>() {
+                final Event<Cargo, BKDEventDetails> event = objectMapper.readValue(payload, new TypeReference<>() {
                 });
                 logger.info(String.format("Event : %s ", event));
                 EventHandler eventHandler = getEventHandler(EventType.valueOf(eventCode));

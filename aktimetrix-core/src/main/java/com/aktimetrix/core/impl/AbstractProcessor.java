@@ -169,7 +169,8 @@ public abstract class AbstractProcessor implements Processor {
     private List<PostProcessor> getPostProcessor(ProcessType processType) {
         Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_SERVICE)
                 && re.attribute(Constants.ATT_POST_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate2 = re -> (re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE) == processType);
+        Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE) &&
+                (processType == ProcessType.valueOf((String)re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE)));
 
         final List<Object> postProcessors = this.registry.lookupAll(predicate1.and(predicate2));
         logger.debug("Applicable post processors {}", postProcessors);
