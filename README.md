@@ -79,11 +79,13 @@ Reference Application Architecture is given below:
 
 ![reference-architecture](./img/aktimetrix_reference_product.jpeg)
 
-As shown above, we will create a event-driven microservices which will create the plan for a business entity.
+As shown above, A reference product for business processing application can we defined with event-driven microservices for monitoring a business entity.
 Product will contain 3 micro services.
 1. Processor -- Subscribes to the business events and publishes the process and step events.
 2. Meter    -- Subscribes to step events and generate the planned measurement events.
 3. Planner  -- Subscribes to process and measurment events and publish the plan events.
+
+The above microservice components uses a common messaging system for publishing and consuming external and internal events.
 
 ## Processor
 
