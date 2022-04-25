@@ -77,7 +77,7 @@ Developers can bootstrap the development of business process monitoring system d
 
 Reference Application Architecture is given below:
 
-![reference-architecture](./img/product.jpeg)
+![reference-architecture](./img/Product.jpeg)
 ## Processor
 
 Processor Application is a event-driven microservices responsible for consuming the business events from sources and generates the process and step level events for each business entity. For example, processor consumes booking events and generates process instance and step instance events for the booking Id.
