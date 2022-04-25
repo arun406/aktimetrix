@@ -5,10 +5,10 @@ package com.aktimetrix.core.api;
  */
 public interface PreProcessor extends Processor {
 
-    void preProcess(ProcessContext context);
+    void preProcess(Context context);
 
     @Override
-    default void process(ProcessContext context) {
+    default void process(Context context) {
         preProcess(context);
     }
 }

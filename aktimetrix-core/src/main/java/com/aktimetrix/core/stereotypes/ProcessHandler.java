@@ -2,7 +2,6 @@ package com.aktimetrix.core.stereotypes;
 
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.ProcessType;
-import org.springframework.stereotype.Service;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

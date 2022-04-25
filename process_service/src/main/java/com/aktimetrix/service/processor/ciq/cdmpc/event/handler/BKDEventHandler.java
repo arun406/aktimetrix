@@ -4,9 +4,10 @@ import com.aktimetrix.core.api.EventType;
 import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.event.handler.AbstractEventHandler;
 import com.aktimetrix.core.impl.DefaultProcessDefinitionProvider;
+import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.stereotypes.EventHandler;
-import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
 import com.aktimetrix.core.transferobjects.Event;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -20,9 +21,10 @@ public class BKDEventHandler extends AbstractEventHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(BKDEventHandler.class);
 
-    public BKDEventHandler(Registry registry, DefaultProcessDefinitionProvider defaultProcessDefinitionProvider) {
-        super(registry, defaultProcessDefinitionProvider);
+    public BKDEventHandler(DefaultProcessDefinitionProvider defaultProcessDefinitionProvider, RegistryService registryService) {
+        super(defaultProcessDefinitionProvider, registryService);
     }
+
 
     @Override
     protected String entityType(Event<?, ?> event) {

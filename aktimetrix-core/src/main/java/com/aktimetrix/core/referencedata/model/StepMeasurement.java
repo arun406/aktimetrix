@@ -1,5 +1,6 @@
 package com.aktimetrix.core.referencedata.model;
 
+import com.aktimetrix.core.api.MeasurementType;
 import lombok.Data;
 
 @Data

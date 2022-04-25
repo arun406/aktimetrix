@@ -17,9 +17,10 @@ import java.util.Arrays;
 import java.util.Date;
 
 @Configuration
-@EnableMongoRepositories(basePackages = {"com.aktimetrix.service.meter.com.aktimetrix.core.referencedata.encore.repository",
-        "com.aktimetrix.service.meter.com.aktimetrix.core.meter.repository",
-        "com.aktimetrix.service.meter.referencedata.repository"})
+@EnableMongoRepositories(basePackages = {"com.aktimetrix.service.meter.core.referencedata.encore.repository",
+        "com.aktimetrix.core.repository",
+        "com.aktimetrix.core.referencedata.repository",
+        "com.aktimetrix.core.tenant.repository"})
 public class MongoConfig {
 
     @Bean

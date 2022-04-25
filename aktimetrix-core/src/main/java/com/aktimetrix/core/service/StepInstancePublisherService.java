@@ -1,7 +1,7 @@
 package com.aktimetrix.core.service;
 
+import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;
-import com.aktimetrix.core.api.ProcessContext;
 import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.impl.StepEventGenerator;
 import com.aktimetrix.core.transferobjects.Event;
@@ -23,7 +23,7 @@ public class StepInstancePublisherService implements PostProcessor {
     final private StreamBridge streamBridge;
 
     @Override
-    public void postProcess(ProcessContext context) {
+    public void postProcess(Context context) {
         log.debug("executing process instance publisher service");
         if (context.getStepInstances() == null || context.getStepInstances().isEmpty()) {
             return;

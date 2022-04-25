@@ -1,7 +1,5 @@
 package com.aktimetrix.service.planner.transferobjects;
 
-import com.aktimetrix.service.planner.model.MeasurementInstance;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Multimap;
 import lombok.Data;
 import lombok.NoArgsConstructor;

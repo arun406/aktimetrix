@@ -7,5 +7,5 @@ public interface Processor {
     /**
      * @param context process context
      */
-    void process(ProcessContext context);
+    void process(Context context);
 }

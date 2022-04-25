@@ -1,8 +1,8 @@
 package com.aktimetrix.service.meter.core.meter.generators;
 
-import com.aktimetrix.service.meter.core.meter.impl.AbstractMeter;
-import com.aktimetrix.service.meter.core.stereotypes.Measurement;
-import com.aktimetrix.service.meter.core.transferobjects.StepInstanceDTO;
+import com.aktimetrix.core.meter.impl.AbstractMeter;
+import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.stereotypes.Measurement;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -10,12 +10,12 @@ import org.springframework.stereotype.Component;
 public class RCSPlanPiecesGenerator extends AbstractMeter {
 
     @Override
-    protected String getMeasurementUnit(String tenant, StepInstanceDTO step) {
-        return String.valueOf((int) step.getMetadata().get("reservationPieces"));
+    protected String getMeasurementUnit(String tenant, StepInstance step) {
+        return "N";
     }
 
     @Override
-    protected String getMeasurementValue(String tenant, StepInstanceDTO step) {
-        return "N";
+    protected String getMeasurementValue(String tenant, StepInstance step) {
+        return String.valueOf((int) step.getMetadata().get("pieces"));
     }
 }

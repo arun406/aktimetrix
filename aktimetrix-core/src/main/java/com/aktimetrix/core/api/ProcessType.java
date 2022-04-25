@@ -1,5 +1,5 @@
 package com.aktimetrix.core.api;
 
 public enum ProcessType {
-    A2ATRANSPORT
+    A2ATRANSPORT, METERPROCESSOR;
 }

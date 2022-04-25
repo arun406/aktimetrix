@@ -3,8 +3,6 @@ package com.aktimetrix.service.planner.api;
 
 import com.aktimetrix.service.planner.model.Plan;
 import com.aktimetrix.service.planner.model.ProcessInstance;
-import com.aktimetrix.service.planner.model.StepInstance;
-import org.bson.types.ObjectId;
 
 import java.util.List;
 

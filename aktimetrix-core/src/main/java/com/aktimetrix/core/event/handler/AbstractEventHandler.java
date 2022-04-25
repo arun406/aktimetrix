@@ -1,15 +1,15 @@
 package com.aktimetrix.core.event.handler;
 
-import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.api.Processor;
 import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
-import com.aktimetrix.core.impl.DefaultProcessContext;
+import com.aktimetrix.core.impl.DefaultContext;
 import com.aktimetrix.core.impl.DefaultProcessDefinitionProvider;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
+import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -20,9 +20,9 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public abstract class AbstractEventHandler implements EventHandler {
-    private static final Logger logger = LoggerFactory.getLogger(AbstractEventHandler.class);
-    private final Registry registry;
-    private final DefaultProcessDefinitionProvider defaultProcessDefinitionProvider;
+    final private static Logger logger = LoggerFactory.getLogger(AbstractEventHandler.class);
+    final private DefaultProcessDefinitionProvider defaultProcessDefinitionProvider;
+    final private RegistryService registryService;
 
     /**
      * @param event
@@ -40,13 +40,12 @@ public abstract class AbstractEventHandler implements EventHandler {
                     // should be changed to registry implementation.
                     Processor processHandler = null;
                     try {
-                        processHandler = getProcessHandler(ProcessType.valueOf(definition.getProcessCode()));
+                        processHandler = registryService.getProcessHandler(ProcessType.valueOf(definition.getProcessCode()));
                     } catch (ProcessHandlerNotFoundException e) {
                         logger.error("process handler is not defined for {} process", ProcessType.A2ATRANSPORT);
                         return;
                     }
-                    // change this. TODO
-                    DefaultProcessContext processContext = prepareProcessContext(definition, event);
+                    DefaultContext processContext = prepareContext(definition, event);
                     processHandler.process(processContext);
                 });
             }
@@ -70,26 +69,6 @@ public abstract class AbstractEventHandler implements EventHandler {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Returns the process Handler Based on Process Type
-     *
-     * @param processType event type
-     * @return Event Handler Object
-     * @throws ProcessHandlerNotFoundException
-     */
-    public Processor getProcessHandler(ProcessType processType) throws ProcessHandlerNotFoundException {
-        final List<Object> handlers = this.registry
-                .lookupAll(registryEntry -> registryEntry.hasAttribute(Constants.ATT_PROCESS_HANDLER_SERVICE) &&
-                        registryEntry.attribute(Constants.ATT_PROCESS_HANDLER_SERVICE).equals(Constants.VAL_YES) &&
-                        (ProcessType.valueOf((String) registryEntry.attribute(Constants.ATT_PROCESS_TYPE)) == processType)
-                );
-        logger.debug("applicable handlers {}", handlers);
-        Processor processHandler = null;
-        for (Object m : handlers) {
-            processHandler = (Processor) m;
-        }
-        return processHandler;
-    }
 
     /**
      * prepares the ProcessContext
@@ -98,8 +77,8 @@ public abstract class AbstractEventHandler implements EventHandler {
      * @param event      event
      * @return Process Context
      */
-    public DefaultProcessContext prepareProcessContext(ProcessDefinition definition, Event<?, ?> event) {
-        DefaultProcessContext processContext = new DefaultProcessContext();
+    public DefaultContext prepareContext(ProcessDefinition definition, Event<?, ?> event) {
+        DefaultContext processContext = new DefaultContext();
 
         processContext.setProperty("entityId", entityId(event));
         processContext.setProperty("entityType", entityType(event));

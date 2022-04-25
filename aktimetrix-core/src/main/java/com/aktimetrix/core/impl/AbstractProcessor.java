@@ -1,9 +1,9 @@
 package com.aktimetrix.core.impl;
 
 import com.aktimetrix.core.api.Constants;
+import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;
 import com.aktimetrix.core.api.PreProcessor;
-import com.aktimetrix.core.api.ProcessContext;
 import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.api.Processor;
 import com.aktimetrix.core.api.Registry;
@@ -14,6 +14,7 @@ import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.service.ProcessInstancePublisherService;
 import com.aktimetrix.core.service.ProcessInstanceService;
+import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.service.StepInstancePublisherService;
 import com.aktimetrix.core.service.StepInstanceService;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -50,12 +49,14 @@ public abstract class AbstractProcessor implements Processor {
 
     @Autowired
     private Registry registry;
+    @Autowired
+    private RegistryService registryService;
 
     /**
      * @param context process context
      */
     @Override
-    public void process(ProcessContext context) {
+    public void process(Context context) {
         // call pre processors
         executePreProcessors(context);
         // call do process
@@ -64,17 +65,17 @@ public abstract class AbstractProcessor implements Processor {
         executePostProcessors(context);
     }
 
-    private void executePreProcessors(ProcessContext context) {
+    private void executePreProcessors(Context context) {
         // get the preprocessors from registry
         log.debug("executing the preprocessors");
 
-        final List<PreProcessor> preProcessors = getPreProcessor(ProcessType.A2ATRANSPORT); // TODO remove the hard coding
+        final List<PreProcessor> preProcessors = registryService.getPreProcessor(ProcessType.A2ATRANSPORT); // TODO remove the hard coding
         preProcessors.forEach(preProcessor -> preProcessor.process(context));
     }
 
 
     @Transactional
-    public void doProcess(ProcessContext context) {
+    public void doProcess(Context context) {
         ProcessInstance processInstance = getProcessInstance(context);
         try {
             // get Step definitions
@@ -82,7 +83,6 @@ public abstract class AbstractProcessor implements Processor {
             logger.info("Saving Process Instance");
             final ProcessInstance savedProcessInstance = saveProcessInstance(processInstance);
             logger.debug("placing the process instance into context");
-//            context.setProcessInstance(savedProcessInstance);
             logger.info("Saving the step instances..");
             final List<StepInstance> stepInstances = saveStepInstances(context.getTenant(), stepDefinitions, processInstance.getId(),
                     getStepMetadata(context));
@@ -97,26 +97,26 @@ public abstract class AbstractProcessor implements Processor {
         }
     }
 
-    public List<StepDefinition> getStepDefinitions(ProcessContext context) throws DefinitionNotFoundException {
+    public List<StepDefinition> getStepDefinitions(Context context) throws DefinitionNotFoundException {
         return new DefaultStepDefinitionProvider((ProcessDefinition) context.getProperty(Constants.PROCESS_DEFINITION)).getDefinitions();
     }
 
-    protected abstract Map<String, Object> getStepMetadata(ProcessContext context);
+    protected abstract Map<String, Object> getStepMetadata(Context context);
 
-    protected abstract Map<String, Object> getProcessMetadata(ProcessContext context);
+    protected abstract Map<String, Object> getProcessMetadata(Context context);
 
     /**
      * Execute the post processor
      *
      * @param context process context
      */
-    private void executePostProcessors(ProcessContext context) {
+    private void executePostProcessors(Context context) {
         // TODO  get the post processors from registry
         log.debug("executing post processors");
         // publish the process instance event
 //        this.processInstancePublisherService.process(context);
 //        this.stepInstancePublisherService.process(context);
-        final List<PostProcessor> postProcessors = getPostProcessor(ProcessType.A2ATRANSPORT); // TODO remove the hard coding
+        final List<PostProcessor> postProcessors = registryService.getPostProcessor(ProcessType.A2ATRANSPORT); // TODO remove the hard coding
         postProcessors.forEach(postProcessor -> postProcessor.process(context));
     }
 
@@ -151,7 +151,7 @@ public abstract class AbstractProcessor implements Processor {
                 .save(tenant, stepDefinitions, metadata, processInstanceId);
     }
 
-    private ProcessInstance getProcessInstance(ProcessContext context) {
+    private ProcessInstance getProcessInstance(Context context) {
         ProcessDefinition definition = (ProcessDefinition) context.getProperty(Constants.PROCESS_DEFINITION);
         String tenant = context.getTenant();
         String entityId = (String) context.getProperty(Constants.ENTITY_ID);
@@ -164,34 +164,5 @@ public abstract class AbstractProcessor implements Processor {
             processInstance.setEntityId(entityId);
         }
         return processInstance;
-    }
-
-    private List<PostProcessor> getPostProcessor(ProcessType processType) {
-        Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_SERVICE)
-                && re.attribute(Constants.ATT_POST_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE) &&
-                (processType == ProcessType.valueOf((String)re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE)));
-
-        final List<Object> postProcessors = this.registry.lookupAll(predicate1.and(predicate2));
-        logger.debug("Applicable post processors {}", postProcessors);
-
-        if (postProcessors != null && !postProcessors.isEmpty()) {
-            return postProcessors.stream().map(m -> (PostProcessor) m).collect(Collectors.toList());
-        }
-        return new ArrayList<>();
-    }
-
-    private List<PreProcessor> getPreProcessor(ProcessType processType) {
-        Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_PRE_PROCESSOR_SERVICE)
-                && re.attribute(Constants.ATT_PRE_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate2 = re -> (re.attribute(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE) == processType);
-
-        final List<Object> preProcessors = this.registry.lookupAll(predicate1.and(predicate2));
-        logger.debug("Applicable pre processors {}", preProcessors);
-
-        if (preProcessors != null && !preProcessors.isEmpty()) {
-            return preProcessors.stream().map(m -> (PreProcessor) m).collect(Collectors.toList());
-        }
-        return new ArrayList<>();
     }
 }

@@ -5,10 +5,10 @@ package com.aktimetrix.core.api;
  */
 public interface PostProcessor extends Processor {
 
-    void postProcess(ProcessContext context);
+    void postProcess(Context context);
 
     @Override
-    default void process(ProcessContext context) {
+    default void process(Context context) {
         postProcess(context);
     }
 }
