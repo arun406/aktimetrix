@@ -9,20 +9,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@Measurement(code = "TIME", stepCode = "RCS")
-public class RCSPlanTimeGenerator extends AbstractMeter {
-    private static final Logger logger = LoggerFactory.getLogger(RCSPlanTimeGenerator.class);
+@Measurement(code = "TIME", stepCode = "NFD")
+public class NFDPlanTimeMeter extends AbstractMeter {
+
+    private static final Logger logger = LoggerFactory.getLogger(NFDPlanTimeMeter.class);
 
     @Autowired
-    private CDMPCExportStepMeasurementValueCalculator valueCalculator;
+    private CDMPCImportStepMeasurementValueCalculator valueCalculator;
 
     @Override
     protected String getMeasurementUnit(String tenant, StepInstance step) {
-        return this.valueCalculator.calculate(tenant, step, stepCode());
+        return "TIMESTAMP";
     }
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        return "TIMESTAMP";
+        return this.valueCalculator.calculate(tenant, step, stepCode());
     }
 }

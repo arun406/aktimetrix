@@ -3,23 +3,19 @@ package com.aktimetrix.service.meter.core.meter.generators;
 import com.aktimetrix.core.meter.impl.AbstractMeter;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.stereotypes.Measurement;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@Measurement(code = "TIME", stepCode = "DEP-T")
-public class DEPTPlanTimeGenerator extends AbstractMeter {
-
-    @Autowired
-    private CDMPCImportStepMeasurementValueCalculator valueCalculator;
+@Measurement(code = "PCS", stepCode = "RCS")
+public class RCSPlanPiecesMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementUnit(String tenant, StepInstance step) {
-        return "TIMESTAMP";
+        return "N";
     }
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        return this.valueCalculator.calculate(tenant, step, step.getStepCode());
+        return String.valueOf((int) step.getMetadata().get("pieces"));
     }
 }

@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@Measurement(code = "TIME", stepCode = "AWR")
-public class AWRPlanTimeGenerator extends AbstractMeter {
+@Measurement(code = "TIME", stepCode = "DLV")
+public class DLVPlanTimeMeter extends AbstractMeter {
 
     @Autowired
     private CDMPCImportStepMeasurementValueCalculator valueCalculator;

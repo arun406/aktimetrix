@@ -7,11 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@Measurement(code = "TIME", stepCode = "DLV")
-public class DLVPlanTimeGenerator extends AbstractMeter {
+@Measurement(code = "TIME", stepCode = "FWB")
+public class FWBPlanTimeMeter extends AbstractMeter {
 
     @Autowired
-    private CDMPCImportStepMeasurementValueCalculator valueCalculator;
+    private CDMPCExportStepMeasurementValueCalculator valueCalculator;
 
     @Override
     protected String getMeasurementUnit(String tenant, StepInstance step) {

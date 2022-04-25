@@ -1,26 +1,21 @@
 package com.aktimetrix.service.meter.core.meter.generators;
 
-
 import com.aktimetrix.core.meter.impl.AbstractMeter;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.stereotypes.Measurement;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@Measurement(code = "TIME", stepCode = "AWD")
-public class AWDPlanTimeGenerator extends AbstractMeter {
-
-    @Autowired
-    private CDMPCImportStepMeasurementValueCalculator valueCalculator;
+@Measurement(code = "WT", stepCode = "RCS")
+public class RCSPlanWeightMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementUnit(String tenant, StepInstance step) {
-        return "TIMESTAMP";
+        return (String) step.getMetadata().get("wtUnit");
     }
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        return this.valueCalculator.calculate(tenant, step, stepCode());
+        return String.valueOf((double) step.getMetadata().get("wt"));
     }
 }

@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Measurement(code = "TIME", stepCode = "RCF")
-public class RCFPlanTimeGenerator extends AbstractMeter {
+public class RCFPlanTimeMeter extends AbstractMeter {
 
-    private static final Logger logger = LoggerFactory.getLogger(RCFPlanTimeGenerator.class);
+    private static final Logger logger = LoggerFactory.getLogger(RCFPlanTimeMeter.class);
 
     @Autowired
     private CDMPCImportStepMeasurementValueCalculator valueCalculator;
