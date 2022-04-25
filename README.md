@@ -1,5 +1,5 @@
 # AKTIMETRIX
-## _A Business Activity Monitoring Framework_
+## _A Business Process Monitoring Framework_
 
 [![N|Solid](https://cldup.com/dTxpPi9lDf.thumb.png)](https://nodesource.com/products/nsolid)
 
@@ -14,8 +14,8 @@ The Aktimetrix Framework is an application framework for developeing business pr
 Aktimetrix framework provides below high level features.
 
 - A REST API for defining the reference data for designing business processes
-- Java annotations which are commonly used to configure behaviors in the Spring Framework.
-- General purposed utility for achieving features such as business process planning, monitoring and control.
+- Java annotations to configure the behaviors in the Aktimetrix Framework.
+- General purposed utility functions for achieving features such as business process planning, monitoring and control.
 - A notification framework for notifying business stakeholders
 
 ## Whats Available
