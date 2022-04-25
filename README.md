@@ -27,9 +27,9 @@ Aktimetrix framework is based on event-driven micro service architecture connect
 ## Domain language
 Aktimetrix primarily exposes below domain language.
 _Reference Data_
-- Process   - Collection of Steps
+- Process   - A Collection of Steps
 - Step      - A individual milestone in the process
-- Metadata  - A domain specific information
+- Metadata  - A domain specific information in the form of Key Value Pairs.
 - Measurement - A definition of calculation to be performed
 - Metric    - Aggregation of measurements
 - Business Entity   - External business object whos process need to be monitored into the aktimetrix.
@@ -80,7 +80,8 @@ Reference Application Architecture is given below:
 ![reference-architecture](./img/Product.jpeg)
 ## Processor
 
-Processor Application is a event-driven microservices responsible for consuming the business events from sources and generates the process and step level events for each business entity. For example, processor consumes booking events and generates process instance and step instance events for the booking Id.
+Processor Application is a event-driven microservices responsible for consuming the business events from sources and generates the process and step level events for each business entity. 
+For example, processor consumes booking events and generates process instance and step instance events for each of the bookings.
 
 1. Create a base spring boot application using [spring initializer](https://start.spring.io/).
 Add aktimetrix core dependency to the project
@@ -99,7 +100,7 @@ Add aktimetrix core dependency to the project
 3. Create event handler for managing business event. 
 
 ##### Event Handler
-Event handlers are responsible for processing the external business events. For example , A booking event handler will be used to process 'Booking' events from an Airline reservation system.
+Event handlers are responsible for processing the external business events. For example, A booking event handler will be used to process 'Booking' events from an Airline reservation system.
 
 A booking event handler will be created by extend the AbstractEventHandler class from aktimetrix core and override the entityId(Event<?,?> event) and eventType(Event<?,?> event) method. 
 
@@ -204,7 +205,10 @@ Here _code_ refers the name given to the measurement and _stepCode_ will refer t
 _*Currently AbstractMeter calculate step level measurements_.
 
 ##### 3. Create Event Handler
-A Step Event handler in Meter Application will be created by extending the AbstractEventHandler class from aktimetrix core and override the entityId(Event<?,?> event) and eventType(Event<?,?> event) method.
+
+Processor Application publishes the Process Instance Events and Step Instance Events. Meter Application can subscribe these events and generate the measurement from the step instance events and process instance events.
+
+A Step Event handler in Meter Application will be created by extending the _AbstractStepEventHandler_ class from _aktimetrix core_ and override the entityId(Event<?,?> event) and eventType(Event<?,?> event) method.
 
 Step Event handler will calculate the measurements applicable for the step (based on step definition)
 
@@ -239,6 +243,8 @@ Want to contribute? Great!
 
 Aktimetric uses Spring + Spring boot for fast developing.
 Make a change in your file and instantaneously see your updates!
+
+### Deployment
 
 ## License
 
