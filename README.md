@@ -77,7 +77,7 @@ Developers can bootstrap the development of business process monitoring system d
 
 Reference Application Architecture is given below:
 
-![reference-architecture](./img/Product.jpeg)
+![reference-architecture](./img/aktimetrix_reference_product.jpeg)
 
 As shown above, we will create a event-driven microservices which will create the plan for a business entity.
 Product will contain 3 micro services.
