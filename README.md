@@ -78,6 +78,13 @@ Developers can bootstrap the development of business process monitoring system d
 Reference Application Architecture is given below:
 
 ![reference-architecture](./img/Product.jpeg)
+
+As shown above, we will create a event-driven microservices which will create the plan for a business entity.
+Product will contain 3 micro services.
+1. Processor -- Subscribes to the business events and publishes the process and step events.
+2. Meter    -- Subscribes to step events and generate the planned measurement events.
+3. Planner  -- Subscribes to process and measurment events and publish the plan events.
+
 ## Processor
 
 Processor Application is a event-driven microservices responsible for consuming the business events from sources and generates the process and step level events for each business entity. 
