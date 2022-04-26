@@ -21,9 +21,6 @@ Aktimetrix framework provides below high level features.
 ## Whats Available
 Aktimetrix provides the framework for building business monitoring applications.
 
-## Architecture
-Aktimetrix framework is based on event-driven micro service architecture connected with shared messaging system.
-
 ## Domain language
 Aktimetrix primarily exposes below domain language.
 _Reference Data_
@@ -37,17 +34,17 @@ _Reference Data_
 - Step Instance - Instance of step
 - Measurement Instance  - Instance of measurement
 - Metric Instance   - Instance of metric
+- Process Plan
 
-Sample process and step composition for cargo iq process in air cargo domain is given below.
-    
-![ad](./img/aktimetrix_cargo.jpeg)
-
-
-Another example process and step composition for loan account processing in banking domain is given below.
+An example process and step composition for loan account processing in banking domain is given below.
    
 ![ad](./img/aktimetrix_banking.jpeg)
 
-The following are the primary APIs which are included as part of aktimetrix.
+Sample process and step composition for air cargo transportation is given below.
+    
+![ad](./img/aktimetrix_cargo.jpeg)
+
+The following are the primary APIs which are included as part of aktimetrix framework.
 
 - **_Reference data API_** - This REST style API will allow to define the reference data required for aktimetrix such as process definitions, step definitions, measurement definitions and metric definitions.(more about these in coming sections)
 - **_Processor API_** - Processor API allows to create the process instance and step instance etc for each business entity.
@@ -73,17 +70,21 @@ Install the dependencies and devDependencies and start the server.
 
 ## Development
 
-Developers can bootstrap the development of business process monitoring system development with aktimetrix framework by following below steps.
+Lets create a headless [No UI] reference business monitoring application for e-commerce domain with aktimetrix framework and call it as *_E-Buzz_Monitor*_. E-Buzz_Monitor aim is to monitor each order placed by any customer in e-commerce website. E-Buzz_Monitor will be placed outside the business application(e-commerce website) and subsribes to the events published by the e-commerce website.
 
-Reference Application Architecture is given below:
+For monitoring the orders life cycle, lets breakdown the application into 4 microservices. Each microservice will perform certain functionalities. 
+
+1. Processor -- Subscribes to the business events and publishes the process and step events.
+2. Meter    -- Subscribes to step events and generate the planned measurement events.
+3. Planner  -- Subscribes to process and measurment events and publish the plan events.
+4. Monitor  -- Subscribes to the business events and update the status of process and steps.
+
+Our e-commerce business monitoring application architecture is given below:
 
 ![reference-architecture](./img/aktimetrix_reference_product.jpeg)
 
 As shown above, A reference product for business processing application can we defined with event-driven microservices for monitoring a business entity.
 Product will contain 3 micro services.
-1. Processor -- Subscribes to the business events and publishes the process and step events.
-2. Meter    -- Subscribes to step events and generate the planned measurement events.
-3. Planner  -- Subscribes to process and measurment events and publish the plan events.
 
 The above microservice components uses a common messaging system for publishing and consuming external and internal events.
 
