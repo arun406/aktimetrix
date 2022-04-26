@@ -70,7 +70,7 @@ Install the dependencies and devDependencies and start the server.
 
 ## Development
 
-Lets create a headless [No UI] reference business monitoring application for e-commerce domain with aktimetrix framework and call it as *_E-Buzz_Monitor*_. E-Buzz_Monitor aim is to monitor each order placed by any customer in e-commerce website. E-Buzz_Monitor will be placed outside the business application(e-commerce website) and subsribes to the events published by the e-commerce website.
+Lets create a headless [No UI] reference business monitoring application for e-commerce domain with aktimetrix framework and call it as _**E-Buzz_Monitor**_. E-Buzz_Monitor aim is to monitor each order placed by any customer in e-commerce website. E-Buzz_Monitor will be placed outside the business application(e-commerce website) and subsribes to the events published by the e-commerce website.
 
 For monitoring the orders life cycle, lets breakdown the application into 4 microservices. Each microservice will perform certain functionalities. 
 
