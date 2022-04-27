@@ -20,6 +20,10 @@ Another example for for air cargo transportation is given below.
     
 ![ad](./img/aktimetrix_cargo.jpeg)
 
+Another example for for e-commerce order delivery process is given below.
+    
+![ad](./img/aktimetrix_ecommerce.jpeg)
+
 The diagram below is a simplified version of the business process monitoring reference architecture. It introduces the key concepts and terms relevant to business process monitoring, as used by Aktimetrix.
 
 ![ad](./img/aktimetrix_reference_architecture.jpeg)
