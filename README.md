@@ -46,7 +46,10 @@ A _ProcessInstance_ refers to the concept of a logical _Process_ run. Consider a
 ### Step & StepInstance
 A Step is a domain object that encapsulates an independent, sequential phase of a business process. Therefore, every Process is composed entirely of one or more steps. A Step contains all of the information necessary to define and control the actual business process monitoring. As with a Process, a Step has an individual StepInstance that correlates with a unique ProcessInstance, as shown in the following image:
 
+![ad](./img/aktimetrix_step.jpeg)
 
+### Metadata
+In the preceding example, where there are two process instances, one for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ , there is really only one Process, but it has two metadata objects: one that was created for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ . Thus, the contract can be defined as: _**ProcessInstance = Process + identifying Metadata**_. This allows a developer to effectively control how a ProcessInstance is defined, since they control what metadata are passed in.
 
 ## Features
 Aktimetrix framework provides below high level features.
