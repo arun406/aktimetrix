@@ -12,16 +12,26 @@ The Aktimetrix is a lightweight, comprehensive framework designed to facilitate 
 ## What is Business Process Monitoring ? Key Concepts and Terminology
 It is important for any business process monitoring application developer to be familiar and comfortable with the main concepts of business process monitoring. Business Process Monitoring is the proactive and process oreiented monitoring of a company's core business processes. 
 
+An example process for loan account processing in banking domain can be defined as below.
+   
+![ad](./img/aktimetrix_banking.jpeg)
+
+Another example for for air cargo transportation is given below.
+    
+![ad](./img/aktimetrix_cargo.jpeg)
+
 The diagram below is a simplified version of the business process monitoring reference architecture. It introduces the key concepts and terms relevant to business process monitoring, as used by Aktimetrix.
 
 ![ad](./img/aktimetrix_reference_architecture.jpeg)
  
-As shown in our business process monitoring example, a business process is typically encapsulated by a _Process_ consisting of multiple _Steps_. A Process is instantiated by a _Event Handlers_, and metadata is a key value pair which will store the domain entity information of the process being monitored.
+As shown in our business process monitoring example, a business process is typically encapsulated by a _Process_ consisting of multiple _Steps_. A Process is instantiated by a _Event Handlers_ and _Processors_, and _metadata_ is a key value pair which will store the domain entity information of the process being monitored.
 Configured Processes are stored in Process Repository. 
+
+This section describes stereotypes relating to the concept of a business process.
 ### Process
 ![ad](./img/aktimetrix_process.jpeg)
 
-This section describes stereotypes relating to the concept of a business process. A Process is an entity that encapsulates an entire business process. A Job is wired together with a configuration. This configuration may be referred to as the "process definition". However, Process is just the top of an overall hierarchy, as shown in the following diagram:
+ A Process is an entity that encapsulates an entire business process. A Process is wired together with a configuration. This configuration may be referred to as the "process definition". However, Process is just the top of an overall hierarchy, as shown in the following diagram:
 
 In Aktimetrix, a Process is simply a container for Step instances. It combines multiple steps that belong logically together in a flow and allows for configuration of properties global to all steps. The Process configuration contains:
 
@@ -29,6 +39,14 @@ In Aktimetrix, a Process is simply a container for Step instances. It combines m
 2. The simple name of the Process.
 3. Definition and ordering of Step instances.
 4. The event configuration.
+
+### Process Instance
+A _ProcessInstance_ refers to the concept of a logical _Process_ run. Consider a business process that should be run for each business entity (Order), such as the 'Order Delivery' Process from the preceding diagram. There is one 'Order Delivery' process, but each individual run of the process must be tracked separately. In the case of this process, there is one logical ProcessInstance per order. For example, there is a separate ProcessInstance for _Order No # NAEE40086925866_ run, a _Order No # NAEE40034644935_ run, and so on. 
+
+### Step & StepInstance
+A Step is a domain object that encapsulates an independent, sequential phase of a business process. Therefore, every Process is composed entirely of one or more steps. A Step contains all of the information necessary to define and control the actual business process monitoring. As with a Process, a Step has an individual StepInstance that correlates with a unique ProcessInstance, as shown in the following image:
+
+
 
 ## Features
 Aktimetrix framework provides below high level features.
