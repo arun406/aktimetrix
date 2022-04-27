@@ -31,7 +31,7 @@ This section describes stereotypes relating to the concept of a business process
 ### Process
 ![ad](./img/aktimetrix_process.jpeg)
 
- A Process is an entity that encapsulates an entire business process. A Process is wired together with a configuration. This configuration may be referred to as the "process definition". However, Process is just the top of an overall hierarchy, as shown in the following diagram:
+A Process is an entity that encapsulates an entire business process. A Process is wired together with a configuration. This configuration may be referred to as the "process definition". However, Process is just the top of an overall hierarchy, as shown in the following diagram:
 
 In Aktimetrix, a Process is simply a container for Step instances. It combines multiple steps that belong logically together in a flow and allows for configuration of properties global to all steps. The Process configuration contains:
 
@@ -49,7 +49,14 @@ A Step is a domain object that encapsulates an independent, sequential phase of 
 ![ad](./img/aktimetrix_step.jpeg)
 
 ### Metadata
-In the preceding example, where there are two process instances, one for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ , there is really only one Process, but it has two metadata objects: one that was created for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ . Thus, the contract can be defined as: _**ProcessInstance = Process + identifying Metadata**_. This allows a developer to effectively control how a ProcessInstance is defined, since they control what metadata are passed in.
+In the preceding example, where there are two process instances, one for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ , there is really only one Process, but it has two metadata objects: one that was created for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ . Thus, the contract can be defined as: _**ProcessInstance = Process + identifying Metadata**_. This allows a developer to effectively control how a ProcessInstance is defined, since they control what metadata are passed in. Metadata can be used for storing the reference data and domain entity data such as order details, customer details, city information, etc.,
+
+![ad](./img/aktimetrix_metadata.jpeg)
+
+### Measurement
+Measurements are raw data captured for a business entity. As per the preceding example, delivery start time, delivery end time, shipped datetime, planned time for delivery are some measurement which can be capture for a ProcessInstance or StepInstance for an order. These measurements can be categoried as planned and actual. Similar to Process and Step, measurement will have _MeasurementInstance_ for each measurement. Planned measurements are expected values and actuals the real values captured for an business entity.  For example, order planned delivery time for _Order # NAEE40086925866_ it can be 27-04-2022 12:00 and for _Order #NAEE40034644935_ can be  29-04-2022 18:00. Planned vs Actual values will provide the status of the ProcessInstance and StepInstance. 
+
+![ad](./img/aktimetrix_step.jpeg)
 
 ## Features
 Aktimetrix framework provides below high level features.
@@ -59,13 +66,10 @@ Aktimetrix framework provides below high level features.
 - General purposed utility functions for achieving features such as business process planning, monitoring and control.
 - A notification framework for notifying business stakeholders
 
-## Whats Available
-Aktimetrix provides the framework for building business monitoring applications.
-
-## Domain language of Atkimetrix
+## Summary Domain language
 
 Aktimetrix primarily exposes below domain language.
-_Reference Data_
+
 - Process   - A Collection of Steps
 - Step      - A individual milestone in the process
 - Metadata  - A domain specific information in the form of Key Value Pairs.
@@ -75,16 +79,7 @@ _Reference Data_
 - Process Instance  - Instance of process for the belong to business entity
 - Step Instance - Instance of step
 - Measurement Instance  - Instance of measurement
-- Metric Instance   - Instance of metric
-- Process Plan
 
-An example process and step composition for loan account processing in banking domain is given below.
-   
-![ad](./img/aktimetrix_banking.jpeg)
-
-Sample process and step composition for air cargo transportation is given below.
-    
-![ad](./img/aktimetrix_cargo.jpeg)
 
 The following are the primary APIs which are included as part of aktimetrix framework.
 
