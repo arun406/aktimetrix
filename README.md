@@ -13,19 +13,22 @@ The Aktimetrix is a lightweight, comprehensive framework designed to facilitate 
 It is important for any business process monitoring application developer to be familiar and comfortable with the main concepts of business process monitoring. Business Process Monitoring is the proactive and process oreiented monitoring of a company's core business processes. 
 
 The diagram below is a simplified version of the business process monitoring reference architecture. It introduces the key concepts and terms relevant to business process monitoring, as used by Aktimetrix.
+
+![ad](./img/aktimetrix_reference_architecture.jpeg)
  
 As shown in our business process monitoring example, a business process is typically encapsulated by a _Process_ consisting of multiple _Steps_. A Process is instantiated by a _Event Handlers_, and metadata is a key value pair which will store the domain entity information of the process being monitored.
 Configured Processes are stored in Process Repository. 
 ### Process
+![ad](./img/aktimetrix_process.jpeg)
 
 This section describes stereotypes relating to the concept of a business process. A Process is an entity that encapsulates an entire business process. A Job is wired together with a configuration. This configuration may be referred to as the "process definition". However, Process is just the top of an overall hierarchy, as shown in the following diagram:
 
 In Aktimetrix, a Process is simply a container for Step instances. It combines multiple steps that belong logically together in a flow and allows for configuration of properties global to all steps. The Process configuration contains:
 
-The simple code of the Process.
-The simple name of the Process.
-Definition and ordering of Step instances.
-The event configuration.
+1. The simple code of the Process.
+2. The simple name of the Process.
+3. Definition and ordering of Step instances.
+4. The event configuration.
 
 ## Features
 Aktimetrix framework provides below high level features.
