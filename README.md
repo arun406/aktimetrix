@@ -70,12 +70,11 @@ Aktimetrix primarily exposes below domain language.
 - Step      - A individual milestone in the process
 - Metadata  - A domain specific information in the form of Key Value Pairs.
 - Measurement - A definition of calculation to be performed
-- Metric    - Aggregation of measurements
 - Business Entity   - External business object whos process need to be monitored into the aktimetrix.
 - Process Instance  - Instance of process for the belong to business entity
 - Step Instance - Instance of step
 - Measurement Instance  - Instance of measurement
-- 
+
 ## Features
 Aktimetrix framework provides below high level features.
 
