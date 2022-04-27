@@ -55,7 +55,7 @@ A Step is a domain object that encapsulates an independent, sequential phase of 
 ### Metadata
 In the preceding example, where there are two process instances, one for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ , there is really only one Process, but it has two metadata objects: one that was created for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ . Thus, the contract can be defined as: _**ProcessInstance = Process + identifying Metadata**_. This allows a developer to effectively control how a ProcessInstance is defined, since they control what metadata are passed in. Metadata can be used for storing the reference data and domain entity data such as order details, customer details, city information, etc.,
 
-![ad](./img/aktimetrix_metada.jpeg)
+![ad](./img/aktimetrix_metadata.jpeg)
 
 ### Measurement
 Measurements are raw data captured for a business entity. As per the preceding example, delivery start time, delivery end time, shipped datetime, planned time for delivery are some measurement which can be capture for a ProcessInstance or StepInstance for an order. These measurements can be categoried as planned and actual. Similar to Process and Step, measurement will have _MeasurementInstance_ for each measurement. Planned measurements are expected values and actuals the real values captured for an business entity.  For example, order planned delivery time for _Order # NAEE40086925866_ it can be 27-04-2022 12:00 and for _Order #NAEE40034644935_ can be  29-04-2022 18:00. Planned vs Actual values will provide the status of the ProcessInstance and StepInstance. 
