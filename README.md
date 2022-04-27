@@ -56,7 +56,7 @@ In the preceding example, where there are two process instances, one for _Order 
 ### Measurement
 Measurements are raw data captured for a business entity. As per the preceding example, delivery start time, delivery end time, shipped datetime, planned time for delivery are some measurement which can be capture for a ProcessInstance or StepInstance for an order. These measurements can be categoried as planned and actual. Similar to Process and Step, measurement will have _MeasurementInstance_ for each measurement. Planned measurements are expected values and actuals the real values captured for an business entity.  For example, order planned delivery time for _Order # NAEE40086925866_ it can be 27-04-2022 12:00 and for _Order #NAEE40034644935_ can be  29-04-2022 18:00. Planned vs Actual values will provide the status of the ProcessInstance and StepInstance. 
 
-![ad](./img/aktimetrix_step.jpeg)
+![ad](./img/aktimetrix_measurement.jpeg)
 
 ## Features
 Aktimetrix framework provides below high level features.
