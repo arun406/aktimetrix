@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: process-manager
+  data:
+    mongodb:
+      database: svm
+      uri: mongodb://localhost:27017,localhost:27018,localhost:27019
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  #    default-property-inclusion: always, non_null, non_absent, non_default, non_empty
+
+  cloud:
+    stream:
+      bindings:
+        processor-in-0:
+          group: myGroup
+      source: process-instance-out-0;step-instance-out-0
+logging:
+  level:
+    com.aktimetrix: DEBUG
