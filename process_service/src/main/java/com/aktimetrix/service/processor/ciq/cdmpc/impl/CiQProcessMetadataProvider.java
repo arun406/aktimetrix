@@ -1,8 +1,8 @@
 package com.aktimetrix.service.processor.ciq.cdmpc.impl;
 
-import com.aktimetrix.service.processor.core.api.MetadataProvider;
-import com.aktimetrix.service.processor.core.transferobjects.Cargo;
-import com.aktimetrix.service.processor.core.transferobjects.SpecialHandling;
+import com.aktimetrix.core.api.MetadataProvider;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.SpecialHandling;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 

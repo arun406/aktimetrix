@@ -1,0 +1,37 @@
+server:
+  port: '9090'
+spring:
+  application:
+    name: meter
+  data:
+    mongodb:
+      database: meter
+      uri: 'mongodb://localhost:27017,localhost:27018,localhost:27019'
+  cloud:
+    stream:
+      function:
+        bindings:
+          measure-in-0: step-event-processor
+        definition: measure
+      bindings:
+        step-event-processor:
+          group: meter.step.group.0
+          destination: step-instance-out-0
+      source: measurement-instance
+      kafka:
+        bindings:
+          measurement-instance-out-0:
+            producer:
+              configuration:
+                "[key.serializer]": org.apache.kafka.common.serialization.StringSerializer
+          step-event-processor:
+            consumer:
+              enableDlq: true
+              dlqName: input-topic-dlq
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+    org.springframework.data.mongodb.repository.query: DEBUG
+    com.aktimetrix.service.meter: DEBUG
+
+

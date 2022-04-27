@@ -1,6 +1,8 @@
+server:
+  port: '7070'
 spring:
   application:
-    name: process-manager
+    name: processor
   data:
     mongodb:
       database: svm
@@ -12,10 +14,25 @@ spring:
 
   cloud:
     stream:
+      function:
+        bindings:
+          processor-in-0: cargo-event-processor
+        definition: processor
       bindings:
-        processor-in-0:
-          group: myGroup
-      source: process-instance-out-0;step-instance-out-0
+        cargo-event-processor:
+          group: processor.cargo.group.0
+          destination: cargo-event-topic
+      source: process-instance;step-instance
+      kafka:
+        bindings:
+          process-instance-out-0:
+            producer:
+              configuration:
+                "[key.serializer]": org.apache.kafka.common.serialization.StringSerializer
+          step-instance-out-0:
+            producer:
+              configuration:
+                "[key.serializer]": org.apache.kafka.common.serialization.StringSerializer
 logging:
   level:
     com.aktimetrix: DEBUG

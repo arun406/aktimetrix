@@ -1,6 +1,6 @@
 package com.aktimetrix.service.processor.ciq.cdmpc.model;
 
-import com.aktimetrix.service.processor.core.model.StepInstance;
+import com.aktimetrix.core.model.StepInstance;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
 
