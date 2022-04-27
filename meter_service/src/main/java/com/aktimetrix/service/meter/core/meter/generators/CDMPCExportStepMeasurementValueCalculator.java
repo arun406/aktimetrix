@@ -1,7 +1,7 @@
 package com.aktimetrix.service.meter.core.meter.generators;
 
-import com.aktimetrix.service.meter.core.transferobjects.Step;
-import com.aktimetrix.service.meter.core.util.DateTimeUtil;
+import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -26,13 +26,13 @@ public class CDMPCExportStepMeasurementValueCalculator {
      * @param stepCode step code
      * @return measurement value
      */
-    public String calculate(String tenant, Step step, String stepCode) {
+    public String calculate(String tenant, StepInstance step, String stepCode) {
         final Map<String, Object> metadata = step.getMetadata();
 
         long offset = this.offsetCalculator.getOffset(tenant, metadata, stepCode);
         log.info(String.format("%s Step Code offset in minutes is :  %s", stepCode, offset));
         LocalDateTime planTime;
-        final LocalDateTime std = DateTimeUtil.getLocalDateTime((String) metadata.get("std"), "yyyy-MM-dd HH:mm");
+        final LocalDateTime std = DateTimeUtil.getLocalDateTime((String) metadata.get("std"), "yyyy-MM-dd'T'HH:mm:ss");
         //  plan time is STD - offset
         //  plan time is STD + offset
         planTime = !"DEP".equalsIgnoreCase(stepCode) && !"DEP-T".equalsIgnoreCase(stepCode) ? std.minusMinutes(offset) : std.plusMinutes(offset);

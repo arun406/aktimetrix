@@ -18,8 +18,9 @@ import java.util.Date;
 
 @Configuration
 @EnableMongoRepositories(basePackages = {"com.aktimetrix.service.meter.core.referencedata.encore.repository",
-        "com.aktimetrix.service.meter.core.meter.repository",
-        "com.aktimetrix.service.meter.referencedata.repository"})
+        "com.aktimetrix.core.repository",
+        "com.aktimetrix.core.referencedata.repository",
+        "com.aktimetrix.core.tenant.repository"})
 public class MongoConfig {
 
     @Bean

@@ -1,11 +1,11 @@
 package com.aktimetrix.service.processor.ciq.cdmpc.impl;
 
-import com.aktimetrix.service.processor.core.exception.DefinitionNotFoundException;
-import com.aktimetrix.service.processor.core.api.DefinitionProvider;
-import com.aktimetrix.service.processor.core.referencedata.model.StepDefinition;
-import com.aktimetrix.service.processor.core.transferobjects.Cargo;
-import com.aktimetrix.service.processor.core.transferobjects.Itinerary;
-import com.aktimetrix.service.processor.core.transferobjects.StationInfo;
+import com.aktimetrix.core.api.DefinitionProvider;
+import com.aktimetrix.core.exception.DefinitionNotFoundException;
+import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Itinerary;
+import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.StationInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -60,7 +60,7 @@ public class CiQStepDefinitionProvider implements DefinitionProvider<StepDefinit
 
         String finalBoardPointFnCtx = getFnCtx(itinerary.getBoardPoint(), cargo.getOrigin(), cargo.getDestination());
         String finalOffPointFnCtx = getFnCtx(itinerary.getOffPoint(), cargo.getOrigin(), cargo.getDestination());
-        log.info(" Boarding Point Functional Context : " + finalBoardPointFnCtx + ", Off Point Functional Context : " + finalOffPointFnCtx);
+        log.info("Boarding Point Functional Context : " + finalBoardPointFnCtx + ", Off Point Functional Context : " + finalOffPointFnCtx);
         // remove the duplicates also
         final List<StepDefinition> stepDefinitions = steps.stream()
                 .filter(sd ->
@@ -82,7 +82,7 @@ public class CiQStepDefinitionProvider implements DefinitionProvider<StepDefinit
                 }
             }
         }
-        log.info(String.format(" step codes : %s", stepDefinitions.stream()
+        log.info(String.format("step codes : %s", stepDefinitions.stream()
                 .map(StepDefinition::getStepCode)
                 .collect(Collectors.joining(","))));
 
