@@ -147,14 +147,14 @@ Add aktimetrix core dependency to the project
 3. Create event handler for managing business event. 
 
 ##### Event Handler
-Event handlers are responsible for processing the external business events. For example, A booking event handler will be used to process 'Booking' events from an Airline reservation system.
+Event handlers are responsible for processing the external business events. For example, A booking event handler will be used to process 'Booking' events from an ecommerce portal.
 
 A booking event handler will be created by extend the AbstractEventHandler class from aktimetrix core and override the entityId(Event<?,?> event) and eventType(Event<?,?> event) method. 
 
 Event Handler class should by annotated with @EventHandler as shown below. 
 ```java
-@EventHandler(eventType = EventType.BKD)
-public class BKDEventHandler extends AbstractEventHandler {
+@EventHandler(eventType = EventType.BOOKING)
+public class BookingEventHandler extends AbstractEventHandler {
     ...
     @Override
     public void handle(Event<?, ?> event) {
@@ -163,42 +163,40 @@ public class BKDEventHandler extends AbstractEventHandler {
     
     @Override
      public String entityId(Event<?, ?> event){
-         Cargo cargo = (Cargo)event.getEntity();
-         String entityId = cargo.getDocumentInfo().getAwbInfo().getDocumentPrefix() + "-" + cargo.getDocumentInfo().getAwbInfo().getDocumentNumber(); // domain specific entity id
-        return entityId;
+         ..
      }
      
     @Override
     public String entityType(Event<?, ?> event){
-        return "ciq.cargo.awb" // domain specific namespace
+        ..
      }
     ..
 }
 ```
-The above event handler will search for the [process definitions]() whos start event is defined as 'BKD' and execute the processor (more on the processors in coming sections) configured for that process.
+The above event handler will search for the [process definitions]() whos start event is defined as 'BOOKING' and execute the processor (more on the processors in coming sections) configured for that process.
 
 4. Create a Processor.
 
 ### Processor
-Processors are responsible for creating the process instance and step instances associated with the business process for each of the entity. Processor will read the definitions from the reference data.
+Processors are responsible for creating the process instance and step instances associated with the business process for each of the entity. Processor will read the definitions using the reference data api.
 
-Any business/domain specific infromation can be stored as metadata. A metadata can be associated with _process instance_ or _step instance_ .
+Any business/domain specific infromation can be stored as metadata. A metadata can be associated with _ProcessInstance_ or _StepInstance_ .
 
-For example in [IATA Cargo IQ - CDMP-C](https://www.iata.org/en/programs/cargo/cargoiq/) process cargo information can be associated with process instance of air waybill process.
+
 
 ```java
 @Component
-@ProcessHandler(processType = ProcessType.CDMP_C)
-public class CiQA2AProcessor extends AbstractProcessor {
+@ProcessHandler(processType = ProcessType.ORDER_DELIVERY)
+public class OrderDeliveryProcessor extends AbstractProcessor {
      @Override
     protected Map<String, Object> getStepMetadata(ProcessContext context) 
     {
-        return new HashMap<>();
+        ...
     }
     @Override
     protected Map<String, Object> getProcessMetadata(ProcessContext context) 
     {
-        return new HashMap<>();
+        ...
     }
 }
 ```
@@ -208,12 +206,12 @@ Additionally _MetadataProvider_ interface can be implemented to provide the meta
 _AbstractProcessor_ is responsible for creating process and step instances for a business entity identified by entityId and entityType.
 It also publishes the process and step events. More on events given below.
 
-To perform additional functionalities to the base functionality, PreProcessor and PostProcessor components can be defined. Aktimetrix will identify the Pre and Post Processors for a Process and execute them in sequence. The sequence of the execution can be defined by settings the priority.
+To perform additional functionalities to the base features, PreProcessor and PostProcessor components can be defined. Aktimetrix will identify the Pre and Post Processors for a Process and execute them in sequence. The sequence of the execution can be defined by settings the priority.
 
-The below will will define a post processfor for a '_A2ATRANSPORT_' process
+The below will will define a post processfor for a '_ORDER_DELIVERY_' process
 
 ```java
-@com.aktimetrix.core.stereotypes.PostProcessor(priority = 100, code = "PI_PUBLISHER", processType = ProcessType.A2ATRANSPORT)
+@com.aktimetrix.core.stereotypes.PostProcessor(priority = 100, code = "PI_PUBLISHER", processType = ProcessType.ORDER_DELIVERY)
 public class ProcessInstancePublisherService implements PostProcessor {
   
     @Override
@@ -236,8 +234,8 @@ With the Aktimetrix REST api define the measurement definitions and metrix defin
 Create a meter by extending AbstractMeter. Meter should be annotated with @Measurement
 "_Meter is used to calculate the measurment_"
 ```java
-@Measurement(code = "TIME", stepCode = "ARR")
-public class ARRPlanTimeMeter extends AbstractMeter {
+@Measurement(code = "TIME", stepCode = "SHIPPED")
+public class ShippedDateMeter extends AbstractMeter {
      @Override
     protected String getMeasurementUnit(String tenant, StepInstance step) {
         return "TIMESTAMP";
