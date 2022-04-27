@@ -5,10 +5,27 @@
 
 [![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://travis-ci.org/joemccann/dillinger)
 
-## Business Process Monitoring
-Business Process Monitoring is the proactive and process oreiented monitoring of a company's core business processes. 
+
 ## Introduction
-The Aktimetrix Framework is an application framework for developeing business process monitoring applications. The framework uses [spring cloud stream](https://spring.io/projects/spring-cloud-stream) (Spring Cloud Stream is a framework for building highly scalable event-driven microservices connected with shared messaging systems).The Aktimetrix Framework is open source.
+The Aktimetrix is a lightweight, comprehensive framework designed to facilitate development of robust business process monitoring applications. It also provides more advanced technical services and features that support extremely high volume and high performance business processes through its optimization and partitioning techniques. The framework uses [spring cloud stream](https://spring.io/projects/spring-cloud-stream) (Spring Cloud Stream is a framework for building highly scalable event-driven microservices connected with shared messaging systems).The Aktimetrix Framework is open source.
+
+## What is Business Process Monitoring ? Key Concepts and Terminology
+It is important for any business process monitoring application developer to be familiar and comfortable with the main concepts of business process monitoring. Business Process Monitoring is the proactive and process oreiented monitoring of a company's core business processes. 
+
+The diagram below is a simplified version of the business process monitoring reference architecture. It introduces the key concepts and terms relevant to business process monitoring, as used by Aktimetrix.
+ 
+As shown in our business process monitoring example, a business process is typically encapsulated by a _Process_ consisting of multiple _Steps_. A Process is instantiated by a _Event Handlers_, and metadata is a key value pair which will store the domain entity information of the process being monitored.
+Configured Processes are stored in Process Repository. 
+### Process
+
+This section describes stereotypes relating to the concept of a business process. A Process is an entity that encapsulates an entire business process. A Job is wired together with a configuration. This configuration may be referred to as the "process definition". However, Process is just the top of an overall hierarchy, as shown in the following diagram:
+
+In Aktimetrix, a Process is simply a container for Step instances. It combines multiple steps that belong logically together in a flow and allows for configuration of properties global to all steps. The Process configuration contains:
+
+The simple code of the Process.
+The simple name of the Process.
+Definition and ordering of Step instances.
+The event configuration.
 
 ## Features
 Aktimetrix framework provides below high level features.
@@ -21,7 +38,8 @@ Aktimetrix framework provides below high level features.
 ## Whats Available
 Aktimetrix provides the framework for building business monitoring applications.
 
-## Domain language
+## Domain language of Atkimetrix
+
 Aktimetrix primarily exposes below domain language.
 _Reference Data_
 - Process   - A Collection of Steps
