@@ -1,0 +1,288 @@
+{
+  "tenantKey": "XX",
+  "eventId": "51541182-81fa-4727-afd5-114acdf086b1",
+  "eventName": "cargo movement event",
+  "eventType": "CME",
+  "eventCode": "BKD",
+  "eventTime": "01-02-2021 09:10:00+0400",
+  "eventUTCTime": "01-02-2021 05:10:00+0000",
+  "source": "SC",
+  "entityId": "888-11112303",
+  "entityType": "cargo",
+  "entity": {
+    "cargoType": "AWB",
+    "cargoCategory": "F",
+    "commodity": "9203",
+    "description": "TOYS, GAMES",
+    "jobReferenceNumber": 12345678,
+    "cargoReference": 12345678,
+    "eAWBIndicator": true,
+    "origin": {
+      "code": "DXB"
+    },
+    "destination": {
+      "code": "BOM"
+    },
+    "productCode": "GCR",
+    "remarks": [
+      {
+        "key": "name",
+        "value": "shipment is priority booking"
+      }
+    ],
+    "shcList": [
+      {
+        "code": "PER",
+        "category": ""
+      }
+    ],
+    "reservationServiceCodes": [
+      "A",
+      "B"
+    ],
+    "itineraries": [
+      {
+        "boardPoint": {
+          "code": "DXB"
+        },
+        "offPoint": {
+          "code": "BOM"
+        },
+        "transportInfo": {
+          "carrier": "XX",
+          "number": "1234",
+          "extensionNumber": "A"
+        },
+        "departureDateTimeLocal": {
+          "schedule": "2022-01-07 08:00:00",
+          "estimated": "2022-01-07 08:00:00",
+          "actual": null
+        },
+        "departureDateTimeUTC": {
+          "schedule": "2022-01-07 04:00:00",
+          "estimated": "2022-01-07 04:00:00",
+          "actual": null
+        },
+        "arrivalDateTimeLocal": {
+          "schedule": "2022-01-07 12:30:00",
+          "estimated": "2021-06-25 12:30:00",
+          "actual": null
+        },
+        "arrivalDateTimeUTC": {
+          "schedule": "2021-06-25 07:00:00",
+          "estimated": "2021-06-25 07:00:00",
+          "actual": null
+        },
+        "legNumber": 1,
+        "partIndicator": true,
+        "oalIndicator": false,
+        "aircraftCategory": "RFS",
+        "quantity": {
+          "piece": 2,
+          "weight": {
+            "value": 10.0,
+            "unit": {
+              "code": "K"
+            }
+          },
+          "volume": {
+            "value": 0.6,
+            "unit": {
+              "code": "CM"
+            }
+          },
+          "shcList": [
+            {
+              "code": "PER"
+            }
+          ]
+        },
+        "spaceStatus": {
+          "code": "SS"
+        }
+      },
+      {
+        "boardPoint": {
+          "code": "DXB"
+        },
+        "offPoint": {
+          "code": "BOM"
+        },
+        "transportInfo": {
+          "carrier": "XX",
+          "number": "5678",
+          "extensionNumber": "A"
+        },
+        "departureDateTimeLocal": {
+          "schedule": "2022-01-08 08:00:00",
+          "estimated": "2022-01-08 08:00:00",
+          "actual": null
+        },
+        "departureDateTimeUTC": {
+          "schedule": "2022-01-08 04:00:00",
+          "estimated": "2022-01-08 04:00:00",
+          "actual": null
+        },
+        "arrivalDateTimeLocal": {
+          "schedule": "2022-01-08 12:30:00",
+          "estimated": "2021-06-08 12:30:00",
+          "actual": null
+        },
+        "arrivalDateTimeUTC": {
+          "schedule": "2022-01-08 07:00:00",
+          "estimated": "2022-01-08 07:00:00",
+          "actual": null
+        },
+        "legNumber": 1,
+        "partIndicator": true,
+        "oalIndicator": false,
+        "aircraftCategory": "RFS",
+        "quantity": {
+          "piece": 3,
+          "weight": {
+            "value": 5.0,
+            "unit": {
+              "code": "K"
+            }
+          },
+          "volume": {
+            "value": 0.4,
+            "unit": {
+              "code": "CM"
+            }
+          },
+          "shcList": [
+            {
+              "code": "PER"
+            }
+          ]
+        },
+        "spaceStatus": {
+          "code": "SS"
+        }
+      }
+    ],
+    "quantityInfo": [
+      {
+        "piece": 5,
+        "slac": null,
+        "weight": {
+          "value": 15.0,
+          "unit": {
+            "code": "K"
+          }
+        },
+        "volume": {
+          "value": 1.0,
+          "unit": {
+            "code": "CM"
+          }
+        },
+        "shcList": [
+          {
+            "code": "PER",
+            "category": ""
+          }
+        ]
+      }
+    ],
+    "documentInfo": {
+      "awbInfo": {
+        "documentNumber": "11112303",
+        "documentPrefix": "888",
+        "documentType": "AWB",
+        "eAWBIndicator": false,
+        "origin": {
+          "code": "DXB"
+        },
+        "destination": {
+          "code": "BOM"
+        },
+        "participant": [
+          {
+            "type": "AGT",
+            "firstName": "",
+            "name": "NARNN",
+            "identifier": "9XX"
+          },
+          {
+            "type": "SHP",
+            "firstName": "",
+            "name": "ALTAYAB NOW",
+            "identifier": "ALTAYAEDXBB01"
+          },
+          {
+            "type": "CNE",
+            "firstName": "",
+            "name": "someName name2",
+            "identifier": "SOMENAEBOMABD"
+          }
+        ]
+      }
+    }
+  },
+  "eventDetails": {
+    "itineraries": [
+      {
+        "boardPoint": {
+          "code": "DXB"
+        },
+        "offPoint": {
+          "code": "BOM"
+        },
+        "transportInfo": {
+          "carrier": "XX",
+          "number": "5678",
+          "extensionNumber": "A"
+        },
+        "departureDateTimeLocal": {
+          "schedule": "2022-01-08 08:00:00",
+          "estimated": "2022-01-08 08:00:00",
+          "actual": null
+        },
+        "departureDateTimeUTC": {
+          "schedule": "2022-01-08 04:00:00",
+          "estimated": "2022-01-08 04:00:00",
+          "actual": null
+        },
+        "arrivalDateTimeLocal": {
+          "schedule": "2022-01-08 12:30:00",
+          "estimated": "2021-06-08 12:30:00",
+          "actual": null
+        },
+        "arrivalDateTimeUTC": {
+          "schedule": "2022-01-08 07:00:00",
+          "estimated": "2022-01-08 07:00:00",
+          "actual": null
+        },
+        "legNumber": 1,
+        "partIndicator": true,
+        "oalIndicator": false,
+        "aircraftCategory": "RFS",
+        "quantity": {
+          "piece": 3,
+          "weight": {
+            "value": 5.0,
+            "unit": {
+              "code": "K"
+            }
+          },
+          "volume": {
+            "value": 0.4,
+            "unit": {
+              "code": "CM"
+            }
+          },
+          "shcList": [
+            {
+              "code": "PER"
+            }
+          ]
+        },
+        "spaceStatus": {
+          "code": "SS"
+        }
+      }
+    ]
+  }
+}
