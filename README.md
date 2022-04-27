@@ -58,14 +58,6 @@ Measurements are raw data captured for a business entity. As per the preceding e
 
 ![ad](./img/aktimetrix_measurement.jpeg)
 
-## Features
-Aktimetrix framework provides below high level features.
-
-- A REST API for defining the reference data for designing business processes
-- Java annotations to configure the behaviors in the Aktimetrix Framework.
-- General purposed utility functions for achieving features such as business process planning, monitoring and control.
-- A notification framework for notifying business stakeholders
-
 ## Summary Domain language
 
 Aktimetrix primarily exposes below domain language.
@@ -79,6 +71,14 @@ Aktimetrix primarily exposes below domain language.
 - Process Instance  - Instance of process for the belong to business entity
 - Step Instance - Instance of step
 - Measurement Instance  - Instance of measurement
+- 
+## Features
+Aktimetrix framework provides below high level features.
+
+- A REST API for defining the reference data for designing business processes
+- Java annotations to configure the behaviors in the Aktimetrix Framework.
+- General purposed utility functions for achieving features such as business process planning, monitoring and control.
+- A notification framework for notifying business stakeholders
 
 
 The following are the primary APIs which are included as part of aktimetrix framework.
