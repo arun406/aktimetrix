@@ -6,7 +6,7 @@ spring:
   data:
     mongodb:
       database: svm
-      uri: mongodb://localhost:27017,localhost:27018,localhost:27019
+      uri: mongodb+srv://admin:admin%40123@aruncluster.70orz.mongodb.net/?retryWrites=true&w=majority
   jackson:
     serialization:
       write-dates-as-timestamps: false
