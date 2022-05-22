@@ -27,13 +27,6 @@
     </properties>
     <modules>
         <module>aktimetrix-core</module>
-        <!--  <module>process_service</module>
-          <module>meter_service</module>
-          <module>planner_service</module>-->
-        <!--        <module>aktimetrix-com.aktimetrix.core</module>
-                <module>aktimetrix-processor</module>
-                <module>aktimetrix-meter</module>
-                <module>aktimetrix-planner</module>-->
     </modules>
 
     <dependencyManagement>
