@@ -41,7 +41,7 @@ public class EventHandlerPostBeanProcessor implements BeanPostProcessor {
                 logger.info("Event Type: {}, Name : {}, Version {}", annotation.eventType(), annotation.name(), annotation.version());
                 Map<String, String> attributes = new HashMap<>();
                 attributes.put(Constants.ATT_EVENT_HANDLER_SERVICE, Constants.VAL_YES);
-                attributes.put(Constants.ATT_EVENT_TYPE, annotation.eventType().name());
+                attributes.put(Constants.ATT_EVENT_TYPE, annotation.eventType());
                 attributes.put(Constants.ATT_EVENT_HANDLER_NAME, annotation.name());
                 attributes.put(Constants.ATT_EVENT_HANDLER_VERSION, annotation.version());
                 logger.debug("registering the {} bean with attributes {}", beanName, attributes);

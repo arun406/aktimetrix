@@ -3,7 +3,6 @@ package com.aktimetrix.service.processor.ciq.cdmpc.service;
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.MetadataProvider;
-import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.core.impl.AbstractProcessor;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
@@ -25,7 +24,7 @@ import java.util.Map;
  * @author arun kumar kandakatla
  */
 @Component
-@ProcessHandler(processType = ProcessType.A2ATRANSPORT)
+@ProcessHandler(processType = "A2ATRANSPORT")
 public class CiQA2AProcessor extends AbstractProcessor {
 
     final private static Logger logger = LoggerFactory.getLogger(CiQA2AProcessor.class);
@@ -74,9 +73,7 @@ public class CiQA2AProcessor extends AbstractProcessor {
         final List<StepDefinition> stepDefinitions = super.getStepDefinitions(context);
         final BKDEventDetails eventDetails = (BKDEventDetails) context.getProperty(Constants.EVENT_DATA);
         final Cargo entity = (Cargo) context.getProperty(Constants.ENTITY);
-
         final Itinerary itinerary = eventDetails.getItineraries().get(0);
-
         return new CiQStepDefinitionProvider(stepDefinitions, entity, itinerary).getDefinitions();
     }
 }

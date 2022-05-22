@@ -13,13 +13,13 @@ public class Constants {
     public static final String ATT_TYPE = "type";
     public static final String ATT_DOC = "doc";
 
-    public static final String VAL_VERSION_DEFAULT = "1.0";
+    public static final String VAL_VERSION_DEFAULT = "1.0.0";
     public static final String VAL_SCOPE_SINGLETON = "singleton";
     public static final String VAL_SCOPE_REQUEST = "request";
     public static final String VAL_SCOPE_DEFAULT = VAL_SCOPE_REQUEST;
     public static final String VAL_YES = "yes";
     public static final String VAL_NO = "no";
-    public static final String DEFAULT_VERSION = "1.0";
+    public static final String DEFAULT_VERSION = "1.0.0";
     public static final String ATT_METER_SERVICE = "meter-service";
     public static final String SHIPMENT_GROUP_CODE = "S";
     public static final String FLIGHT_GROUP_CODE = "F";

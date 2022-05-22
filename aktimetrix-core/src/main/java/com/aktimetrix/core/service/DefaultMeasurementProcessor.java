@@ -1,4 +1,4 @@
-package com.aktimetrix.service.meter.core.meter.service;
+package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.api.*;
 import com.aktimetrix.core.meter.api.Meter;
@@ -50,7 +50,7 @@ public class DefaultMeasurementProcessor implements Processor {
         // get the preprocessors from registry
         logger.debug("executing the preprocessors");
 
-        final List<PreProcessor> preProcessors = registryService.getPreProcessor(ProcessType.METERPROCESSOR); // TODO remove the hard coding
+        final List<PreProcessor> preProcessors = registryService.getPreProcessor("METERPROCESSOR"); // TODO remove the hard coding
         preProcessors.forEach(preProcessor -> preProcessor.process(context));
     }
 
@@ -61,7 +61,7 @@ public class DefaultMeasurementProcessor implements Processor {
      */
     private void executePostProcessors(Context context) {
         logger.debug("executing post processors");
-        final List<PostProcessor> postProcessors = registryService.getPostProcessor(ProcessType.METERPROCESSOR); // TODO remove the hard coding
+        final List<PostProcessor> postProcessors = registryService.getPostProcessor("METERPROCESSOR"); // TODO remove the hard coding
         postProcessors.forEach(postProcessor -> postProcessor.process(context));
     }
 

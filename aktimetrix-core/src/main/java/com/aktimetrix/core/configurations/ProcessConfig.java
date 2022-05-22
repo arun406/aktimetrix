@@ -1,4 +1,4 @@
-package com.aktimetrix.service.processor;
+package com.aktimetrix.core.configurations;
 
 import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.api.EventType;
@@ -8,8 +8,6 @@ import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
 import com.aktimetrix.core.exception.ProcessorException;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
-import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.BKDEventDetails;
-import com.aktimetrix.service.processor.ciq.cdmpc.event.transferobjects.Cargo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,7 +50,7 @@ public class ProcessConfig {
                 final Event<?, ?> event = objectMapper.readValue(payload, new TypeReference<Event>() {
                 });
                 logger.info(String.format("Event : %s ", event));
-                EventHandler eventHandler = registryService.getEventHandler(EventType.valueOf(eventCode));
+                EventHandler eventHandler = registryService.getEventHandler(eventCode);
                 eventHandler.handle(event);
             } catch (JsonProcessingException | EventHandlerNotFoundException | MultipleEventHandlerFoundException e) {
                 logger.error("Something happened bad. please contact system administrator.", e);

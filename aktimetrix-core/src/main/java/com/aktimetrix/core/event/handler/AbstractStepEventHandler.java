@@ -32,12 +32,12 @@ public abstract class AbstractStepEventHandler implements EventHandler {
         logger.info("Entity Id : {}", event.getEntityId());
 
         try {
-            Processor processor = registryService.getProcessHandler(ProcessType.METERPROCESSOR);
+            Processor processor = registryService.getProcessHandler("METERPROCESSOR");
             DefaultContext context = prepareContext(event);
             processor.process(context);
 
         } catch (ProcessHandlerNotFoundException e) {
-            logger.error("process handler is not defined for {} process", ProcessType.METERPROCESSOR);
+            logger.error("process handler is not defined for {} process", "METERPROCESSOR");
         }
     }
 
