@@ -11,6 +11,8 @@ import java.util.List;
  */
 public interface Context {
 
+    String getProcessType();
+
     /**
      * Returns the process instance that is currently being executed in this context.
      *

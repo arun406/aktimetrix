@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@com.aktimetrix.core.stereotypes.PostProcessor(code = "MI_PUBLISHER", processType = ProcessType.METERPROCESSOR)
+@com.aktimetrix.core.stereotypes.PostProcessor(code = "MI_PUBLISHER", processType = "METERPROCESSOR")
 public class MeasurementInstancePublisherService implements PostProcessor {
 
     final private StreamBridge streamBridge;

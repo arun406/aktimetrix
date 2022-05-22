@@ -1,6 +1,7 @@
 package com.aktimetrix.core.impl;
 
 import com.aktimetrix.core.api.Context;
+import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
@@ -27,12 +28,22 @@ public class DefaultContext implements Context {
     private List<StepInstance> stepInstances;
     private List<MeasurementInstance> measurementInstances;
     private String tenant;
+    private String processType;
 
     /**
      * default constructor
      */
     public DefaultContext() {
         context = new HashMap<>();
+    }
+
+    @Override
+    public String getProcessType() {
+        return this.processType;
+    }
+
+    public void setProcessType(String processType) {
+        this.processType = processType;
     }
 
     @Override

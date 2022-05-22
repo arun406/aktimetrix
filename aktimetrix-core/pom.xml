@@ -30,11 +30,11 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
+            <!--<dependency>
                 <groupId>io.springfox</groupId>
                 <artifactId>springfox-boot-starter</artifactId>
                 <version>${springfox.version}</version>
-            </dependency>
+            </dependency>-->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
@@ -72,10 +72,6 @@
         </dependencies>
     </dependencyManagement>
     <dependencies>
-        <!-- <dependency>
-             <groupId>io.springfox</groupId>
-             <artifactId>springfox-boot-starter</artifactId>
-         </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-rest</artifactId>

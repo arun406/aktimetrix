@@ -16,7 +16,7 @@ public @interface PreProcessor {
 
     String code();
 
-    ProcessType processType();
+    String processType();
 
     String name() default "";
 

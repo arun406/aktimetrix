@@ -3,7 +3,6 @@ package com.aktimetrix.core.event.handler;
 import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.api.Processor;
-import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
 import com.aktimetrix.core.impl.DefaultContext;
@@ -11,38 +10,39 @@ import com.aktimetrix.core.impl.DefaultProcessDefinitionProvider;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
+@Slf4j
 public abstract class AbstractEventHandler implements EventHandler {
-    final private static Logger logger = LoggerFactory.getLogger(AbstractEventHandler.class);
-    final private DefaultProcessDefinitionProvider defaultProcessDefinitionProvider;
-    final private RegistryService registryService;
+
+    @Autowired
+    private DefaultProcessDefinitionProvider defaultProcessDefinitionProvider;
+    @Autowired
+    private RegistryService registryService;
 
     /**
      * @param event
      */
     @Override
     public void handle(Event<?, ?> event) {
-        logger.info("Entity Id : {}", event.getEntityId());
+        log.info("Entity Id : {}", event.getEntityId());
         // Query the Applicable Process Definitions based on the incoming event's event code.
         try {
             final List<ProcessDefinition> processDefinitions = getProcessDefinitions(event);
             // create instance for all process definitions
             if (!processDefinitions.isEmpty()) {
                 processDefinitions.forEach(definition -> {
-                    logger.info("process definition : {}", definition);
+                    log.info("process definition : {}", definition);
                     // should be changed to registry implementation.
                     Processor processHandler = null;
                     try {
-                        processHandler = registryService.getProcessHandler(ProcessType.valueOf(definition.getProcessCode()));
+                        processHandler = registryService.getProcessHandler(definition.getProcessCode());
                     } catch (ProcessHandlerNotFoundException e) {
-                        logger.error("process handler is not defined for {} process", ProcessType.A2ATRANSPORT);
+                        log.error("process handler is not defined for {} process", ProcessType.A2ATRANSPORT);
                         return;
                     }
                     DefaultContext processContext = prepareContext(definition, event);
@@ -50,7 +50,7 @@ public abstract class AbstractEventHandler implements EventHandler {
                 });
             }
         } catch (DefinitionNotFoundException e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -87,10 +87,15 @@ public abstract class AbstractEventHandler implements EventHandler {
         processContext.setProperty("eventData", event.getEventDetails());
         processContext.setTenant(event.getTenantKey());
         processContext.setProperty("processDefinition", definition);
+        processContext.setProcessType(definition.getProcessType());
         return processContext;
     }
 
-    protected abstract String entityType(Event<?, ?> event);
+    protected String entityType(Event<?, ?> event) {
+        return event.getEntityType();
+    }
 
-    public abstract String entityId(Event<?, ?> event);
+    public String entityId(Event<?, ?> event) {
+        return event.getEntityId();
+    }
 }

@@ -69,7 +69,7 @@ public abstract class AbstractProcessor implements Processor {
         // get the preprocessors from registry
         log.debug("executing the preprocessors");
 
-        final List<PreProcessor> preProcessors = registryService.getPreProcessor(ProcessType.A2ATRANSPORT); // TODO remove the hard coding
+        final List<PreProcessor> preProcessors = registryService.getPreProcessor(context.getProcessType());
         preProcessors.forEach(preProcessor -> preProcessor.process(context));
     }
 
@@ -111,12 +111,9 @@ public abstract class AbstractProcessor implements Processor {
      * @param context process context
      */
     private void executePostProcessors(Context context) {
-        // TODO  get the post processors from registry
         log.debug("executing post processors");
         // publish the process instance event
-//        this.processInstancePublisherService.process(context);
-//        this.stepInstancePublisherService.process(context);
-        final List<PostProcessor> postProcessors = registryService.getPostProcessor(ProcessType.A2ATRANSPORT); // TODO remove the hard coding
+        final List<PostProcessor> postProcessors = registryService.getPostProcessor("A2ATRANSPORT"); // TODO remove the hard coding
         postProcessors.forEach(postProcessor -> postProcessor.process(context));
     }
 

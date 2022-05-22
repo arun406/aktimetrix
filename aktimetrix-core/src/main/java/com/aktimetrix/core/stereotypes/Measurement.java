@@ -1,5 +1,6 @@
 package com.aktimetrix.core.stereotypes;
 
+import com.aktimetrix.core.api.Constants;
 import org.springframework.stereotype.Service;
 
 import java.lang.annotation.ElementType;
@@ -18,5 +19,5 @@ public @interface Measurement {
 
     String stepCode();
 
-    String version() default "1.0.0";
+    String version() default Constants.DEFAULT_VERSION;
 }

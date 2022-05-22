@@ -41,7 +41,7 @@ public class PreProcessorPostBeanProcessor implements BeanPostProcessor {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(Constants.ATT_PRE_PROCESSOR_SERVICE, Constants.VAL_YES);
         attributes.put(Constants.ATT_PRE_PROCESSOR_CODE, annotation.code());
-        attributes.put(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE, annotation.processType().name());
+        attributes.put(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE, annotation.processType());
         attributes.put(Constants.ATT_PRE_PROCESSOR_NAME, annotation.name());
         attributes.put(Constants.ATT_PRE_PROCESSOR_PRIORITY, String.valueOf(annotation.priority()));
         attributes.put(Constants.ATT_PRE_PROCESSOR_VERSION, annotation.version());
