@@ -7,7 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -40,9 +45,11 @@ public class ProcessInstanceService {
      * @param entityId    entity id
      * @return process instance
      */
-    public ProcessInstance getProcessInstance(String tenant, String processCode, String entityType, String entityId) {
+    public Page<ProcessInstance> getProcessInstance(String tenant, String processType, String processCode, String entityType, String entityId) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "version");
+        PageRequest pageable = PageRequest.of(0, 1, sort);
         return this.repository
-                .findByTenantAndProcessCodeAndEntityTypeAndEntityIdAndStatus(tenant, processCode, entityType, entityId, "Created");
+                .findByTenantAndProcessCodeAndProcessTypeAndEntityTypeAndEntityId(tenant, processType, processCode, entityType, entityId, pageable);
     }
 
 
@@ -53,7 +60,23 @@ public class ProcessInstanceService {
      * @param processInstanceId process instance reference
      * @return process instance
      */
-    public ProcessInstance getProcessInstance(String tenant, ObjectId processInstanceId) {
-        return this.repository.findByTenantAndId(tenant, processInstanceId).stream().findFirst().orElse(null);
+    public ProcessInstance getProcessInstance(String tenant, String processInstanceId) {
+        return this.repository.findByTenantAndId(tenant, new ObjectId(processInstanceId)).stream().findFirst().orElse(null);
+    }
+
+
+    /**
+     * set the process instance status to 'Cancelled'
+     *
+     * @param tenant
+     * @param processInstanceId
+     * @param cancellationReason
+     */
+    public void cancelProcessInstance(String tenant, String processInstanceId, String cancellationReason) {
+        ProcessInstance processInstance = this.repository.findById(processInstanceId).orElseThrow(() -> new RuntimeException("process instance not found"));
+        processInstance.setStatus("Cancelled");
+        processInstance.setCancellationReason(cancellationReason);
+        processInstance.setModifiedOn(LocalDateTime.now());
+        this.repository.save(processInstance);
     }
 }

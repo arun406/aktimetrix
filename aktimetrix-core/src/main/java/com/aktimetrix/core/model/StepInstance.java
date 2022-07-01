@@ -1,20 +1,23 @@
 package com.aktimetrix.core.model;
 
 import lombok.Data;
-import org.bson.types.ObjectId;
+import lombok.ToString;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Data
-@org.springframework.data.mongodb.core.mapping.Document(collection = "stepInstances")
+@ToString
+@Document(collection = "stepInstances")
 public class StepInstance {
 
     private String tenant;
     @Id
-    private ObjectId id;
-    private ObjectId processInstanceId;
+    private String id;
+    private String processInstanceId;
     private String stepCode;
     private String locationCode;
     private String groupCode;
@@ -23,6 +26,7 @@ public class StepInstance {
     private String functionalCtx;
     private Map<String, Object> metadata;
     private LocalDateTime createdOn;
+    private List<MeasurementInstance> measurements;
 
     public StepInstance() {
         super();
@@ -38,7 +42,7 @@ public class StepInstance {
      * @param status
      * @param createdOn
      */
-    public StepInstance(String tenant, String stepCode, ObjectId processInstanceId, String groupCode,
+    public StepInstance(String tenant, String stepCode, String processInstanceId, String groupCode,
                         String functionalCtx, String version, String status, LocalDateTime createdOn) {
         this.tenant = tenant;
         this.stepCode = stepCode;

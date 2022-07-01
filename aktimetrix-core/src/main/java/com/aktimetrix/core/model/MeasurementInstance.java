@@ -1,40 +1,32 @@
 package com.aktimetrix.core.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
-import org.bson.types.ObjectId;
+import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.ZonedDateTime;
+import java.util.Map;
 
 @Data
-@Document(collection = "measurement-instance")
+@Document(collection = "measurementInstances")
+@ToString
 public class MeasurementInstance {
 
     private String tenant;
     @Id
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId id;
-
-    @JsonIgnore
-    private ObjectId processInstanceId;
-
-    @JsonIgnore
-    private ObjectId stepInstanceId;
-
-    @JsonIgnore
+    private String id;
+    private String processInstanceId;
+    private String stepInstanceId;
     private String stepCode;
-
     private String code;
     private String value;
     private String unit;
     private String type;
     private String measuredAt;
+    private Map<String, Object> metadata;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonProperty("measuredOn")
@@ -51,8 +43,8 @@ public class MeasurementInstance {
      * @param processInstanceId
      * @param stepInstanceId
      */
-    public MeasurementInstance(String tenant, String code, String value, String unit, ObjectId processInstanceId,
-                               ObjectId stepInstanceId, String stepCode, String type, String measuredAt, ZonedDateTime createdOn) {
+    public MeasurementInstance(String tenant, String code, String value, String unit, String processInstanceId,
+                               String stepInstanceId, String stepCode, String type, String measuredAt, ZonedDateTime createdOn) {
         this.tenant = tenant;
         this.code = code;
         this.value = value;

@@ -2,14 +2,13 @@ package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventHandler;
-import com.aktimetrix.core.api.EventType;
 import com.aktimetrix.core.api.PostProcessor;
 import com.aktimetrix.core.api.PreProcessor;
-import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.api.Processor;
 import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
-import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
+import com.aktimetrix.core.exception.MultipleEventHandlersFoundException;
+import com.aktimetrix.core.exception.MultipleProcessHandlersFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
 import com.aktimetrix.core.impl.RegistryEntry;
 import com.aktimetrix.core.meter.api.MeasurementProcessor;
@@ -31,31 +30,62 @@ public class RegistryService {
     @Autowired
     private Registry registry;
 
-    public List<PreProcessor> getPreProcessor(String processType) {
+    public List<PreProcessor> getPreProcessor(String code) {
         Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_PRE_PROCESSOR_SERVICE)
                 && re.attribute(Constants.ATT_PRE_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate2 = re -> (re.attribute(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE).equals(processType));
-
+        Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_PRE_PROCESSOR_CODE) && (re.attribute(Constants.ATT_PRE_PROCESSOR_CODE).equals(code));
         final List<Object> preProcessors = this.registry.lookupAll(predicate1.and(predicate2));
         logger.debug("Applicable pre processors {}", preProcessors);
 
         if (preProcessors != null && !preProcessors.isEmpty()) {
-            return preProcessors.stream().map(m -> (PreProcessor) m).collect(Collectors.toList());
+            return preProcessors.stream().map(m -> (PreProcessor) m).collect(Collectors.toList()); //TODO
         }
         return new ArrayList<>();
     }
 
-    public List<PostProcessor> getPostProcessor(String processType) {
+    public List<PreProcessor> getPreProcessor(String processType, String processCode) {
+        Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_PRE_PROCESSOR_SERVICE)
+                && re.attribute(Constants.ATT_PRE_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
+        Predicate<RegistryEntry> predicate2 = re -> (re.attribute(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE).equals(processType));
+        Predicate<RegistryEntry> predicate3 = re -> re.hasAttribute(Constants.ATT_PRE_PROCESSOR_PROCESS_CODE) &&
+                (processCode.equals(re.attribute(Constants.ATT_PRE_PROCESSOR_PROCESS_CODE)));
+        final List<Object> preProcessors = this.registry.lookupAll(predicate1.and(predicate2).and(predicate3));
+        logger.debug("Applicable pre processors {}", preProcessors);
+
+        if (preProcessors != null && !preProcessors.isEmpty()) {
+            return preProcessors.stream().map(m -> (PreProcessor) m).collect(Collectors.toList()); //TODO
+        }
+        return new ArrayList<>();
+    }
+
+    public List<PostProcessor> getPostProcessor(String code) {
         Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_SERVICE)
                 && re.attribute(Constants.ATT_POST_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE) &&
-                (processType.equals(re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE)));
+        Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_CODE) &&
+                (code.equals(re.attribute(Constants.ATT_POST_PROCESSOR_CODE)));
 
         final List<Object> postProcessors = this.registry.lookupAll(predicate1.and(predicate2));
         logger.debug("Applicable post processors {}", postProcessors);
 
         if (postProcessors != null && !postProcessors.isEmpty()) {
-            return postProcessors.stream().map(m -> (PostProcessor) m).collect(Collectors.toList());
+            return postProcessors.stream().map(m -> (PostProcessor) m).collect(Collectors.toList()); //TODO
+        }
+        return new ArrayList<>();
+    }
+
+    public List<PostProcessor> getPostProcessor(String processType, String processCode) {
+        Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_SERVICE)
+                && re.attribute(Constants.ATT_POST_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
+        Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE) &&
+                (processType.equals(re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE)));
+        Predicate<RegistryEntry> predicate3 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_PROCESS_CODE) &&
+                (processCode.equals(re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_CODE)));
+
+        final List<Object> postProcessors = this.registry.lookupAll(predicate1.and(predicate2).and(predicate3));
+        logger.debug("Applicable post processors {}", postProcessors);
+
+        if (postProcessors != null && !postProcessors.isEmpty()) {
+            return postProcessors.stream().map(m -> (PostProcessor) m).collect(Collectors.toList()); //TODO
         }
         return new ArrayList<>();
     }
@@ -67,13 +97,20 @@ public class RegistryService {
      * @return Event Handler Object
      * @throws ProcessHandlerNotFoundException
      */
-    public Processor getProcessHandler(String processType) throws ProcessHandlerNotFoundException {
+    public Processor getProcessHandler(String processType, String processCode) throws ProcessHandlerNotFoundException, MultipleProcessHandlersFoundException {
         final List<Object> handlers = this.registry
                 .lookupAll(registryEntry -> registryEntry.hasAttribute(Constants.ATT_PROCESS_HANDLER_SERVICE) &&
                         registryEntry.attribute(Constants.ATT_PROCESS_HANDLER_SERVICE).equals(Constants.VAL_YES) &&
-                        processType.equals(registryEntry.attribute(Constants.ATT_PROCESS_TYPE))
+                        processType.equals(registryEntry.attribute(Constants.ATT_PROCESS_TYPE)) &&
+                        processCode.equals(registryEntry.attribute(Constants.ATT_PROCESS_CODE))
                 );
         logger.debug("applicable handlers {}", handlers);
+        if (handlers == null || handlers.isEmpty()) {
+            throw new ProcessHandlerNotFoundException(String.format("event handlers not found for %s, %s", processType, processCode));
+        }
+        if (handlers.size() > 1) {
+            throw new MultipleProcessHandlersFoundException(String.format("Multiple event handlers exists for the same process type %s, and process code %s", processType, processCode));
+        }
         Processor processHandler = null;
         for (Object m : handlers) {
             processHandler = (Processor) m;
@@ -88,18 +125,19 @@ public class RegistryService {
      * @return Event Handler Object
      * @throws EventHandlerNotFoundException
      */
-    public EventHandler getEventHandler(String eventType) throws EventHandlerNotFoundException, MultipleEventHandlerFoundException {
+    public EventHandler getEventHandler(String eventType, String eventCode) throws EventHandlerNotFoundException, MultipleEventHandlersFoundException {
         Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_EVENT_HANDLER_SERVICE);
         Predicate<RegistryEntry> predicate2 = re -> re.attribute(Constants.ATT_EVENT_HANDLER_SERVICE).equals(Constants.VAL_YES);
         Predicate<RegistryEntry> predicate3 = re -> re.attribute(Constants.ATT_EVENT_TYPE).equals(eventType);
+        Predicate<RegistryEntry> predicate4 = re -> re.attribute(Constants.ATT_EVENT_CODE).equals(eventCode);
 
-        final List<Object> eventHandlers = this.registry.lookupAll(predicate1.and(predicate2).and(predicate3));
+        final List<Object> eventHandlers = this.registry.lookupAll(predicate1.and(predicate2).and(predicate3).and(predicate4));
         logger.debug("Applicable eventHandlers {}", eventHandlers);
         if (eventHandlers == null || eventHandlers.isEmpty()) {
             throw new EventHandlerNotFoundException(String.format("event handlers not found for %s", eventType));
         }
         if (eventHandlers.size() > 1) {
-            throw new MultipleEventHandlerFoundException();
+            throw new MultipleEventHandlersFoundException();
         }
         EventHandler eventHandler = null;
         for (Object m : eventHandlers) {

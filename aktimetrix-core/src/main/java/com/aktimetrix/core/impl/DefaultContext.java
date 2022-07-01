@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
+import com.aktimetrix.core.model.ProcessPlanInstance;
 import com.aktimetrix.core.model.StepInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,8 @@ public class DefaultContext implements Context {
     private List<MeasurementInstance> measurementInstances;
     private String tenant;
     private String processType;
+    private String processCode;
+    private ProcessPlanInstance processPlanInstance;
 
     /**
      * default constructor
@@ -42,9 +45,19 @@ public class DefaultContext implements Context {
         return this.processType;
     }
 
+    @Override
+    public String getProcessCode() {
+        return this.processCode;
+    }
+
+    public void setProcessCode(String processCode) {
+        this.processCode = processCode;
+    }
+
     public void setProcessType(String processType) {
         this.processType = processType;
     }
+
 
     @Override
     public ProcessInstance getProcessInstance() {
@@ -57,6 +70,10 @@ public class DefaultContext implements Context {
     @Override
     public Object getProperty(String propertyName) {
         return context.get(propertyName);
+    }
+
+    public boolean containsProperty(String propertyName) {
+        return context.containsKey(propertyName);
     }
 
     @Override
@@ -114,5 +131,25 @@ public class DefaultContext implements Context {
 
     public void setTenant(String tenant) {
         this.tenant = tenant;
+    }
+
+    /**
+     * sets the process plan instance into the context
+     *
+     * @param plan
+     */
+    @Override
+    public void setProcessPlanInstance(ProcessPlanInstance plan) {
+        this.processPlanInstance = plan;
+    }
+
+    /**
+     * returns the process plan instance
+     *
+     * @return
+     */
+    @Override
+    public ProcessPlanInstance getProcessPlanInstance() {
+        return this.processPlanInstance;
     }
 }

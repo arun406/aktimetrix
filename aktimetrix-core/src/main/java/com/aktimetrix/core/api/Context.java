@@ -2,6 +2,7 @@ package com.aktimetrix.core.api;
 
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
+import com.aktimetrix.core.model.ProcessPlanInstance;
 import com.aktimetrix.core.model.StepInstance;
 
 import java.util.List;
@@ -12,6 +13,8 @@ import java.util.List;
 public interface Context {
 
     String getProcessType();
+
+    String getProcessCode();
 
     /**
      * Returns the process instance that is currently being executed in this context.
@@ -48,6 +51,11 @@ public interface Context {
      */
     String getTenant();
 
+    /**
+     * @param tenant
+     */
+    void setTenant(String tenant);
+
 
     /**
      * sets the step instances
@@ -78,4 +86,9 @@ public interface Context {
     List<MeasurementInstance> getMeasurementInstances();
 
 
+    void setProcessPlanInstance(ProcessPlanInstance plan);
+
+    ProcessPlanInstance getProcessPlanInstance();
+
+    public boolean containsProperty(String propertyName);
 }

@@ -38,10 +38,12 @@ public class EventHandlerPostBeanProcessor implements BeanPostProcessor {
             com.aktimetrix.core.stereotypes.EventHandler annotation =
                     AnnotationUtils.findAnnotation(bean.getClass(), com.aktimetrix.core.stereotypes.EventHandler.class);
             if (annotation != null) {
-                logger.info("Event Type: {}, Name : {}, Version {}", annotation.eventType(), annotation.name(), annotation.version());
+                logger.info("Event Type: {}, Event Code: {}, Name : {}, Version {}", annotation.eventType(),
+                        annotation.eventCode(), annotation.name(), annotation.version());
                 Map<String, String> attributes = new HashMap<>();
                 attributes.put(Constants.ATT_EVENT_HANDLER_SERVICE, Constants.VAL_YES);
                 attributes.put(Constants.ATT_EVENT_TYPE, annotation.eventType());
+                attributes.put(Constants.ATT_EVENT_CODE, annotation.eventCode());
                 attributes.put(Constants.ATT_EVENT_HANDLER_NAME, annotation.name());
                 attributes.put(Constants.ATT_EVENT_HANDLER_VERSION, annotation.version());
                 logger.debug("registering the {} bean with attributes {}", beanName, attributes);

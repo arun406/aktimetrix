@@ -1,0 +1,22 @@
+1. Introduce Aktimetrix
+2. High level grammer of Aktimetrix.
+3. Main features.
+4. Use cases.
+5. Introduce  CiQ - CDPM-C as SaaS
+	1. Tenant (TN1) On boarding on a cloud. On click on boarding.
+	2. Configure the Master data. (Encore)
+	3. Scenario - 1. 
+		Mimic Airline cargo system sending booking update (Booking message). DXB-BOM - DHL -  888-12345678
+		1. Publish canonical (json) formatted BKD event to the tenant's endpoint for a direct shipment.
+		2. RMP message will be send to forward's Email id(static). 
+	  Scenario - 2. 		
+		3. Publish updated BKD event to the tenant's endpoint (forwarder is changed for the shipment). DXB-DEL - DHL -  888-12345678
+		4. new RMP will be sent to the  forwarder. 
+		5. CAN will message to forwarder.
+		6. Failure case where event donot have enough information.
+	  Scenario - 3.
+	    7. Route map API. 
+	  Scenario - 4
+		8. Generate the management report.
+	  Scenario - 5
+		9. Monitoring

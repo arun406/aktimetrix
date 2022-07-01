@@ -1,0 +1,38 @@
+[
+  {
+    "airline": "EK",
+    "flightNo": "EI123",
+    "flightGroupCode": "EI_DUB",
+    "flightGroupName": "EI EX DUB"
+  },
+  {
+    "airline": "EK",
+    "flightNo": "EI105",
+    "flightGroupCode": "EI_DUB",
+    "flightGroupName": "EI EX DUB"
+  },
+  {
+    "airline": "EK",
+    "flightNo": "EI105",
+    "flightGroupCode": "EI_JFK",
+    "flightGroupName": "EI TO JFK"
+  },
+  {
+    "airline": "EK",
+    "flightNo": "EI109",
+    "flightGroupCode": "EI_DUB",
+    "flightGroupName": "EI EX DUB"
+  },
+  {
+    "airline": "EK",
+    "flightNo": "EI109",
+    "flightGroupCode": "EI_JFK",
+    "flightGroupName": "EI TO JFK"
+  },
+  {
+    "airline": "EK",
+    "flightNo": "EI129",
+    "flightGroupCode": "EI_DUB",
+    "flightGroupName": "EI EX DUB"
+  }
+]

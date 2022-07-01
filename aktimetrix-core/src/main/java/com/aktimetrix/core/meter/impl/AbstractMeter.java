@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base class for all Meters
@@ -29,10 +31,15 @@ public abstract class AbstractMeter implements Meter {
      */
     @Override
     public MeasurementInstance measure(String tenant, StepInstance step) {
-        return new MeasurementInstance(tenant, code(),
+        MeasurementInstance measurementInstance = new MeasurementInstance(tenant, code(),
                 getMeasurementValue(tenant, step), getMeasurementUnit(tenant, step), step.getProcessInstanceId(),
                 step.getId(), stepCode(), Constants.PLAN_MEASUREMENT_TYPE,
                 step.getLocationCode(), ZonedDateTime.now());
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("documentType", step.getMetadata().get("documentType"));
+        metadata.put("documentNumber", step.getMetadata().get("documentNumber"));
+        measurementInstance.setMetadata(metadata);
+        return measurementInstance;
     }
 
     protected abstract String getMeasurementUnit(String tenant, StepInstance step);

@@ -6,6 +6,7 @@ import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -29,7 +30,7 @@ public class ProcessDefinition {
     private String status;
     private String responsiblePartyCode;
     private String groupCode;
-    private List<StepDefinition> steps;
+    private List<StepDefinition> steps = new ArrayList<>();
     private List<String> measurements;
 
     /**

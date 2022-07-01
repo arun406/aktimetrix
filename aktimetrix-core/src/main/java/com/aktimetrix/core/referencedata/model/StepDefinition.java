@@ -5,6 +5,7 @@ import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -27,5 +28,5 @@ public class StepDefinition {
     private List<String> startEventCodes;
     private List<String> endEventCodes;
     private String groupCode;
-    private List<StepMeasurement> measurements;
+    private List<StepMeasurement> measurements = new ArrayList<>();
 }

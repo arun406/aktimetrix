@@ -10,7 +10,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface ProcessHandler {
-    String processType();
+    String processType() default "";
+
+    String processCode();
 
     String name() default "";
 
