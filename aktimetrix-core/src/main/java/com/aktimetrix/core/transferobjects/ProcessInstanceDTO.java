@@ -4,6 +4,8 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +17,7 @@ public class ProcessInstanceDTO implements Serializable {
     private String entityType;
     private String tenant;
     private String processCode;
+    private String processType;
     private String categoryCode;
     private String subCategoryCode;
     private String status;
@@ -22,6 +25,6 @@ public class ProcessInstanceDTO implements Serializable {
     private boolean active;
     private boolean valid;
     private boolean complete;
-    private Map<String, Object> metadata;
-    private List<StepInstanceDTO> steps;
+    private Map<String, Object> metadata = new HashMap<>();
+    private List<StepInstanceDTO> steps = new ArrayList<>();
 }

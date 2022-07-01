@@ -16,6 +16,6 @@ public interface StepDefinitionRepository extends MongoRepository<StepDefinition
      * @param stepCode
      * @return
      */
-    @Query("{ 'tenant': ?0, 'stepCode' : ?1 }")
-    StepDefinition findByStepCode(String tenant, String stepCode);
+    @Query("{ 'tenant': ?0, 'stepCode' : ?1 , 'status': ?2}")
+    StepDefinition findByStepCodeAndStatus(String tenant, String stepCode, String status);
 }

@@ -1,14 +1,16 @@
 package com.aktimetrix.core.configurations;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
-import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
+import com.aktimetrix.core.exception.MultipleEventHandlersFoundException;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,13 +27,14 @@ public class MeterConfig {
      * @return
      */
     @Bean
+    @ConditionalOnProperty(value = "aktimetrix.consumer.step.enabled", havingValue = "true", matchIfMissing = false)
     public java.util.function.Consumer<Event<StepInstanceDTO, Void>> measure() {
         return event -> {
             log.debug("event: {}", event);
             try {
-                final EventHandler eventHandler = registryService.getEventHandler("STEP_EVENT");
+                final EventHandler eventHandler = registryService.getEventHandler(Constants.STEP_EVENT, Constants.STEP_CREATED);
                 eventHandler.handle(event);
-            } catch (EventHandlerNotFoundException | MultipleEventHandlerFoundException e) {
+            } catch (EventHandlerNotFoundException | MultipleEventHandlersFoundException e) {
                 log.error("Something happened bad. please contact system administrator.", e);
             }
         };

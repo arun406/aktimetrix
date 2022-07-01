@@ -15,6 +15,7 @@ public class Event<U, V> {
     private String eventType;
     private String eventName;
     private String eventCode;
+    private String version;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     private ZonedDateTime eventTime;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")

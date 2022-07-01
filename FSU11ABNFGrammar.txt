@@ -1,0 +1,801 @@
+#------------------------------------------------------------------------
+# FSU/11
+#------------------------------------------------------------------------
+
+FSU11 =    
+    StandardMessageIdentification
+    (
+        ConsignmentDetail
+        (
+            (
+                (
+                    RCSStatusDetails /
+                    RCTStatusDetails /
+                    RCFStatusDetails /
+                    BKDStatusDetails /
+                    MANStatusDetails /
+                    DEPStatusDetails / 
+                    PREStatusDetails /
+                    TRMStatusDetails / 
+                    TFDStatusDetails /
+                    NFDStatusDetails /
+                    AWDStatusDetails /
+                    CCDStatusDetails /
+                    DLVStatusDetails /
+                    DISStatusDetails /
+                    CRCStatusDetails /
+                    DDLStatusDetails / 
+                    TGCStatusDetails /
+                    ARRStatusDetails /
+                    AWRStatusDetails
+                )
+                [ULDDescription]
+                [OtherServiceInformation]
+            )
+            /
+            OtherServiceInformation
+        )
+    );
+
+# Standard Message Identification
+# -------------------------------
+StandardMessageIdentification =
+    "FSU/11" 
+    CRLF;
+
+# Consignment Detail
+# ------------------
+ConsignmentDetail =    
+    AWBIdentification 
+    [AWBOriginAndDestination]
+    [QuantityDetail]                # OPTIONAL
+    CRLF;
+
+AWBIdentification =    
+    DE112_AirlinePrefix 
+    Hyphen
+    DE113_AWBSerialNumber;
+
+AWBOriginAndDestination =
+    2DE313_AirportCityCode;
+
+QuantityDetail =
+    Slant
+    (
+        (    
+            DE703_ShipmentDescriptionCode_T 
+            DE701_NumberOfPieces 
+            [DE601_WeightCode DE600_Weight]
+        ) 
+        / 
+        (    
+            DE703_ShipmentDescriptionCode_P 
+            DE701_NumberOfPieces 
+            (
+                (
+                    DE601_WeightCode 
+                    DE600_Weight 
+                    TotalConsignmentPieces
+                )
+                /
+                TotalConsignmentPieces
+            )
+        )
+    );
+
+TotalConsignmentPieces =
+    DE703_ShipmentDescriptionCode_T 
+    DE701_NumberOfPieces;
+
+# RCS
+# ---
+RCSStatusDetails =    
+    DE400_StatusCode_RCS 
+    Slant
+    RCSMovementDetail 
+    Slant
+    RCSQuantityDetail 
+    [Slant RCSReceivedFromDetail]
+    CRLF
+    [Slant RCSVolumeDetail CRLF];
+
+RCSMovementDetail =
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime] 
+    Slant
+    DE313_AirportCode;
+
+RCSQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+RCSReceivedFromDetail =
+    DE300_Name;
+    
+RCSVolumeDetail =
+    DE604_VolumeCode
+    DE500_VolumeAmount;
+
+# RCT
+# ---
+RCTStatusDetails =    
+    DE400_StatusCode_RCT 
+    Slant
+    RCTMovementDetail 
+    Slant
+    RCTQuantityDetail
+    CRLF;
+
+RCTMovementDetail = 
+    DE312_CarrierCode 
+    Slant
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime] 
+    Slant
+    DE313_AirportCode;
+
+RCTQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+# RCF
+# ---
+RCFStatusDetails =    
+    DE400_StatusCode_RCF 
+    Slant
+    RCFMovementDetail 
+    Slant
+    RCFQuantityDetail 
+    [
+        (Slant RCFTimeOfDepartureInformation 
+         Slant RCFTimeOfArrivalInformation) /
+        (Slant  
+         Slant RCFTimeOfArrivalInformation) /
+        (Slant RCFTimeOfDepartureInformation)
+    ]
+    CRLF;
+
+RCFMovementDetail = 
+    [DE312_CarrierCode DE800_FlightNumber] 
+    Slant
+    DE202_Day 
+    DE201_Month 
+    [DE203_Time [Hyphen DE205_DayChangeIndicator]] 
+    Slant
+    DE313_AirportCode;
+
+RCFQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+RCFTimeOfDepartureInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+RCFTimeOfArrivalInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+# BKD
+# ---
+BKDStatusDetails =    
+    DE400_StatusCode_BKD 
+    Slant
+    BKDMovementDetail 
+    Slant
+    BKDQuantityDetail 
+    [
+        (Slant BKDTimeOfDepartureInformation 
+         Slant BKDTimeOfArrivalInformation
+         Slant BKDVolumeDetail) /
+        (Slant 
+         Slant BKDTimeOfArrivalInformation
+         Slant BKDVolumeDetail) /
+        (Slant 
+         Slant 
+         Slant BKDVolumeDetail) /
+        (Slant BKDTimeOfDepartureInformation 
+         Slant BKDTimeOfArrivalInformation) /
+        (Slant  
+         Slant BKDTimeOfArrivalInformation) /
+        (Slant BKDTimeOfDepartureInformation)
+    ]
+    CRLF;
+
+BKDMovementDetail = 
+    [
+        (DE312_CarrierCode DE800_FlightNumber) /
+        DE800_FlightNumber /
+        DE312_CarrierCode
+    ]
+    Slant
+    [DE202_Day] 
+    [DE201_Month] 
+    Slant
+    DE313_AirportCode
+    DE313_AirportCode;
+
+BKDQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+BKDTimeOfDepartureInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+BKDTimeOfArrivalInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+    
+BKDVolumeDetail =
+    DE604_VolumeCode
+    DE500_VolumeAmount;
+
+# MAN
+# ---
+MANStatusDetails =    
+    DE400_StatusCode_MAN
+    Slant
+    MANMovementDetail 
+    Slant
+    MANQuantityDetail 
+    [
+        (Slant MANTimeOfDepartureInformation 
+         Slant MANTimeOfArrivalInformation) /
+        (Slant  
+         Slant MANTimeOfArrivalInformation) /
+        (Slant MANTimeOfDepartureInformation)
+    ]
+    CRLF;
+
+MANMovementDetail = 
+    [
+        (DE312_CarrierCode DE800_FlightNumber) /
+        DE800_FlightNumber /
+        DE312_CarrierCode
+    ]
+    Slant
+    [DE202_Day] 
+    [DE201_Month] 
+    Slant
+    2DE313_AirportCode;
+
+MANQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+MANTimeOfDepartureInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+MANTimeOfArrivalInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+# DEP
+# ---
+DEPStatusDetails =    
+    DE400_StatusCode_DEP
+    Slant
+    DEPMovementDetail 
+    Slant
+    DEPQuantityDetail 
+    [
+        (Slant DEPTimeOfDepartureInformation 
+         Slant DEPTimeOfArrivalInformation) /
+        (Slant  
+         Slant DEPTimeOfArrivalInformation) /
+        (Slant DEPTimeOfDepartureInformation)
+    ]
+    CRLF;
+
+DEPMovementDetail = 
+    [
+        (DE312_CarrierCode DE800_FlightNumber) /
+        DE800_FlightNumber /
+        DE312_CarrierCode
+    ]
+    Slant
+    [DE202_Day] 
+    [DE201_Month] 
+    Slant
+    2DE313_AirportCode;
+
+DEPQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+DEPTimeOfDepartureInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+DEPTimeOfArrivalInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+# PRE
+# ---
+PREStatusDetails =    
+    DE400_StatusCode_PRE
+    Slant
+    PREMovementDetail 
+    Slant
+    PREQuantityDetail 
+    [
+        (Slant PRETimeOfDepartureInformation 
+         Slant PRETimeOfArrivalInformation) /
+        (Slant  
+         Slant PRETimeOfArrivalInformation) /
+        (Slant PRETimeOfDepartureInformation)
+    ]
+    CRLF;
+
+PREMovementDetail = 
+    [
+        (DE312_CarrierCode DE800_FlightNumber) /
+        DE800_FlightNumber /
+        DE312_CarrierCode
+    ]
+    Slant
+    [DE202_Day] 
+    [DE201_Month] 
+    Slant
+    2DE313_AirportCode;
+
+PREQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+PRETimeOfDepartureInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+PRETimeOfArrivalInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+# TRM
+# ---
+TRMStatusDetails =    
+    DE400_StatusCode_TRM 
+    Slant
+    TRMMovementDetail 
+    Slant
+    TRMQuantityDetail
+    CRLF;
+
+TRMMovementDetail =
+    DE312_CarrierCode 
+    Slant
+    DE313_AirportCode;
+
+TRMQuantityDetail =
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+# TFD
+# ---
+TFDStatusDetails =    
+    DE400_StatusCode_TFD 
+    Slant
+    TFDMovementDetail 
+    Slant
+    TFDQuantityDetail
+    [Slant TFDTransferReference]
+    CRLF;
+
+TFDMovementDetail = 
+    DE312_CarrierCode 
+    Slant
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime]
+    Slant
+    DE313_AirportCode;
+
+TFDQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+TFDTransferReference =
+    DE118_TransferManifestNumber;
+
+# NFD
+# ---
+NFDStatusDetails =    
+    DE400_StatusCode_NFD 
+    Slant
+    NFDMovementDetail 
+    Slant
+    NFDQuantityDetail
+    [Slant NFDNotificationToDetail]
+    CRLF;
+
+NFDMovementDetail = 
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime]
+    Slant
+    DE313_AirportCode;
+
+NFDQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+NFDNotificationToDetail =
+    DE300_Name;
+
+# AWD
+# ---
+AWDStatusDetails =    
+    DE400_StatusCode_AWD 
+    Slant
+    AWDMovementDetail 
+    Slant
+    AWDQuantityDetail
+    [Slant AWDDeliveryToDetail]
+    CRLF;
+
+AWDMovementDetail = 
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime]
+    Slant
+    DE313_AirportCode;
+
+AWDQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+AWDDeliveryToDetail =
+    DE300_Name;
+
+# CCD
+# ---
+CCDStatusDetails =    
+    DE400_StatusCode_CCD 
+    Slant
+    CCDMovementDetail 
+    Slant
+    CCDQuantityDetail
+    CRLF;
+
+CCDMovementDetail =
+     DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime]
+    Slant
+    DE313_AirportCode;
+
+CCDQuantityDetail =
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+# DLV
+# ---
+DLVStatusDetails =    
+    DE400_StatusCode_DLV 
+    Slant
+    DLVMovementDetail 
+    Slant
+    DLVQuantityDetail
+    [Slant DLVDeliveryToDetail]
+    CRLF;
+
+DLVMovementDetail = 
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime]
+    Slant
+    DE313_AirportCode;
+
+DLVQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+DLVDeliveryToDetail =
+    DE300_Name;
+
+# DIS
+# ---
+DISStatusDetails =    
+    DE400_StatusCode_DIS 
+    Slant
+    DISMovementDetail 
+    Slant
+    DISDiscrepancyDescription 
+    Slant
+    DISQuantityDetail
+    CRLF;
+
+DISMovementDetail = 
+    [DE312_CarrierCode DE800_FlightNumber] 
+    Slant
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime] 
+    Slant
+    DE313_AirportCode;
+
+DISDiscrepancyDescription =
+    DE706_DiscrepancyCode;
+    
+DISQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+# CRC
+# ---
+CRCStatusDetails =    
+    DE400_StatusCode_CRC 
+    Slant
+    CRCMovementDetail 
+    Slant
+    CRCQuantityDetail
+    CRLF;
+
+CRCMovementDetail = 
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime]
+    Slant
+    DE313_AirportCode;
+
+CRCQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+# DDL
+# ---
+DDLStatusDetails =    
+    DE400_StatusCode_DDL 
+    Slant
+    DDLMovementDetail 
+    Slant
+    DDLQuantityDetail
+    [Slant DDLDeliveryToDetail]
+    CRLF;
+
+DDLMovementDetail = 
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime]
+    Slant
+    DE313_AirportCode;
+
+DDLQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+DDLDeliveryToDetail =
+    DE300_Name;
+
+# TGC
+# ---
+TGCStatusDetails =    
+    DE400_StatusCode_TGC 
+    Slant
+    TGCMovementDetail 
+    Slant
+    TGCQuantityDetail
+    CRLF;
+
+TGCMovementDetail = 
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime]
+    Slant
+    DE313_AirportCode;
+
+TGCQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+# ARR
+# ---
+ARRStatusDetails =    
+    DE400_StatusCode_ARR 
+    Slant
+    ARRMovementDetail 
+    Slant
+    ARRQuantityDetail 
+    [
+        (Slant ARRTimeOfDepartureInformation 
+         Slant ARRTimeOfArrivalInformation) /
+        (Slant  
+         Slant ARRTimeOfArrivalInformation) /
+        (Slant ARRTimeOfDepartureInformation)
+    ]
+    CRLF;
+
+ARRMovementDetail = 
+    [DE312_CarrierCode DE800_FlightNumber] 
+    Slant
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime [Hyphen DE205_DayChangeIndicator]] 
+    Slant
+    DE313_AirportCode;
+
+ARRQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+ARRTimeOfDepartureInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+ARRTimeOfArrivalInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+# AWR
+# ---
+AWRStatusDetails =    
+    DE400_StatusCode_AWR 
+    Slant
+    AWRMovementDetail 
+    Slant
+    AWRQuantityDetail 
+    [
+        (Slant AWRTimeOfDepartureInformation 
+         Slant AWRTimeOfArrivalInformation) /
+        (Slant  
+         Slant AWRTimeOfArrivalInformation) /
+        (Slant AWRTimeOfDepartureInformation)
+    ]
+    CRLF;
+
+AWRMovementDetail = 
+    [DE312_CarrierCode DE800_FlightNumber] 
+    Slant
+    DE202_Day 
+    DE201_Month 
+    [DE203_ActualTime [Hyphen DE205_DayChangeIndicator]] 
+    Slant
+    DE313_AirportCode;
+
+AWRQuantityDetail =    
+    DE703_ShipmentDescriptionCode
+    DE701_NumberOfPieces
+    [DE601_WeightCode DE600_Weight];
+
+AWRTimeOfDepartureInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+AWRTimeOfArrivalInformation =
+    DE206_TypeOfTimeIndicator
+    DE203_Time
+    [Hyphen DE205_DayChangeIndicator];
+
+# ULD
+# ---
+ULDDescription =
+    DE103_LineIdentifier_ULD
+    1*
+    (
+        1*5
+        (
+            Slant 
+            DE802_ULDType 
+            DE115_ULDSerialNumber 
+            DE801_ULDOwnerCode
+        ) 
+        CRLF
+    );
+
+# OSI
+# ---
+OtherServiceInformation =    
+    DE103_LineIdentifier_OSI 
+    1*2OSIDetails;
+
+OSIDetails =
+    Slant 
+    DE405_OtherServiceInformation
+    CRLF;
+
+# Data Elements
+# -------------
+
+DE103_LineIdentifier            = 3Alpha;
+DE103_LineIdentifier_ULD        = "ULD";
+DE103_LineIdentifier_OSI        = "OSI";
+DE112_AirlinePrefix             = 3Numeric;
+DE113_AWBSerialNumber           = 1*8Numeric;
+DE115_ULDSerialNumber           = Mixed 3*4Numeric;
+DE118_TransferManifestNumber    = 6Numeric;
+DE201_Month                     = 3Alpha;
+DE202_Day                       = 2Numeric;
+DE203_Time                      = 4Numeric;
+DE203_ActualTime                = 4Numeric;
+DE205_DayChangeIndicator        = Alpha;
+DE206_TypeOfTimeIndicator       = Alpha;
+DE300_Name                      = 1*35Text;
+DE312_CarrierCode               = 2Mixed;
+DE313_AirportCode               = 3Alpha;
+DE313_AirportCityCode           = 3Alpha;
+DE400_StatusCode                = 3Alpha;
+DE400_StatusCode_ARR            = "ARR";
+DE400_StatusCode_AWD            = "AWD";
+DE400_StatusCode_AWR            = "AWR";
+DE400_StatusCode_BKD            = "BKD";
+DE400_StatusCode_CCD            = "CCD";
+DE400_StatusCode_CRC            = "CRC";
+DE400_StatusCode_DDL            = "DDL";
+DE400_StatusCode_DEP            = "DEP";
+DE400_StatusCode_DIS            = "DIS";
+DE400_StatusCode_DLV            = "DLV";
+DE400_StatusCode_MAN            = "MAN";
+DE400_StatusCode_NFD            = "NFD";
+DE400_StatusCode_PRE            = "PRE";
+DE400_StatusCode_RCF            = "RCF";
+DE400_StatusCode_RCS            = "RCS";
+DE400_StatusCode_RCT            = "RCT";
+DE400_StatusCode_TFD            = "TFD";
+DE400_StatusCode_TGC            = "TGC";
+DE400_StatusCode_TRM            = "TRM";
+DE405_OtherServiceInformation   = 1*65Text;
+DE500_VolumeAmount              = 1*9Decimal;
+DE600_Weight                    = 1*7Decimal;
+DE601_WeightCode                = Alpha;
+DE604_VolumeCode                = 2Alpha;
+DE701_NumberOfPieces            = 1*4Numeric;
+DE703_ShipmentDescriptionCode   = "T" / "P";
+DE703_ShipmentDescriptionCode_T = "T";
+DE703_ShipmentDescriptionCode_P = "P";
+DE706_DiscrepancyCode           = 4Alpha;
+DE800_FlightNumber              = 3*4Numeric [Alpha];
+DE801_ULDOwnerCode              = 2Mixed;
+DE802_ULDType                   = Alpha 2Mixed;
+
+# Types
+# -----
+CRLF    = (CR LF) / LF; 
+CR      = %x0D;
+LF      = %x0A;
+Slant   = "/";
+Hyphen  = "-";
+Alpha   = %x41-5A;
+Numeric = %x30-39;
+Decimal = %x30-39 / ".";
+Mixed   = Alpha / Numeric;
+Text    = %x41-5A / %x30-39 / "." / "-" / " ";
+
+#------------------------------------------------------------------------
+# eof
+#------------------------------------------------------------------------

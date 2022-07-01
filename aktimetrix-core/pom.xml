@@ -9,6 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>aktimetrix-core</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
@@ -19,6 +20,7 @@
         <lombok.version>1.18.24</lombok.version>
         <jackson-bom.version>2.13.2</jackson-bom.version>
         <spring-data-bom.version>2021.1.4</spring-data-bom.version>
+        <httpclient.version>4.5.3</httpclient.version>
     </properties>
     <repositories>
         <repository>
@@ -132,6 +134,19 @@
             <groupId>org.javatuples</groupId>
             <artifactId>javatuples</artifactId>
             <version>1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>31.1-jre</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
         </dependency>
     </dependencies>
 </project>

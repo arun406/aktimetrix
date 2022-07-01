@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.api.Processor;
 import com.aktimetrix.core.exception.DefinitionNotFoundException;
+import com.aktimetrix.core.exception.MultipleProcessHandlersFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
 import com.aktimetrix.core.impl.DefaultContext;
 import com.aktimetrix.core.impl.DefaultProcessDefinitionProvider;
@@ -29,6 +30,7 @@ public abstract class AbstractEventHandler implements EventHandler {
      */
     @Override
     public void handle(Event<?, ?> event) {
+
         log.info("Entity Id : {}", event.getEntityId());
         // Query the Applicable Process Definitions based on the incoming event's event code.
         try {
@@ -40,8 +42,8 @@ public abstract class AbstractEventHandler implements EventHandler {
                     // should be changed to registry implementation.
                     Processor processHandler = null;
                     try {
-                        processHandler = registryService.getProcessHandler(definition.getProcessCode());
-                    } catch (ProcessHandlerNotFoundException e) {
+                        processHandler = registryService.getProcessHandler(definition.getProcessType(), definition.getProcessCode());
+                    } catch (ProcessHandlerNotFoundException | MultipleProcessHandlersFoundException e) {
                         log.error("process handler is not defined for {} process", ProcessType.A2ATRANSPORT);
                         return;
                     }
@@ -88,6 +90,7 @@ public abstract class AbstractEventHandler implements EventHandler {
         processContext.setTenant(event.getTenantKey());
         processContext.setProperty("processDefinition", definition);
         processContext.setProcessType(definition.getProcessType());
+        processContext.setProcessCode(definition.getProcessCode());
         return processContext;
     }
 

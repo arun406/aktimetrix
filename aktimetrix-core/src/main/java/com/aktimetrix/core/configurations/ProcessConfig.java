@@ -1,10 +1,9 @@
 package com.aktimetrix.core.configurations;
 
 import com.aktimetrix.core.api.EventHandler;
-import com.aktimetrix.core.api.EventType;
 import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
-import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
+import com.aktimetrix.core.exception.MultipleEventHandlersFoundException;
 import com.aktimetrix.core.exception.ProcessorException;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
@@ -50,9 +49,9 @@ public class ProcessConfig {
                 final Event<?, ?> event = objectMapper.readValue(payload, new TypeReference<Event>() {
                 });
                 logger.info(String.format("Event : %s ", event));
-                EventHandler eventHandler = registryService.getEventHandler(eventCode);
+                EventHandler eventHandler = registryService.getEventHandler(eventType, eventCode);
                 eventHandler.handle(event);
-            } catch (JsonProcessingException | EventHandlerNotFoundException | MultipleEventHandlerFoundException e) {
+            } catch (JsonProcessingException | EventHandlerNotFoundException | MultipleEventHandlersFoundException e) {
                 logger.error("Something happened bad. please contact system administrator.", e);
             }
         };

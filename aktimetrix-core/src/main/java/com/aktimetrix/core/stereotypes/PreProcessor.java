@@ -18,6 +18,8 @@ public @interface PreProcessor {
 
     String processType();
 
+    String processCode();
+
     String name() default "";
 
     int priority() default 1;

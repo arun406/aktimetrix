@@ -2,13 +2,13 @@ package com.aktimetrix.core.exception;
 
 import java.security.PrivilegedActionException;
 
-public class MultipleEventHandlerFoundException extends Exception {
+public class MultipleProcessHandlersFoundException extends Exception {
     /**
      * Constructs a new exception with {@code null} as its detail message.
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
      */
-    public MultipleEventHandlerFoundException() {
+    public MultipleProcessHandlersFoundException() {
     }
 
     /**
@@ -19,7 +19,7 @@ public class MultipleEventHandlerFoundException extends Exception {
      * @param message the detail message. The detail message is saved for
      *                later retrieval by the {@link #getMessage()} method.
      */
-    public MultipleEventHandlerFoundException(String message) {
+    public MultipleProcessHandlersFoundException(String message) {
         super(message);
     }
 
@@ -37,7 +37,7 @@ public class MultipleEventHandlerFoundException extends Exception {
      *                unknown.)
      * @since 1.4
      */
-    public MultipleEventHandlerFoundException(String message, Throwable cause) {
+    public MultipleProcessHandlersFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 
@@ -55,7 +55,7 @@ public class MultipleEventHandlerFoundException extends Exception {
      *              unknown.)
      * @since 1.4
      */
-    public MultipleEventHandlerFoundException(Throwable cause) {
+    public MultipleProcessHandlersFoundException(Throwable cause) {
         super(cause);
     }
 
@@ -73,7 +73,7 @@ public class MultipleEventHandlerFoundException extends Exception {
      *                           be writable
      * @since 1.7
      */
-    public MultipleEventHandlerFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public MultipleProcessHandlersFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

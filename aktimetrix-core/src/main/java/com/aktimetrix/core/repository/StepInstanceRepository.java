@@ -20,7 +20,7 @@ public interface StepInstanceRepository extends MongoRepository<StepInstance, St
      * @return
      */
     @Query("{ 'tenant' : ?0 , 'stepCode': ?1 , 'processInstanceId': ?2 }")
-    List<StepInstance> findByTenantAndStepCodeAndProcessInstanceId(String tenant, String stepCode, ObjectId processInstanceId);
+    List<StepInstance> findByTenantAndStepCodeAndProcessInstanceId(String tenant, String stepCode, String processInstanceId);
 
     /**
      * @param tenant
@@ -29,7 +29,7 @@ public interface StepInstanceRepository extends MongoRepository<StepInstance, St
      */
 
     @Query("{ 'tenant' : ?0 , 'processInstanceId': ?1 }")
-    List<StepInstance> findByTenantAndProcessInstanceId(String tenant, ObjectId processInstanceId);
+    List<StepInstance> findByTenantAndProcessInstanceId(String tenant, String processInstanceId);
 
     /**
      * @param tenant
@@ -38,7 +38,7 @@ public interface StepInstanceRepository extends MongoRepository<StepInstance, St
      * @return
      */
     @Query("{ 'tenant' : ?0 , 'processInstanceId': ?1, '_id': ?2 }")
-    StepInstance getStepInstanceByProcessInstanceIdAndId(String tenant, ObjectId processInstanceId, ObjectId stepInstanceId);
+    StepInstance getStepInstanceByProcessInstanceIdAndId(String tenant, String processInstanceId, String stepInstanceId);
 
 
     @Aggregation(pipeline = {"{\n" +
@@ -64,5 +64,5 @@ public interface StepInstanceRepository extends MongoRepository<StepInstance, St
                     "    }\n" +
                     "}"
     })
-    StepInstance getStepInstancesWithMeasurements(String tenant, ObjectId processInstanceId, ObjectId stepInstanceId);
+    StepInstance getStepInstancesWithMeasurements(String tenant, String processInstanceId, String stepInstanceId);
 }

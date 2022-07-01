@@ -1,0 +1,196 @@
+{
+  "tenantKey": "XX",
+  "eventId": "51541182-81fa-4727-afd5-114acdf086b1",
+  "eventName": "cargo movement event",
+  "eventType": "FSU",
+  "eventCode": "BKD",
+  "eventTime": "2015-11-18T00:00:00.000+0200",
+  "eventUTCTime": "2015-11-18 00:00:00",
+  "source": "SC",
+  "entityId": "888-11111290",
+  "entityType": "cargo.awb",
+  "entity": {
+    "cargoType": "AWB",
+    "cargoCategory": "F",
+    "commodity": "9203",
+    "description": "TOYS, GAMES",
+    "jobReferenceNumber": 12345678,
+    "cargoReference": 12345678,
+    "eAWBIndicator": true,
+    "origin": {
+      "code": "DXB"
+    },
+    "destination": {
+      "code": "BOM"
+    },
+    "productCode": "GCR",
+    "remarks": [{
+      "key": "name",
+      "value": "shipment is priority booking"
+    }
+    ],
+    "shcList": [{
+      "code": "EAW"
+    }
+    ],
+    "reservationServiceCodes": [
+      "A",
+      "B"
+    ],
+    "itineraries": [{
+      "boardPoint": {
+        "code": "DXB"
+      },
+      "offPoint": {
+        "code": "BOM"
+      },
+      "transportInfo": {
+        "carrier": "XX",
+        "number": "1234",
+        "extensionNumber": "A"
+      },
+      "departureDateTimeUTC": {
+        "schedule": "2021-06-25T07:45:00",
+        "estimated": "2021-06-25T07:45:00",
+        "actual": null
+      },
+      "arrivalDateTimeUTC": {
+        "schedule": "2021-06-25T08:35:00",
+        "estimated": "2021-06-25T08:35:00",
+        "actual": null
+      },
+      "legNumber": 1,
+      "partIndicator": true,
+      "oalIndicator": false,
+      "aircraftCategory": "RFS",
+      "quantity": {
+        "piece": 10,
+        "weight": {
+          "value": 30.0,
+          "unit": {
+            "code": "K"
+          }
+        },
+        "volume": {
+          "value": 2.0,
+          "unit": {
+            "code": "CM"
+          }
+        },
+        "shcList": [{
+          "code": "EAW"
+        }
+        ]
+      },
+      "spaceStatus": {
+        "code": "SS"
+      }
+    }
+    ],
+    "quantityInfo": [{
+      "piece": 10,
+      "slac": null,
+      "weight": {
+        "value": 30.0,
+        "unit": {
+          "code": "K"
+        }
+      },
+      "volume": {
+        "value": 2.0,
+        "unit": {
+          "code": "CM"
+        }
+      },
+      "shcList": [{
+        "code": "PER",
+        "category": ""
+      }
+      ]
+    }
+    ],
+    "documentInfo": {
+      "awbInfo": {
+        "documentNumber": "11111290",
+        "documentPrefix": "888",
+        "documentType": "AWB",
+        "eAWBIndicator": false,
+        "origin": {
+          "code": "DXB"
+        },
+        "destination": {
+          "code": "BOM"
+        },
+        "participant": [{
+          "type": "AGT",
+          "firstName": "",
+          "name": "NARNN",
+          "identifier": "ABC"
+        }, {
+          "type": "SHP",
+          "firstName": "",
+          "name": "ALTAYAB NOW",
+          "identifier": "ALTAYAEDXBB01"
+        }, {
+          "type": "CNE",
+          "firstName": "",
+          "name": "someName name2",
+          "identifier": "SOMENAEBOMABD"
+        }
+        ]
+      }
+    }
+  },
+  "eventDetails": {
+    "itineraries": [{
+      "boardPoint": {
+        "code": "DXB"
+      },
+      "offPoint": {
+        "code": "BOM"
+      },
+      "transportInfo": {
+        "carrier": "XX",
+        "number": "1234",
+        "extensionNumber": "A"
+      },
+      "departureDateTimeUTC": {
+        "schedule": "2021-06-25T07:45:00",
+        "estimated": "2021-06-25T07:45:00",
+        "actual": null
+      },
+      "arrivalDateTimeUTC": {
+        "schedule": "2021-06-25T08:35:00",
+        "estimated": "2021-06-25T08:35:00",
+        "actual": null
+      },
+      "legNumber": 1,
+      "partIndicator": true,
+      "oalIndicator": false,
+      "aircraftCategory": "RFS",
+      "quantity": {
+        "piece": 10,
+        "weight": {
+          "value": 30.0,
+          "unit": {
+            "code": "K"
+          }
+        },
+        "volume": {
+          "value": 2.0,
+          "unit": {
+            "code": "CM"
+          }
+        },
+        "shcList": [{
+          "code": "EAW"
+        }
+        ]
+      },
+      "spaceStatus": {
+        "code": "SS"
+      }
+    }
+    ]
+  }
+}

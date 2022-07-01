@@ -45,6 +45,7 @@ public class Constants {
     public static final String ATT_PRE_PROCESSOR_CODE = "code";
     public static final String ATT_PRE_PROCESSOR_PRIORITY = "priority";
     public static final String ATT_PRE_PROCESSOR_PROCESS_TYPE = "process-type";
+    public static final String ATT_PRE_PROCESSOR_PROCESS_CODE = "process-code";
     public static final String ATT_PRE_PROCESSOR_NAME = "pre-processor-name";
     public static final String ATT_PRE_PROCESSOR_VERSION = "pre-processor-version";
     public static final String ATT_PRE_PROCESSOR_DEFAULT = "pre-processor-default";
@@ -53,6 +54,7 @@ public class Constants {
     public static final String ATT_POST_PROCESSOR_CODE = "code";
     public static final String ATT_POST_PROCESSOR_PRIORITY = "priority";
     public static final String ATT_POST_PROCESSOR_PROCESS_TYPE = "process-type";
+    public static final String ATT_POST_PROCESSOR_PROCESS_CODE = "process-code";
     public static final String ATT_POST_PROCESSOR_NAME = "post-processor-name";
     public static final String ATT_POST_PROCESSOR_VERSION = "post-processor-version";
     public static final String ATT_POST_PROCESSOR_DEFAULT = "post-processor-default";
@@ -61,4 +63,26 @@ public class Constants {
     public final static String ENTITY_ID = "entityId";
     public final static String EVENT_DATA = "eventData";
     public final static String ENTITY = "entity";
+    public static final String ATT_EVENT_CODE = "event-code";
+    public static final String ATT_PROCESS_CODE = "process-code";
+    public static final String STEP_EVENT = "Step_Event";
+    public static final String STEP_CREATED = "Created";
+    public static final String PROCESS_EVENT = "Process_Event";
+    public static final String PROCESS_CREATED = "Created";
+    public static final String PROCESS_INSTANCE_TYPE = "process-instance-type";
+    public static final String PROCESS_INSTANCE_CREATE = "process-instance-created";
+    public static final String PROCESS_INSTANCE_UPDATE = "Process-instance-updated";
+    public static final String PROCESS_UPDATED = "Updated";
+    public static final String PROCESS_CANCELLED = "Cancelled";
+    public static final String PROCESS_INSTANCE_CANCEL = "process-instance-cancelled";
+    public static final String DEFAULT_PROCESS_CODE = "DEFAULT_PROCESS_CODE";
+    public static final String DEFAULT_PROCESS_TYPE = "DEFAULT_PROCESS_TYPE";
+    public static final String MEASUREMENT_EVENT = "Measurement_Event";
+    public static final String MEASUREMENT_CREATED = "Created";
+    public static final String PLAN_CREATED = "Created";
+    public static final String PLAN_EVENT = "Plan_Event";
+    public static final String PLAN_UPDATED = "Updated";
+    public static final String STATUS_BASELINE = "Baseline";
+    public static final String ENTITY_TYPE = "entityType";
+    public static final String PLAN_CANCELLED = "Cancelled";
 }

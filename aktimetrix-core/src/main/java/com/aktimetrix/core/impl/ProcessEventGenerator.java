@@ -1,11 +1,13 @@
 package com.aktimetrix.core.impl;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventGenerator;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.ProcessInstanceDTO;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -15,13 +17,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class ProcessEventGenerator implements EventGenerator {
-
-    private final ProcessInstance processInstance;
-
-    public ProcessEventGenerator(ProcessInstance processInstance) {
-        this.processInstance = processInstance;
-    }
+@Component("ProcessEventGenerator")
+public class ProcessEventGenerator implements EventGenerator<ProcessInstanceDTO, Void> {
 
     /**
      * Generate the Events
@@ -29,16 +26,16 @@ public class ProcessEventGenerator implements EventGenerator {
      * @return Event
      */
     @Override
-    public Event<ProcessInstanceDTO, Void> generate() {
-        return getProcessEvent(processInstance);
+    public Event<ProcessInstanceDTO, Void> generate(Object... object) {
+        return getProcessEvent((ProcessInstance) object[0]);
     }
 
     private Event<ProcessInstanceDTO, Void> getProcessEvent(ProcessInstance processInstance) {
         Event<ProcessInstanceDTO, Void> event = new Event<>();
         event.setEventId(UUID.randomUUID().toString());
-        event.setEventType("Process_Event");
-        event.setEventCode("CREATED");
-        event.setEventName("Process Instance Created Event");
+        event.setEventType(Constants.PROCESS_EVENT);
+        event.setEventCode(processInstance.getModifiedOn() == null ? Constants.PROCESS_CREATED : Constants.PROCESS_UPDATED);
+        event.setEventName(processInstance.getModifiedOn() == null ? "Process Instance Created Event" : "Process Instance Updated Event");
         event.setEventTime(ZonedDateTime.now());
         event.setEventUTCTime(LocalDateTime.now(ZoneOffset.UTC));
         event.setEntityId(String.valueOf(processInstance.getId()));
@@ -58,6 +55,7 @@ public class ProcessEventGenerator implements EventGenerator {
                 .active(processInstance.isActive())
                 .categoryCode(processInstance.getCategoryCode())
                 .processCode(processInstance.getProcessCode())
+                .processType(processInstance.getProcessType())
                 .complete(processInstance.isComplete())
                 .entityType(processInstance.getEntityType())
                 .id(processInstance.getId().toString())

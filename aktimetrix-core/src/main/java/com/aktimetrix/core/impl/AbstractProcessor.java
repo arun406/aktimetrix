@@ -1,30 +1,19 @@
 package com.aktimetrix.core.impl;
 
-import com.aktimetrix.core.api.Constants;
-import com.aktimetrix.core.api.Context;
-import com.aktimetrix.core.api.PostProcessor;
-import com.aktimetrix.core.api.PreProcessor;
-import com.aktimetrix.core.api.ProcessType;
-import com.aktimetrix.core.api.Processor;
-import com.aktimetrix.core.api.Registry;
+import com.aktimetrix.core.api.*;
 import com.aktimetrix.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
-import com.aktimetrix.core.service.ProcessInstancePublisherService;
-import com.aktimetrix.core.service.ProcessInstanceService;
-import com.aktimetrix.core.service.RegistryService;
-import com.aktimetrix.core.service.StepInstancePublisherService;
-import com.aktimetrix.core.service.StepInstanceService;
+import com.aktimetrix.core.service.*;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,21 +23,10 @@ import java.util.Objects;
 @Slf4j
 public abstract class AbstractProcessor implements Processor {
 
-    final private static Logger logger = LoggerFactory.getLogger(AbstractProcessor.class);
-
     @Autowired
     private StepInstanceService stepInstanceService;
     @Autowired
     private ProcessInstanceService processInstanceService;
-
-    // default post processors
-    @Autowired
-    private ProcessInstancePublisherService processInstancePublisherService;
-    @Autowired
-    private StepInstancePublisherService stepInstancePublisherService;
-
-    @Autowired
-    private Registry registry;
     @Autowired
     private RegistryService registryService;
 
@@ -60,41 +38,40 @@ public abstract class AbstractProcessor implements Processor {
         // call pre processors
         executePreProcessors(context);
         // call do process
-        doProcess(context);
+        try {
+            doProcess(context);
+        } catch (DefinitionNotFoundException e) {
+            log.error(e.getLocalizedMessage(), e);
+            // set errors in the context
+        }
         // post processors
         executePostProcessors(context);
     }
 
-    private void executePreProcessors(Context context) {
+    protected void executePreProcessors(Context context) {
         // get the preprocessors from registry
         log.debug("executing the preprocessors");
-
-        final List<PreProcessor> preProcessors = registryService.getPreProcessor(context.getProcessType());
-        preProcessors.forEach(preProcessor -> preProcessor.process(context));
+        // get default preprocessor
+        final List<PreProcessor> defaultPreProcessors = registryService.getPreProcessor(Constants.DEFAULT_PROCESS_TYPE, Constants.DEFAULT_PROCESS_CODE);
+        defaultPreProcessors.forEach(preProcessor -> preProcessor.preProcess(context));
     }
 
-
     @Transactional
-    public void doProcess(Context context) {
+    public void doProcess(Context context) throws DefinitionNotFoundException {
         ProcessInstance processInstance = getProcessInstance(context);
-        try {
-            // get Step definitions
-            final List<StepDefinition> stepDefinitions = getStepDefinitions(context);
-            logger.info("Saving Process Instance");
-            final ProcessInstance savedProcessInstance = saveProcessInstance(processInstance);
-            logger.debug("placing the process instance into context");
-            logger.info("Saving the step instances..");
-            final List<StepInstance> stepInstances = saveStepInstances(context.getTenant(), stepDefinitions, processInstance.getId(),
-                    getStepMetadata(context));
-            logger.debug("placing the step instance into context");
-            processInstance.setSteps(Objects.requireNonNullElseGet(stepInstances, ArrayList::new));
 
-            context.setStepInstances(stepInstances);
-            context.setProcessInstance(processInstance);
-
-        } catch (DefinitionNotFoundException e) {
-            logger.error("step definitions are not available for this process", e);
-        }
+        List<StepDefinition> stepDefinitions = getStepDefinitions(context);
+        log.info("Saving Process Instance");
+        final ProcessInstance savedProcessInstance = saveProcessInstance(processInstance);
+        log.debug("placing the process instance into context");
+        log.info("Saving the step instances..");
+        final List<StepInstance> stepInstances = saveStepInstances(context.getTenant(), stepDefinitions, processInstance.getId(),
+                getStepMetadata(context));
+        this.stepInstanceService.save(stepInstances);
+        log.debug("placing the step instance into context");
+        processInstance.getSteps().addAll(Objects.requireNonNullElseGet(stepInstances, ArrayList::new));
+        context.setStepInstances(stepInstances);
+        context.setProcessInstance(processInstance);
     }
 
     public List<StepDefinition> getStepDefinitions(Context context) throws DefinitionNotFoundException {
@@ -113,10 +90,17 @@ public abstract class AbstractProcessor implements Processor {
     private void executePostProcessors(Context context) {
         log.debug("executing post processors");
         // publish the process instance event
-        final List<PostProcessor> postProcessors = registryService.getPostProcessor("A2ATRANSPORT"); // TODO remove the hard coding
-        postProcessors.forEach(postProcessor -> postProcessor.process(context));
+        final List<PostProcessor> postProcessors = registryService.getPostProcessor(context.getProcessType(), context.getProcessCode());
+        if (!postProcessors.isEmpty()) {
+            // order the post processor execution by priority TODO
+            postProcessors.forEach(postProcessor -> postProcessor.process(context));
+        }
+        // default post processors
+        final List<PostProcessor> defaultPostProcessors = registryService.getPostProcessor(Constants.DEFAULT_PROCESS_TYPE, Constants.DEFAULT_PROCESS_CODE);
+        if (!defaultPostProcessors.isEmpty()) {
+            defaultPostProcessors.forEach(postProcessor -> postProcessor.process(context));
+        }
     }
-
 
     /**
      * Saves the Process Instance
@@ -126,10 +110,10 @@ public abstract class AbstractProcessor implements Processor {
      */
     private ProcessInstance saveProcessInstance(ProcessInstance processInstance) {
         // Save Process Instance only if it's already not exists
-        if (processInstance.getId() == null) {
-            return this.processInstanceService.saveProcessInstance(processInstance);
+        if (processInstance.getId() != null) {
+            processInstance.setModifiedOn(LocalDateTime.now());
         }
-        return processInstance;
+        return this.processInstanceService.saveProcessInstance(processInstance);
     }
 
     /**
@@ -142,24 +126,68 @@ public abstract class AbstractProcessor implements Processor {
      * @return step instance collection
      */
     @Transactional
-    private List<StepInstance> saveStepInstances(String tenant, List<StepDefinition> stepDefinitions,
-                                                 ObjectId processInstanceId, Map<String, Object> metadata) {
-        return this.stepInstanceService
-                .save(tenant, stepDefinitions, metadata, processInstanceId);
+    public List<StepInstance> saveStepInstances(String tenant, List<StepDefinition> stepDefinitions,
+                                                String processInstanceId, Map<String, Object> metadata) {
+        return this.stepInstanceService.save(tenant, stepDefinitions, metadata, processInstanceId);
     }
 
-    private ProcessInstance getProcessInstance(Context context) {
+    /**
+     * create or update process instance
+     *
+     * @param context
+     * @return
+     */
+    protected ProcessInstance getProcessInstance(Context context) {
         ProcessDefinition definition = (ProcessDefinition) context.getProperty(Constants.PROCESS_DEFINITION);
-        String tenant = context.getTenant();
         String entityId = (String) context.getProperty(Constants.ENTITY_ID);
+        String entityType = (String) context.getProperty(Constants.ENTITY_TYPE);
+
+        log.debug("looking for process instance with same entity id and entity type.");
         // check process instance already exists for this entity type, entity id, process code combination
-        ProcessInstance processInstance = processInstanceService.getProcessInstance(context.getTenant(),
-                definition.getProcessCode(), definition.getEntityType(), entityId);
-        if (processInstance == null) {
-            processInstance = new ProcessInstance(definition);
-            processInstance.setMetadata(getProcessMetadata(context));
-            processInstance.setEntityId(entityId);
+        Page<ProcessInstance> page = processInstanceService.getProcessInstance(context.getTenant(),
+                definition.getProcessType(), definition.getProcessCode(), definition.getEntityType(), entityId);
+        ProcessInstance processInstance = null;
+        Map<String, Object> processMetadata = this.getProcessMetadata(context);
+
+        if (!page.isEmpty() && page.hasContent()) {
+            processInstance = page.getContent().get(0);
+            // compare quantity in both process instances
+            Map<String, Object> metadata = processInstance.getMetadata();
+            if (processInstance != null) {
+                if (!processInstance.isComplete()) {
+                    log.debug("retrieving existing incomplete process instances.");
+                    List<StepInstance> stepInstances = stepInstanceService.getStepInstancesByProcessInstanceId(context.getTenant(), processInstance.getId());
+                    processInstance.setSteps(stepInstances);
+                    context.setStepInstances(stepInstances);
+                    context.setProcessInstance(processInstance);
+                    processInstance.setMetadata(processMetadata);
+                    return processInstance;
+                } else {
+                    log.debug("compare the itineraries and verify only flight /date is changed.? and update the itinerary.");
+                }
+            }
         }
+        log.debug("creating new process instance from the scratch.");
+        processInstance = getProcessInstance(context, definition, entityId);
+        processInstance.setMetadata(processMetadata);
+        return processInstance;
+    }
+
+
+    /**
+     * create new process instance
+     *
+     * @param context
+     * @param definition
+     * @param entityId
+     * @return
+     */
+    private ProcessInstance getProcessInstance(Context context, ProcessDefinition definition, String entityId) {
+        ProcessInstance processInstance = new ProcessInstance(definition);
+        processInstance.setTenant(context.getTenant());
+        processInstance.setEntityId(entityId);
+        processInstance.setSteps(new ArrayList<>());
+        processInstance.setCreatedOn(LocalDateTime.now());
         return processInstance;
     }
 }

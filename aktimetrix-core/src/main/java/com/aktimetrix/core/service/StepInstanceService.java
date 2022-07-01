@@ -55,7 +55,7 @@ public class StepInstanceService {
      * @param stepCode          step code
      * @return step instance collection
      */
-    public List<StepInstance> getStepInstancesByProcessInstanceIdAndStepCode(String tenant, ObjectId processInstanceId, String stepCode) {
+    public List<StepInstance> getStepInstancesByProcessInstanceIdAndStepCode(String tenant, String processInstanceId, String stepCode) {
         return this.repository
                 .findByTenantAndStepCodeAndProcessInstanceId(tenant, stepCode, processInstanceId);
     }
@@ -71,7 +71,7 @@ public class StepInstanceService {
      * @return step instance collection
      */
     public List<StepInstance> save(String tenant, List<StepDefinition> stepDefinitions,
-                                   Map<String, Object> metadata, ObjectId processInstanceId) {
+                                   Map<String, Object> metadata, String processInstanceId) {
 
         List<StepInstance> steps = new ArrayList<>();
         for (StepDefinition stepDefinition : stepDefinitions) {
@@ -87,9 +87,7 @@ public class StepInstanceService {
 //            setStepLocation(itinerary, stepDefinition, stepInstance);
             steps.add(stepInstance);
         }
-        // save
-        this.save(steps);
-        return steps;
+          return steps;
     }
 
 
@@ -123,7 +121,7 @@ public class StepInstanceService {
      * @param status
      * @return
      */
-    public StepInstance prepareStepInstanceObject(String tenant, ObjectId processInstanceId, String stepCode,
+    public StepInstance prepareStepInstanceObject(String tenant, String processInstanceId, String stepCode,
                                                   String functionalCtx, String groupCode, String version, String status) {
         return new StepInstance(tenant, stepCode, processInstanceId, groupCode, functionalCtx, version, status, LocalDateTime.now());
     }
@@ -135,7 +133,7 @@ public class StepInstanceService {
      * @param processInstanceId process instance id
      * @return step instance collection
      */
-    public List<StepInstance> getStepInstancesByProcessInstanceId(String tenant, ObjectId processInstanceId) {
+    public List<StepInstance> getStepInstancesByProcessInstanceId(String tenant, String processInstanceId) {
 
         Document params = new Document();
         params.put("tenant", tenant);
@@ -160,6 +158,6 @@ public class StepInstanceService {
                 .getStepMeasurements(tenant, new ObjectId(processInstanceId), new ObjectId(stepInstanceId));
         stepInstance.setMeasurements(stepMeasurements);
         return stepInstance;*/
-        return this.repository.getStepInstancesWithMeasurements(tenant, new ObjectId(processInstanceId), new ObjectId(stepInstanceId));
+        return this.repository.getStepInstancesWithMeasurements(tenant, processInstanceId, stepInstanceId);
     }
 }

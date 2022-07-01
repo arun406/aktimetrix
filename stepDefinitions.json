@@ -1,0 +1,463 @@
+[{
+  "_id": {
+    "$oid": "61aa67ae38920465159ea53a"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "functionalCtxCode": "E",
+  "optionalInd": "N",
+  "responsiblePartyCode": "F",
+  "startEventCodes": [
+    "FWB"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "FWB",
+  "stepName": "Creation of MAWB",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "locationCtxCode": "none",
+  "groupCode": "S",
+  "measurements": [
+    {
+      "measurementCode": "PCS",
+      "type": "P"
+    },
+    {
+      "measurementCode": "WT",
+      "type": "P"
+    },
+    {
+      "measurementCode": "VOL",
+      "type": "P"
+    },
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa684b38920465159ea53c"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "functionalCtxCode": "E",
+  "locationCtxCode": "B",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "RCS"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "RCS",
+  "stepName": "Freight ready for carriage",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "S",
+  "measurements": [
+    {
+      "measurementCode": "PCS",
+      "type": "P"
+    },
+    {
+      "measurementCode": "WT",
+      "type": "P"
+    },
+    {
+      "measurementCode": "VOL",
+      "type": "P"
+    },
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa687638920465159ea53d"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "locationCtxCode": "none",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "DEP"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "DEP",
+  "stepName": "Goods confirmed on board flight from origin",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "F",
+  "functionalCtxCode": "E",
+  "measurements": [
+    {
+      "measurementCode": "PCS",
+      "type": "P"
+    },
+    {
+      "measurementCode": "WT",
+      "type": "P"
+    },
+    {
+      "measurementCode": "VOL",
+      "type": "P"
+    },
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa688638920465159ea53e"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "locationCtxCode": "none",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "DEP"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "DEP-T",
+  "stepName": "Goods confirmed on board flight from transit",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "F",
+  "functionalCtxCode": "T",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa68a138920465159ea53f"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "locationCtxCode": "none",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "ARR"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "ARR",
+  "stepName": "Freight arrival at destination airport",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "F",
+  "functionalCtxCode": "I",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa68b038920465159ea540"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "locationCtxCode": "none",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "ARR"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "ARR-T",
+  "stepName": "Freight arrival at transit airport",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "F",
+  "functionalCtxCode": "T",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa68c938920465159ea541"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "locationCtxCode": "W",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "RCF"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "RCF",
+  "stepName": "Freight acceptance at destination airport",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "F",
+  "functionalCtxCode": "I",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa68d438920465159ea542"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "locationCtxCode": "W",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "RCF"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "RCF-T",
+  "stepName": "Freight acceptance at transit airport",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "F",
+  "functionalCtxCode": "T",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa693538920465159ea543"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "functionalCtxCode": "I",
+  "locationCtxCode": "O",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "AWD"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "AWD",
+  "stepName": "Document delivery to forwarder",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "S",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa695138920465159ea544"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "functionalCtxCode": "I",
+  "locationCtxCode": "O",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "AWR"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "AWR",
+  "stepName": "Documents received at destination airport",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "S",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa696638920465159ea545"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "functionalCtxCode": "I",
+  "locationCtxCode": "O",
+  "optionalInd": "N",
+  "responsiblePartyCode": "A",
+  "startEventCodes": [
+    "NFD"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "NFD",
+  "stepName": "Freight and docs ready for forwarder pick-up",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "S",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61aa69c338920465159ea546"
+  },
+  "categoryCode": "CIQ",
+  "endEventCodes": [],
+  "functionalCtxCode": "I",
+  "locationCtxCode": "W",
+  "optionalInd": "N",
+  "responsiblePartyCode": "F",
+  "startEventCodes": [
+    "DLV"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "DLV",
+  "stepName": "Freight delivery to forwarder",
+  "subCategoryCode": "CDMP-C",
+  "tenant": "XX",
+  "groupCode": "S",
+  "measurements": [
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "61cc78bd95482147249e44ca"
+  },
+  "tenant": "XX",
+  "stepCode": "LAT",
+  "stepName": "Latest acceptance time",
+  "optionalInd": "N",
+  "categoryCode": "CIQ",
+  "subCategoryCode": "CDMP-C",
+  "status": "CONFIRMED",
+  "functionalCtxCode": "E",
+  "locationCtxCode": "B",
+  "responsiblePartyCode": "F",
+  "startEventCodes": [
+    "FOH"
+  ],
+  "endEventCodes": [],
+  "groupCode": "S",
+  "measurements": [
+    {
+      "measurementCode": "PCS",
+      "type": "P"
+    },
+    {
+      "measurementCode": "WT",
+      "type": "P"
+    },
+    {
+      "measurementCode": "VOL",
+      "type": "P"
+    },
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ],
+  "_class": "com.accelya.products.svm.core.referencedata.model.StepDefinition"
+},{
+  "_id": {
+    "$oid": "628a4da21ef78f21e4f9f265"
+  },
+  "categoryCode": "ORDER",
+  "endEventCodes": [],
+  "functionalCtxCode": null,
+  "optionalInd": "N",
+  "responsiblePartyCode": null,
+  "startEventCodes": [
+    "ORDER_PLACED_EVENT"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "PLACE",
+  "stepName": "Order Placed Step",
+  "subCategoryCode": "DELIVERY",
+  "tenant": "AA",
+  "locationCtxCode": null,
+  "measurements": [
+    {
+      "measurementCode": "PCS",
+      "type": "P"
+    },
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "628a4e901ef78f21e4f9f266"
+  },
+  "categoryCode": "ORDER",
+  "endEventCodes": [],
+  "functionalCtxCode": null,
+  "optionalInd": "N",
+  "responsiblePartyCode": null,
+  "startEventCodes": [
+    "ORDER_SHIPPED_EVENT"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "SHIP",
+  "stepName": "Order Shipped Step",
+  "subCategoryCode": "DELIVERY",
+  "tenant": "AA",
+  "locationCtxCode": null,
+  "measurements": [
+    {
+      "measurementCode": "PCS",
+      "type": "P"
+    },
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    }
+  ]
+},{
+  "_id": {
+    "$oid": "628a51001ef78f21e4f9f267"
+  },
+  "categoryCode": "ORDER",
+  "endEventCodes": [],
+  "functionalCtxCode": null,
+  "optionalInd": "N",
+  "responsiblePartyCode": null,
+  "startEventCodes": [
+    "ORDER_DELIVERED_EVENT"
+  ],
+  "status": "CONFIRMED",
+  "stepCode": "DELIVER",
+  "stepName": "Order Delivery Step",
+  "subCategoryCode": "DELIVERY",
+  "tenant": "AA",
+  "locationCtxCode": null,
+  "measurements": [
+    {
+      "measurementCode": "PCS",
+      "type": "P"
+    },
+    {
+      "measurementCode": "TIME",
+      "type": "P"
+    },
+    {
+      "measurementCode": "RATING",
+      "type": "P"
+    }
+  ]
+}]

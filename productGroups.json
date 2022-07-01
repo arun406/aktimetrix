@@ -1,0 +1,30 @@
+[
+  {
+    "airline": "EK",
+    "productCode": "GEN",
+    "productName": "General Cargo",
+    "productGroupCode": "none",
+    "productGroupName": "none"
+  },
+  {
+    "airline": "EK",
+    "productCode": "GCR",
+    "productName": "General Freight",
+    "productGroupCode": "none",
+    "productGroupName": "none"
+  },
+  {
+    "airline": "EK",
+    "productCode": "",
+    "productName": "General Cargo",
+    "productGroupCode": "none",
+    "productGroupName": "none"
+  },
+  {
+    "airline": "EK",
+    "productCode": "AXC",
+    "productName": "Cool Chain",
+    "productGroupCode": "none",
+    "productGroupName": "none"
+  }
+]

@@ -41,6 +41,7 @@ public class PostProcessorPostBeanProcessor implements BeanPostProcessor {
         attributes.put(Constants.ATT_POST_PROCESSOR_SERVICE, Constants.VAL_YES);
         attributes.put(Constants.ATT_POST_PROCESSOR_CODE, annotation.code());
         attributes.put(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE, annotation.processType());
+        attributes.put(Constants.ATT_POST_PROCESSOR_PROCESS_CODE, annotation.processCode());
         attributes.put(Constants.ATT_POST_PROCESSOR_NAME, annotation.name());
         attributes.put(Constants.ATT_PRE_PROCESSOR_PRIORITY, String.valueOf(annotation.priority()));
         attributes.put(Constants.ATT_POST_PROCESSOR_VERSION, annotation.version());

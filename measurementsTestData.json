@@ -1,0 +1,289 @@
+[{
+  "_id": {
+    "$oid": "62a71bd6ad593034fe18bfac"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ff6",
+  "stepCode": "ARR",
+  "code": "TIME",
+  "value": "2021-06-25T13:35:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118806200"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71bddad593034fe18bfad"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ff7",
+  "stepCode": "AWD",
+  "code": "TIME",
+  "value": "2021-06-25T16:35:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118813053"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be1ad593034fe18bfae"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ff8",
+  "stepCode": "AWR",
+  "code": "TIME",
+  "value": "2021-06-25T12:35:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118817433"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be1ad593034fe18bfaf"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ff9",
+  "stepCode": "DEP",
+  "code": "TIME",
+  "value": "2021-06-25T12:40:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118817798"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be2ad593034fe18bfb0"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ffa",
+  "stepCode": "DLV",
+  "code": "TIME",
+  "value": "2021-06-28T12:35:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118818154"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be2ad593034fe18bfb1"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ffb",
+  "stepCode": "FWB",
+  "code": "TIME",
+  "value": "2021-06-25T03:35:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118818507"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be2ad593034fe18bfb2"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ffc",
+  "stepCode": "LAT",
+  "code": "PCS",
+  "value": "5",
+  "unit": "N",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118818655"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be2ad593034fe18bfb3"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ffc",
+  "stepCode": "LAT",
+  "code": "WT",
+  "value": "15.0",
+  "unit": "K",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118818655"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be2ad593034fe18bfb4"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ffc",
+  "stepCode": "LAT",
+  "code": "VOL",
+  "value": "1.0",
+  "unit": "CM",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118818655"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be2ad593034fe18bfb5"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ffc",
+  "stepCode": "LAT",
+  "code": "TIME",
+  "value": "2021-06-25T03:40:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118818865"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be3ad593034fe18bfb6"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ffd",
+  "stepCode": "NFD",
+  "code": "TIME",
+  "value": "2021-06-25T16:35:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118819214"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be3ad593034fe18bfb7"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3ffe",
+  "stepCode": "RCF",
+  "code": "TIME",
+  "value": "TIMESTAMP",
+  "unit": "2021-06-25T16:35:00",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118819552"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be3ad593034fe18bfb8"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3fff",
+  "stepCode": "RCS",
+  "code": "PCS",
+  "value": "5",
+  "unit": "N",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118819693"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be3ad593034fe18bfb9"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3fff",
+  "stepCode": "RCS",
+  "code": "WT",
+  "value": "15.0",
+  "unit": "K",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118819693"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be3ad593034fe18bfba"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3fff",
+  "stepCode": "RCS",
+  "code": "VOL",
+  "value": "1.0",
+  "unit": "CM",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118819693"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+},{
+  "_id": {
+    "$oid": "62a71be3ad593034fe18bfbb"
+  },
+  "tenant": "XX",
+  "processInstanceId": "62a71bd4c757b2546e5c3ff5",
+  "stepInstanceId": "62a71bd4c757b2546e5c3fff",
+  "stepCode": "RCS",
+  "code": "TIME",
+  "value": "2021-06-25T09:40:00",
+  "unit": "TIMESTAMP",
+  "type": "P",
+  "createdOn": {
+    "$date": {
+      "$numberLong": "1655118819903"
+    }
+  },
+  "_class": "com.aktimetrix.core.model.MeasurementInstance"
+}]

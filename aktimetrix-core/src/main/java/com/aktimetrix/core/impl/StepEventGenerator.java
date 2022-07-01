@@ -1,22 +1,19 @@
 package com.aktimetrix.core.impl;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventGenerator;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-public class StepEventGenerator implements EventGenerator {
-
-    private final StepInstance stepInstance;
-
-    public StepEventGenerator(StepInstance stepInstance) {
-        this.stepInstance = stepInstance;
-    }
+@Component("StepEventGenerator")
+public class StepEventGenerator implements EventGenerator<StepInstanceDTO, Void> {
 
     /**
      * Generate the Events
@@ -24,15 +21,15 @@ public class StepEventGenerator implements EventGenerator {
      * @return Event
      */
     @Override
-    public Event<StepInstanceDTO, Void> generate() {
-        return getStepEvent(this.stepInstance);
+    public Event<StepInstanceDTO, Void> generate(Object... object) {
+        return getStepEvent((StepInstance) object[0]);
     }
 
     private Event<StepInstanceDTO, Void> getStepEvent(StepInstance instance) {
         Event<StepInstanceDTO, Void> event = new Event<>();
         event.setEventId(UUID.randomUUID().toString());
-        event.setEventType("Step_Event");
-        event.setEventCode("CREATED");
+        event.setEventType(Constants.STEP_EVENT);
+        event.setEventCode(Constants.STEP_CREATED);
         event.setEventName("Step Instance Created Event");
         event.setEventTime(ZonedDateTime.now());
         event.setEventUTCTime(LocalDateTime.now(ZoneOffset.UTC));

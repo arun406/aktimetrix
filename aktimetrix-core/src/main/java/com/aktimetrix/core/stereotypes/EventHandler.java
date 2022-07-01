@@ -12,7 +12,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface EventHandler {
-    String eventType();
+    String eventType() default "";
+
+    String eventCode();
 
     String name() default "";
 
