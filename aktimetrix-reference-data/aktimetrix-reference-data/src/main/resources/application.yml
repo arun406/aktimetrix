@@ -15,7 +15,7 @@ spring:
     data:
         mongodb:
             database: ${AKTIMETRIX_DATABASE_NAME:encore}
-            uri:${DOCUMENT_DATABASE_URI:mongodb+srv://admin:admin%40123@$aruncluster.70orz.mongodb.net/?retryWrites=true&w=majority}
+            uri:${DOCUMENT_DATABASE_URI}
     servlet:
         multipart:
             enabled: true
