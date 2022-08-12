@@ -1,10 +1,10 @@
 aws:
-    access-key-id: ${AWS_ACCESS_KEY_ID:AKIA2ZMRLVM7LFF3UZO5}
+    access-key-id: ${AWS_ACCESS_KEY_ID}
     profile: aktimetrix
     region: ${AWS_REGION:ap-south-1}
     s3:
         bucket-name: ${AWS_S3_BUCKET_NAME:aktimetrix-encore-bucket}
-    secret-access-key: ${AWS_SECRET_ACCESS_KEY:mGS/Q1khqZfgkBzxjzW+MiS6X902pGR/OxKPNU0B}
+    secret-access-key: ${AWS_SECRET_ACCESS_KEY}
 file:
     upload-dir: uploads
 server:
