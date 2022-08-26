@@ -14,26 +14,26 @@ It is important for any business process monitoring application developer to be 
 
 An example process for loan account processing in banking domain can be defined as below.
    
-![ad](./img/aktimetrix_banking.jpeg)
+![ad](img/aktimetrix_banking.jpeg)
 
 Another example for for air cargo transportation is given below.
     
-![ad](./img/aktimetrix_cargo.jpeg)
+![ad](img/aktimetrix_cargo.jpeg)
 
 Another example for for e-commerce order delivery process is given below.
     
-![ad](./img/aktimetrix_ecommerce.png)
+![ad](img/aktimetrix_ecommerce.png)
 
 The diagram below is a simplified version of the business process monitoring reference architecture. It introduces the key concepts and terms relevant to business process monitoring, as used by Aktimetrix.
 
-![ad](./img/aktimetrix_reference_architecture.jpeg)
+![ad](img/aktimetrix_reference_architecture.jpeg)
  
 As shown in our business process monitoring example, a business process is typically encapsulated by a _Process_ consisting of multiple _Steps_. A Process is instantiated by a _Event Handlers_ and _Processors_, and _metadata_ is a key value pair which will store the domain entity information of the process being monitored.
 Configured Processes are stored in Process Repository. 
 
 This section describes stereotypes relating to the concept of a business process.
 ### Process
-![ad](./img/aktimetrix_process.jpeg)
+![ad](img/aktimetrix_process.jpeg)
 
 A Process is an entity that encapsulates an entire business process. A Process is wired together with a configuration. This configuration may be referred to as the "process definition". However, Process is just the top of an overall hierarchy, as shown in the following diagram:
 
@@ -50,17 +50,17 @@ A _ProcessInstance_ refers to the concept of a logical _Process_ run. Consider a
 ### Step & StepInstance
 A Step is a domain object that encapsulates an independent, sequential phase of a business process. Therefore, every Process is composed entirely of one or more steps. A Step contains all of the information necessary to define and control the actual business process monitoring. As with a Process, a Step has an individual StepInstance that correlates with a unique ProcessInstance, as shown in the following image:
 
-![ad](./img/aktimetrix_step.jpeg)
+![ad](img/aktimetrix_step.jpeg)
 
 ### Metadata
 In the preceding example, where there are two process instances, one for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ , there is really only one Process, but it has two metadata objects: one that was created for _Order # NAEE40086925866_, and another for _Order #NAEE40034644935_ . Thus, the contract can be defined as: _**ProcessInstance = Process + identifying Metadata**_. This allows a developer to effectively control how a ProcessInstance is defined, since they control what metadata are passed in. Metadata can be used for storing the reference data and domain entity data such as order details, customer details, city information, etc.,
 
-![ad](./img/aktimetrix_metadata.jpeg)
+![ad](img/aktimetrix_metadata.jpeg)
 
 ### Measurement
 Measurements are raw data captured for a business entity. As per the preceding example, delivery start time, delivery end time, shipped datetime, planned time for delivery are some measurement which can be capture for a ProcessInstance or StepInstance for an order. These measurements can be categoried as planned and actual. Similar to Process and Step, measurement will have _MeasurementInstance_ for each measurement. Planned measurements are expected values and actuals the real values captured for an business entity.  For example, order planned delivery time for _Order # NAEE40086925866_ it can be 27-04-2022 12:00 and for _Order #NAEE40034644935_ can be  29-04-2022 18:00. Planned vs Actual values will provide the status of the ProcessInstance and StepInstance. 
 
-![ad](./img/aktimetrix_measurement.jpeg)
+![ad](img/aktimetrix_measurement.jpeg)
 
 ## Summary Domain language
 
@@ -122,7 +122,7 @@ For monitoring the orders life cycle, lets breakdown the application into 4 micr
 
 Our e-commerce business monitoring application architecture is given below:
 
-![reference-architecture](./img/aktimetrix_reference_product.jpeg)
+![reference-architecture](img/aktimetrix_reference_product.jpeg)
 
 As shown above, A reference product for business processing application can we defined with event-driven microservices for monitoring a business entity.
 Product will contain 3 micro services.

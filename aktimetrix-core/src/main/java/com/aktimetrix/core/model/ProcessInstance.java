@@ -1,5 +1,6 @@
 package com.aktimetrix.core.model;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -45,6 +46,7 @@ public class ProcessInstance {
     private Map<String, Object> metadata = new HashMap<>();
     private List<StepInstance> steps = new ArrayList<>();
     private String cancellationReason;
+    private String previousId; // old process instance id;
 
     /**
      * @param definition process definition
@@ -54,7 +56,7 @@ public class ProcessInstance {
         this.processType = definition.getProcessType();
         this.categoryCode = definition.getCategoryCode();
         this.subCategoryCode = definition.getSubCategoryCode();
-        this.status = "Created";
+        this.status = Constants.PROCESS_CREATED;
         this.version = 1;
         this.approvedIndicator = "A";
         this.createdOn = LocalDateTime.now();

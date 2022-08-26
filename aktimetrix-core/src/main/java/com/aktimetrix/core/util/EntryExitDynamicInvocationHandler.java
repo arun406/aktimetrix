@@ -54,10 +54,11 @@ public class EntryExitDynamicInvocationHandler extends InvocationHandlerWithTarg
                     methodName, methodArgs, parameters, level, showArgs, showResult, showExecutionTime);
         }
         log(log, level, entry(methodName, showArgs, parameters, methodArgs));
-        var start = Instant.now();
+        Instant start = Instant.now();
+
         result = methods.get(method.getName()).invoke(getTarget(), args);
-        var end = Instant.now();
-        var duration = String.format("%s %s", unit.between(start, end), unit.name().toLowerCase());
+        Instant end = Instant.now();
+        String duration = String.format("%s %s", unit.between(start, end), unit.name().toLowerCase());
         log(log, level, exit(methodName, duration, result, showResult, showExecutionTime));
         return result;
     }

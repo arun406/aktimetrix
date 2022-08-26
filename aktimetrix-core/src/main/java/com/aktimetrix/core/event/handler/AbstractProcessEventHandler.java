@@ -12,17 +12,19 @@ import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.ProcessInstanceDTO;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 @Slf4j
 public abstract class AbstractProcessEventHandler implements EventHandler {
 
     final private RegistryService registryService;
+
+    public AbstractProcessEventHandler(RegistryService registryService) {
+        this.registryService = registryService;
+    }
 
     /**
      * @param event
@@ -36,15 +38,17 @@ public abstract class AbstractProcessEventHandler implements EventHandler {
             if (Constants.PROCESS_EVENT.equals(event.getEventType())) {
                 processType = Constants.PROCESS_INSTANCE_TYPE;
             }
-            if (Constants.PROCESS_CREATED.equals(event.getEventCode())) {
-                processCode = Constants.PROCESS_INSTANCE_CREATE;
-            } else if (Constants.PROCESS_UPDATED.equals(event.getEventCode())) {
-                processCode = Constants.PROCESS_INSTANCE_UPDATE;
-            } else if (Constants.PROCESS_CANCELLED.equals(event.getEventCode())) {
-                processCode = Constants.PROCESS_INSTANCE_CANCEL;
+            switch (event.getEventCode()) {
+                case Constants.PROCESS_CREATED:
+                case Constants.PROCESS_UPDATED:
+                    processCode = Constants.PROCESS_INSTANCE_CREATE;
+                    break;
+                case Constants.PROCESS_CANCELLED:
+                    processCode = Constants.PROCESS_INSTANCE_CANCEL;
+                    break;
             }
             log.debug("looking for process handler for {}-{}", processType, processCode);
-            Processor processor = registryService.getProcessHandler(processType, processCode);
+            Processor processor = this.registryService.getProcessors(processType, processCode);
             DefaultContext context = prepareContext(event);
             processor.process(context);
         } catch (ProcessHandlerNotFoundException | MultipleProcessHandlersFoundException e) {

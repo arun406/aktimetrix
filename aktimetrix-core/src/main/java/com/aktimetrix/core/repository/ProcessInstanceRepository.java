@@ -44,5 +44,18 @@ public interface ProcessInstanceRepository extends MongoRepository<ProcessInstan
      * @return
      */
     @Query("{'tenant': ?0 , 'processType' : ?1, 'processCode' : ?2 , 'entityType' : ?3, 'entityId': ?4, status: {$ne: 'Cancelled'}}")
-    Page<ProcessInstance> findByTenantAndProcessCodeAndProcessTypeAndEntityTypeAndEntityId(String tenant, String processType, String processCode, String entityType, String entityId, Pageable pageable);
+    Page<ProcessInstance> findByTenantAndProcessCodeAndProcessTypeAndEntityTypeAndEntityId(String tenant,
+                                                                                           String processType, String processCode, String entityType, String entityId, Pageable pageable);
+
+    /**
+     * @param tenant
+     * @param processType
+     * @param processCode
+     * @param entityType
+     * @param entityId
+     * @return
+     */
+    @Query("{'tenant': ?0 , 'processType' : ?1, 'processCode' : ?2 , 'entityType' : ?3, 'entityId': ?4, status: {$ne: 'Cancelled'}}")
+    List<ProcessInstance> findByTenantAndProcessCodeAndProcessTypeAndEntityTypeAndEntityId(String tenant,
+                                                                                           String processType, String processCode, String entityType, String entityId);
 }

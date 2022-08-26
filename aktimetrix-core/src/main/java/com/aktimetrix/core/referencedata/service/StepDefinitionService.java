@@ -4,7 +4,6 @@ import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.referencedata.repository.StepDefinitionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -46,5 +45,9 @@ public class StepDefinitionService {
      */
     public StepDefinition get(String tenant, String stepCode) {
         return this.repository.findByStepCodeAndStatus(tenant, stepCode, "CONFIRMED");
+    }
+
+    public List<StepDefinition> getStepByStartEvent(String tenant, String eventCode) {
+        return this.repository.findByStartEventCode(tenant, eventCode);
     }
 }

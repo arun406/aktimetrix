@@ -49,18 +49,7 @@ public class ProcessDefinitionService {
                 .as("steps");
         final Aggregation aggregation = Aggregation.newAggregation(lookupOperation);
 
-        /* AggregateIterable<ProcessDefinition> aggregate = this.repository.aggregate(Arrays.asList(
-                new Document("$lookup", new Document("from", "stepDefinitions")
-                        .append("localField", "steps.stepCode")
-                        .append("foreignField", "stepCode")
-                        .append("as", "steps")
-                )
-        ));
-        aggregate.forEach(definition -> {
-            processDefinitions.add(definition);
-        });*/
-
-        return mongoTemplate
+        return this.mongoTemplate
                 .aggregate(aggregation, "processDefinitions", ProcessDefinition.class)
                 .getMappedResults();
     }
@@ -89,17 +78,6 @@ public class ProcessDefinitionService {
         MatchOperation matchOperation = Aggregation.match(criteria);
         final Aggregation aggregation = Aggregation.newAggregation(matchOperation, lookupOperation);
 
-        /* AggregateIterable<ProcessDefinition> aggregate = this.repository.aggregate(Arrays.asList(
-                new Document("$lookup", new Document("from", "stepDefinitions")
-                        .append("localField", "steps.stepCode")
-                        .append("foreignField", "stepCode")
-                        .append("as", "steps")
-                )
-        ));
-        aggregate.forEach(definition -> {
-            processDefinitions.add(definition);
-        });*/
-
         List<ProcessDefinition> definitions = mongoTemplate
                 .aggregate(aggregation, "processDefinitions", ProcessDefinition.class)
                 .getMappedResults();
@@ -107,5 +85,31 @@ public class ProcessDefinitionService {
             throw new DefinitionNotFoundException(String.format("No process definition found for process type %s, process code %s", processType, processCode));
         }
         return definitions;
+    }
+
+
+    /**
+     * Returns Process Definitions by start event code
+     *
+     * @param tenant
+     * @param eventCode
+     * @return
+     */
+    public List<ProcessDefinition> getByEventCode(String tenant, String eventCode) {
+        LookupOperation lookupOperation = LookupOperation.newLookup()
+                .from("stepDefinitions")
+                .localField("steps.stepCode")
+                .foreignField("stepCode")
+                .as("steps");
+        final Criteria criteria = Criteria.where("tenant").is(tenant).and("startEventCodes").is(eventCode);
+        MatchOperation matchOperation = Aggregation.match(criteria);
+        final Aggregation aggregation = Aggregation.newAggregation(matchOperation, lookupOperation);
+
+        List<ProcessDefinition> definitions = mongoTemplate
+                .aggregate(aggregation, "processDefinitions", ProcessDefinition.class)
+                .getMappedResults();
+
+        return definitions;
+//        return this.repository.findByStartEventCode(tenant, eventCode);
     }
 }

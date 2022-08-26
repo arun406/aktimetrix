@@ -7,13 +7,14 @@ import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Component("StepEventGenerator")
 public class StepEventGenerator implements EventGenerator<StepInstanceDTO, Void> {
+
+    public static final String STEP_INSTANCE_ENTITY_TYPE = "com.aktimetrix.step.instance";
 
     /**
      * Generate the Events
@@ -27,14 +28,13 @@ public class StepEventGenerator implements EventGenerator<StepInstanceDTO, Void>
 
     private Event<StepInstanceDTO, Void> getStepEvent(StepInstance instance) {
         Event<StepInstanceDTO, Void> event = new Event<>();
-        event.setEventId(UUID.randomUUID().toString());
+        event.setEventId(UUID.randomUUID().toString().replace("-", ""));
         event.setEventType(Constants.STEP_EVENT);
-        event.setEventCode(Constants.STEP_CREATED);
-        event.setEventName("Step Instance Created Event");
-        event.setEventTime(ZonedDateTime.now());
-        event.setEventUTCTime(LocalDateTime.now(ZoneOffset.UTC));
+        event.setEventCode(instance.getStatus()); // Created, Completed
+        ZonedDateTime eventTime = instance.getModifiedOn() != null ? instance.getModifiedOn().atZone(ZoneOffset.UTC) : instance.getCreatedOn().atZone(ZoneOffset.UTC);
+        event.setEventTime(eventTime);  // Created Time/ Modified Time in UTC format
         event.setEntityId(String.valueOf(instance.getId()));
-        event.setEntityType("com.aktimetrix.step.instance");
+        event.setEntityType(STEP_INSTANCE_ENTITY_TYPE);
         event.setSource("ProcessManager");
         event.setTenantKey(instance.getTenant());
         event.setEntity(getStepInstanceDTO(instance));

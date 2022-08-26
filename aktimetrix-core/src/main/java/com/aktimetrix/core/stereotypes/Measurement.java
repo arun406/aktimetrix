@@ -19,5 +19,7 @@ public @interface Measurement {
 
     String stepCode();
 
+    String type() default "P";
+
     String version() default Constants.DEFAULT_VERSION;
 }

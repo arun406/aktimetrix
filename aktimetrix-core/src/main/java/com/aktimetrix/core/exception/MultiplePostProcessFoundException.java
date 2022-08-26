@@ -1,32 +1,34 @@
-package com.aktimetrix.aktimetrix.reference.data.exception;
+package com.aktimetrix.core.exception;
 
-public class EncoreFileUploadException extends RuntimeException{
+import java.security.PrivilegedActionException;
+
+public class MultiplePostProcessFoundException extends Exception {
     /**
-     * Constructs a new runtime exception with {@code null} as its
-     * detail message.  The cause is not initialized, and may subsequently be
-     * initialized by a call to {@link #initCause}.
+     * Constructs a new exception with {@code null} as its detail message.
+     * The cause is not initialized, and may subsequently be initialized by a
+     * call to {@link #initCause}.
      */
-    public EncoreFileUploadException() {
+    public MultiplePostProcessFoundException() {
         super();
     }
 
     /**
-     * Constructs a new runtime exception with the specified detail message.
-     * The cause is not initialized, and may subsequently be initialized by a
-     * call to {@link #initCause}.
+     * Constructs a new exception with the specified detail message.  The
+     * cause is not initialized, and may subsequently be initialized by
+     * a call to {@link #initCause}.
      *
      * @param message the detail message. The detail message is saved for
      *                later retrieval by the {@link #getMessage()} method.
      */
-    public EncoreFileUploadException(String message) {
+    public MultiplePostProcessFoundException(String message) {
         super(message);
     }
 
     /**
-     * Constructs a new runtime exception with the specified detail message and
+     * Constructs a new exception with the specified detail message and
      * cause.  <p>Note that the detail message associated with
      * {@code cause} is <i>not</i> automatically incorporated in
-     * this runtime exception's detail message.
+     * this exception's detail message.
      *
      * @param message the detail message (which is saved for later retrieval
      *                by the {@link #getMessage()} method).
@@ -36,16 +38,17 @@ public class EncoreFileUploadException extends RuntimeException{
      *                unknown.)
      * @since 1.4
      */
-    public EncoreFileUploadException(String message, Throwable cause) {
+    public MultiplePostProcessFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 
     /**
-     * Constructs a new runtime exception with the specified cause and a
-     * detail message of {@code (cause==null ? null : cause.toString())}
-     * (which typically contains the class and detail message of
-     * {@code cause}).  This constructor is useful for runtime exceptions
-     * that are little more than wrappers for other throwables.
+     * Constructs a new exception with the specified cause and a detail
+     * message of {@code (cause==null ? null : cause.toString())} (which
+     * typically contains the class and detail message of {@code cause}).
+     * This constructor is useful for exceptions that are little more than
+     * wrappers for other throwables (for example, {@link
+     * PrivilegedActionException}).
      *
      * @param cause the cause (which is saved for later retrieval by the
      *              {@link #getCause()} method).  (A {@code null} value is
@@ -53,14 +56,14 @@ public class EncoreFileUploadException extends RuntimeException{
      *              unknown.)
      * @since 1.4
      */
-    public EncoreFileUploadException(Throwable cause) {
+    public MultiplePostProcessFoundException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * Constructs a new runtime exception with the specified detail
-     * message, cause, suppression enabled or disabled, and writable
-     * stack trace enabled or disabled.
+     * Constructs a new exception with the specified detail message,
+     * cause, suppression enabled or disabled, and writable stack
+     * trace enabled or disabled.
      *
      * @param message            the detail message.
      * @param cause              the cause.  (A {@code null} value is permitted,
@@ -71,7 +74,7 @@ public class EncoreFileUploadException extends RuntimeException{
      *                           be writable
      * @since 1.7
      */
-    protected EncoreFileUploadException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    protected MultiplePostProcessFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

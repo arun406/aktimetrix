@@ -1,7 +1,6 @@
 package com.aktimetrix.core.configurations;
 
 import com.aktimetrix.core.api.Constants;
-import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.core.exception.MultipleEventHandlersFoundException;
 import com.aktimetrix.core.service.RegistryService;
@@ -32,8 +31,7 @@ public class MeterConfig {
         return event -> {
             log.debug("event: {}", event);
             try {
-                final EventHandler eventHandler = registryService.getEventHandler(Constants.STEP_EVENT, Constants.STEP_CREATED);
-                eventHandler.handle(event);
+                this.registryService.getEventHandler(Constants.STEP_EVENT, event.getEventCode()).handle(event);
             } catch (EventHandlerNotFoundException | MultipleEventHandlersFoundException e) {
                 log.error("Something happened bad. please contact system administrator.", e);
             }

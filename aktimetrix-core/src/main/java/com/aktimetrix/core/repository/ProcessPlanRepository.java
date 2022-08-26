@@ -22,5 +22,5 @@ public interface ProcessPlanRepository extends MongoRepository<ProcessPlanInstan
     ProcessPlanInstance findPlanByProcessInstanceIdAndCompleteIndicator(String tenant, String processInstanceId, String completeIndicator);
 
     @Query("{'tenant' : ?0 , 'processInstanceId': ?1}")
-    List<ProcessPlanInstance> findPlanByProcessInstanceId(String tenant, String id);
+    List<ProcessPlanInstance> findPlanByProcessInstanceId(String tenant, String processInstanceId);
 }

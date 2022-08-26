@@ -2,10 +2,8 @@ package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
-import com.aktimetrix.core.api.Processor;
 import com.aktimetrix.core.model.ProcessInstance;
-import com.aktimetrix.core.service.ProcessInstanceService;
-import com.aktimetrix.core.stereotypes.ProcessHandler;
+import com.aktimetrix.core.stereotypes.Processor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -14,8 +12,8 @@ import java.util.Map;
 
 @Component
 @Slf4j
-@ProcessHandler(processCode = Constants.PROCESS_INSTANCE_CANCEL, processType = Constants.PROCESS_INSTANCE_TYPE, version = Constants.DEFAULT_VERSION)
-public class ProcessInstanceCancellationProcessor implements Processor {
+@Processor(processCode = Constants.PROCESS_INSTANCE_CANCEL, processType = Constants.PROCESS_INSTANCE_TYPE, version = Constants.DEFAULT_VERSION)
+public class ProcessInstanceCancellationProcessor implements com.aktimetrix.core.api.Processor {
 
     @Autowired
     private ProcessInstanceService processInstanceService;

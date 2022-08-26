@@ -25,7 +25,8 @@ public class StepInstance {
     private String version;
     private String functionalCtx;
     private Map<String, Object> metadata;
-    private LocalDateTime createdOn;
+    private LocalDateTime createdOn;    // UTC
+    private LocalDateTime modifiedOn;   // UTC
     private List<MeasurementInstance> measurements;
 
     public StepInstance() {
@@ -47,6 +48,26 @@ public class StepInstance {
         this.tenant = tenant;
         this.stepCode = stepCode;
         this.processInstanceId = processInstanceId;
+        this.groupCode = groupCode;
+        this.functionalCtx = functionalCtx;
+        this.version = version;
+        this.status = status;
+        this.createdOn = createdOn;
+    }
+
+    /**
+     * @param tenant
+     * @param stepCode
+     * @param groupCode
+     * @param functionalCtx
+     * @param version
+     * @param status
+     * @param createdOn
+     */
+    public StepInstance(String tenant, String stepCode, String groupCode,
+                        String functionalCtx, String version, String status, LocalDateTime createdOn) {
+        this.tenant = tenant;
+        this.stepCode = stepCode;
         this.groupCode = groupCode;
         this.functionalCtx = functionalCtx;
         this.version = version;

@@ -28,5 +28,7 @@ public class StepDefinition {
     private List<String> startEventCodes;
     private List<String> endEventCodes;
     private String groupCode;
+    private String processCode;
+    private String processType;
     private List<StepMeasurement> measurements = new ArrayList<>();
 }

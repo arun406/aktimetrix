@@ -1,13 +1,17 @@
 package com.aktimetrix.core.service;
 
-import com.aktimetrix.core.api.*;
+import com.aktimetrix.core.api.Constants;
+import com.aktimetrix.core.api.Context;
+import com.aktimetrix.core.api.PostProcessor;
+import com.aktimetrix.core.exception.MultiplePostProcessFoundException;
+import com.aktimetrix.core.exception.PostProcessorNotFoundException;
 import com.aktimetrix.core.meter.api.Meter;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.referencedata.model.StepMeasurement;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
-import com.aktimetrix.core.stereotypes.ProcessHandler;
+import com.aktimetrix.core.stereotypes.Processor;
 import com.aktimetrix.core.util.CollectionUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,15 +22,16 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Change this to DefaultMeasurementServiceImpl //TODO
+ * Change this to DefaultMeasurementServiceImpl
  */
-@Component
-@RequiredArgsConstructor
 @Slf4j
-@ProcessHandler(processCode = Constants.DEFAULT_PROCESS_CODE, processType = Constants.DEFAULT_PROCESS_TYPE, version = Constants.DEFAULT_VERSION)
-public class MeasurementInstanceProcessor implements Processor {
+@RequiredArgsConstructor
+@Component
+@Processor(processCode = Constants.MEASUREMENT_INSTANCE_CREATE, processType = Constants.MEASUREMENT_INSTANCE_TYPE)
+public class MeasurementInstanceProcessor implements com.aktimetrix.core.api.Processor {
     final private Logger logger = LoggerFactory.getLogger(MeasurementInstanceProcessor.class);
 
     final private StepDefinitionService stepDefinitionService;
@@ -49,13 +54,6 @@ public class MeasurementInstanceProcessor implements Processor {
     protected void executePreProcessors(Context context) {
         // get the preprocessors from registry
         log.debug("executing the pre processors");
-//         get default preprocessor
-//        final List<PreProcessor> defaultPreProcessors = registryService.getPreProcessor("MI_PUBLISHER");
-//        final List<PreProcessor> preProcessors = registryService.getPreProcessor(context.getProcessType());
-//        if (!defaultPreProcessors.isEmpty()) {
-//            defaultPreProcessors.forEach(preProcessor -> preProcessor.preProcess(context));
-//    }
-//        preProcessors.forEach(preProcessor -> preProcessor.process(context));
     }
 
     /**
@@ -65,17 +63,11 @@ public class MeasurementInstanceProcessor implements Processor {
      */
     private void executePostProcessors(Context context) {
         log.debug("executing post processors");
-        // publish the process instance event
-//        final List<PostProcessor> postProcessors = registryService.getPostProcessor(context.getProcessType());
-//        if (!postProcessors.isEmpty()) {
-//            // order the post processor execution by priority TODO
-//            postProcessors.forEach(postProcessor -> postProcessor.process(context));
-//        }
-
-        // default post processors
-        final List<PostProcessor> defaultPostProcessors = registryService.getPostProcessor("MI_PUBLISHER");
-        if (!defaultPostProcessors.isEmpty()) {
-            defaultPostProcessors.forEach(postProcessor -> postProcessor.process(context));
+        try {
+            final PostProcessor defaultPostProcessors = registryService.getPostProcessor("MI_PUBLISHER");
+            defaultPostProcessors.process(context);
+        } catch (PostProcessorNotFoundException | MultiplePostProcessFoundException e) {
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -93,36 +85,42 @@ public class MeasurementInstanceProcessor implements Processor {
         logger.debug("finding applicable step definition for the {} step", stepCode);
         StepDefinition stepDefinition = getStepDefinition(context.getTenant(), stepInstance.getStepCode());
 
-        if (stepDefinition != null && !CollectionUtil.isEmptyOrNull(stepDefinition.getMeasurements())) {
-            List<MeasurementInstance> measurementInstances = new ArrayList<>();
-            for (StepMeasurement stepMeasurement : stepDefinition.getMeasurements()) {
-                stepInstance.setFunctionalCtx(stepDefinition.getFunctionalCtxCode());
-                MeasurementInstance measurement = measure(context, stepInstance, stepDefinition, stepMeasurement);
-                if (measurement != null) {
-                    measurementInstances.add(measurement);
-                }
+        if (stepDefinition == null || CollectionUtil.isEmptyOrNull(stepDefinition.getMeasurements())) {
+            return;
+        }
+        List<MeasurementInstance> measurementInstances = new ArrayList<>();
+        for (StepMeasurement stepMeasurement : stepDefinition.getMeasurements()) {
+            stepInstance.setFunctionalCtx(stepDefinition.getFunctionalCtxCode());
+            final String measurementType = Constants.STEP_COMPLETED.equals(stepInstance.getStatus()) ? "P" : "A";
+            final Meter meter = registryService.getMeter(stepDefinition.getStepCode(),
+                    stepMeasurement.getMeasurementCode(), measurementType);
+            if (meter == null) {
+                continue;
             }
-            if (!measurementInstances.isEmpty()) {
-                this.measurementInstanceService.saveMeasurementInstances(measurementInstances);
-                context.setMeasurementInstances(measurementInstances);
+            logger.info("Step Code: {}, functional Context: {}, Measurement Code: {} ",
+                    stepInstance.getStepCode(), stepInstance.getFunctionalCtx(), stepMeasurement.getMeasurementCode());
+            MeasurementInstance measurement = measure(context, stepInstance, meter);
+            if (measurement != null) {
+                measurementInstances.add(measurement);
             }
+        }
+        if (!measurementInstances.isEmpty()) {
+            this.measurementInstanceService.saveMeasurementInstances(measurementInstances);
+            context.setMeasurementInstances(measurementInstances);
         }
     }
 
-    private MeasurementInstance measure(Context context, StepInstance stepInstance, StepDefinition stepDefinition,
-                                        StepMeasurement stepMeasurement) {
-        if (MeasurementType.P == stepMeasurement.getType()) {
-            logger.info("Step Code: {}, functional Context: {}, Measurement Code: {} ",
-                    stepDefinition.getStepCode(), stepInstance.getFunctionalCtx(), stepMeasurement.getMeasurementCode());
-            Meter meter = registryService.getMeter(context.getTenant(), stepDefinition.getStepCode(), stepMeasurement.getMeasurementCode());
-            if (meter != null) {
-                final MeasurementInstance measurement = meter.measure(context.getTenant(), stepInstance);
-                // TODO add entity id and entity type
-                logger.debug("measurement instance found for " + meter.getClass().getName());
-                return measurement;
-            }
-        }
-        return null;
+    /**
+     * Take Measurements
+     *
+     * @param context
+     * @param stepInstance
+     * @param meter
+     * @return
+     */
+    private MeasurementInstance measure(Context context, StepInstance stepInstance, Meter meter) {
+        Objects.requireNonNull(meter);
+        return meter.measure(context.getTenant(), stepInstance);
     }
 
     /**

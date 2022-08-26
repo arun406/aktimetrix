@@ -2,9 +2,9 @@ package com.aktimetrix.core.referencedata.repository;
 
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
-import org.springframework.data.rest.core.annotation.RestResource;
 
 import java.util.List;
 
@@ -15,4 +15,6 @@ public interface ProcessDefinitionRepository extends MongoRepository<ProcessDefi
 
     List<ProcessDefinition> findByProcessCode(@Param("codes") String codes);
 
+    @Query("{ 'tenant': ?0, 'startEventCodes': ?1, 'status' : 'CONFIRMED' }")
+    List<ProcessDefinition> findByStartEventCode(String tenant, String eventCode);
 }

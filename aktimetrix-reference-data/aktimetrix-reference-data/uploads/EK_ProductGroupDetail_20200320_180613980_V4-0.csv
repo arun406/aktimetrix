@@ -1,7 +1,0 @@
-Version 4.0
-Airline,Product Code,Product Name,Product Group Code,Product Group Name
-EK,GEN,General Cargo,none,none
-EK,GCR,General Freight,none,none
-EK,,General Cargo,none,none
-EK,AXC,Cool Chain,none,none
-EK,EOF,EOF,EOF,20.03.2020

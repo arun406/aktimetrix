@@ -85,4 +85,13 @@ public class Constants {
     public static final String STATUS_BASELINE = "Baseline";
     public static final String ENTITY_TYPE = "entityType";
     public static final String PLAN_CANCELLED = "Cancelled";
+    public static final String COMPLETED = "Completed";
+    public static final String STEP_COMPLETED = "Completed";
+    public static final String ATT_MEASUREMENT_TYPE = "type";
+    public static final String STEP_INSTANCE_TYPE = "step-instance-type";
+    public static final String MEASUREMENT_INSTANCE_CREATE = "measurement-instance-created";
+    public static final String STEP_CANCELLED = "Cancelled";
+    public static final String MEASUREMENT_INSTANCE_CANCEL = "measurement-instance-cancelled";
+    public static final String MEASUREMENT_INSTANCE_TYPE = "measurement-instance-type";
+    public static final String STEP_INSTANCE_COMPLETED = "step-instance-completed";
 }
