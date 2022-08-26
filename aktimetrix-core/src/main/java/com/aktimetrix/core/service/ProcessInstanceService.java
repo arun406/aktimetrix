@@ -1,6 +1,5 @@
 package com.aktimetrix.core.service;
 
-import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.repository.ProcessInstanceRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +21,6 @@ public class ProcessInstanceService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceService.class);
 
     private final ProcessInstanceRepository repository;
-    private final Registry registry;
 
     /**
      * saves the process instance object to database.
@@ -52,6 +51,19 @@ public class ProcessInstanceService {
                 .findByTenantAndProcessCodeAndProcessTypeAndEntityTypeAndEntityId(tenant, processType, processCode, entityType, entityId, pageable);
     }
 
+    /**
+     * Returns the process instance
+     *
+     * @param tenant      tenant
+     * @param processCode process code
+     * @param entityType  entity type
+     * @param entityId    entity id
+     * @return process instance
+     */
+    public List<ProcessInstance> getProcessInstances(String tenant, String processType, String processCode, String entityType, String entityId) {
+        return this.repository
+                .findByTenantAndProcessCodeAndProcessTypeAndEntityTypeAndEntityId(tenant, processType, processCode, entityType, entityId);
+    }
 
     /**
      * Returns the ProcessInstance By id

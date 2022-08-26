@@ -1,15 +1,7 @@
 package com.aktimetrix.core.service;
 
-import com.aktimetrix.core.api.Constants;
-import com.aktimetrix.core.api.EventHandler;
-import com.aktimetrix.core.api.PostProcessor;
-import com.aktimetrix.core.api.PreProcessor;
-import com.aktimetrix.core.api.Processor;
-import com.aktimetrix.core.api.Registry;
-import com.aktimetrix.core.exception.EventHandlerNotFoundException;
-import com.aktimetrix.core.exception.MultipleEventHandlersFoundException;
-import com.aktimetrix.core.exception.MultipleProcessHandlersFoundException;
-import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
+import com.aktimetrix.core.api.*;
+import com.aktimetrix.core.exception.*;
 import com.aktimetrix.core.impl.RegistryEntry;
 import com.aktimetrix.core.meter.api.MeasurementProcessor;
 import com.aktimetrix.core.meter.api.Meter;
@@ -58,7 +50,7 @@ public class RegistryService {
         return new ArrayList<>();
     }
 
-    public List<PostProcessor> getPostProcessor(String code) {
+    public PostProcessor getPostProcessor(String code) throws PostProcessorNotFoundException, MultiplePostProcessFoundException {
         Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_SERVICE)
                 && re.attribute(Constants.ATT_POST_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
         Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_CODE) &&
@@ -67,10 +59,18 @@ public class RegistryService {
         final List<Object> postProcessors = this.registry.lookupAll(predicate1.and(predicate2));
         logger.debug("Applicable post processors {}", postProcessors);
 
-        if (postProcessors != null && !postProcessors.isEmpty()) {
-            return postProcessors.stream().map(m -> (PostProcessor) m).collect(Collectors.toList()); //TODO
+
+        if (postProcessors == null || postProcessors.isEmpty()) {
+            throw new PostProcessorNotFoundException(String.format("Post Processor handlers not found with code %s", code));
         }
-        return new ArrayList<>();
+        if (postProcessors.size() > 1) {
+            throw new MultiplePostProcessFoundException(String.format("Multiple post processors exists for the same code %s", code));
+        }
+        PostProcessor postProcessor = null;
+        for (Object m : postProcessors) {
+            postProcessor = (PostProcessor) m;
+        }
+        return postProcessor;
     }
 
     public List<PostProcessor> getPostProcessor(String processType, String processCode) {
@@ -97,7 +97,7 @@ public class RegistryService {
      * @return Event Handler Object
      * @throws ProcessHandlerNotFoundException
      */
-    public Processor getProcessHandler(String processType, String processCode) throws ProcessHandlerNotFoundException, MultipleProcessHandlersFoundException {
+    public Processor getProcessors(String processType, String processCode) throws ProcessHandlerNotFoundException, MultipleProcessHandlersFoundException {
         final List<Object> handlers = this.registry
                 .lookupAll(registryEntry -> registryEntry.hasAttribute(Constants.ATT_PROCESS_HANDLER_SERVICE) &&
                         registryEntry.attribute(Constants.ATT_PROCESS_HANDLER_SERVICE).equals(Constants.VAL_YES) &&
@@ -173,18 +173,42 @@ public class RegistryService {
     }
 
     /**
-     * Return applicable meter instance
+     * Return applicable plan meter instance
      *
-     * @param tenant          tenant parameter
      * @param stepCode        step code
      * @param measurementCode measurement code
      */
-    public Meter getMeter(String tenant, String stepCode, String measurementCode) {
+    public Meter getMeter(String stepCode, String measurementCode) {
         final List<Object> meters = this.registry.lookupAll(registryEntry ->
                 registryEntry.hasAttribute(Constants.ATT_METER_SERVICE) &&
                         registryEntry.attribute(Constants.ATT_METER_SERVICE).equals(Constants.VAL_YES) &&
                         (registryEntry.attribute(Constants.ATT_CODE).equals(measurementCode)
-                                && registryEntry.attribute(Constants.ATT_STEP_CODE).equals(stepCode))
+                                && registryEntry.attribute(Constants.ATT_STEP_CODE).equals(stepCode)
+                                && registryEntry.attribute(Constants.ATT_MEASUREMENT_TYPE).equals("P")
+                        )
+        );
+        Meter meter = null;
+        for (Object m : meters) {
+            meter = (Meter) m;
+        }
+        return meter;
+    }
+
+    /**
+     * Return applicable plan meter instance
+     *
+     * @param stepCode        step code
+     * @param measurementCode measurement code
+     * @param type            measurement type
+     */
+    public Meter getMeter(String stepCode, String measurementCode, String type) {
+        final List<Object> meters = this.registry.lookupAll(registryEntry ->
+                registryEntry.hasAttribute(Constants.ATT_METER_SERVICE) &&
+                        registryEntry.attribute(Constants.ATT_METER_SERVICE).equals(Constants.VAL_YES) &&
+                        (registryEntry.attribute(Constants.ATT_CODE).equals(measurementCode)
+                                && registryEntry.attribute(Constants.ATT_STEP_CODE).equals(stepCode)
+                                && registryEntry.attribute(Constants.ATT_MEASUREMENT_TYPE).equals(type)
+                        )
         );
         Meter meter = null;
         for (Object m : meters) {

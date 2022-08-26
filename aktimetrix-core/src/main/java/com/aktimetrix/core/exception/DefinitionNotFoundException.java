@@ -2,7 +2,7 @@ package com.aktimetrix.core.exception;
 
 import java.security.PrivilegedActionException;
 
-public class DefinitionNotFoundException extends Exception {
+public class DefinitionNotFoundException extends RuntimeException {
 
     /**
      * Constructs a new exception with {@code null} as its detail message.

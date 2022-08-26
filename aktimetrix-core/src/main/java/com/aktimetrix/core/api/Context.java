@@ -12,6 +12,10 @@ import java.util.List;
  */
 public interface Context {
 
+    ProcessInstanceState getCurrentState();
+
+    void setCurrentState(ProcessInstanceState state);
+
     String getProcessType();
 
     String getProcessCode();
@@ -90,5 +94,7 @@ public interface Context {
 
     ProcessPlanInstance getProcessPlanInstance();
 
-    public boolean containsProperty(String propertyName);
+    boolean containsProperty(String propertyName);
+
+
 }

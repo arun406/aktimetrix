@@ -11,40 +11,55 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@RequiredArgsConstructor
+@Slf4j
 public abstract class AbstractStepEventHandler implements EventHandler {
 
-    final private static Logger logger = LoggerFactory.getLogger(AbstractStepEventHandler.class);
-    final private RegistryService registryService;
-
-    @Value("${aktimetrix.meter.process-type:DEFAULT_PROCESS_TYPE}")
-    private String processType;
-
-    @Value("${aktimetrix.meter.process-code:DEFAULT_PROCESS_CODE}")
-    private String processCode;
+    @Autowired
+    public RegistryService registryService;
 
     /**
      * @param event
      */
     @Override
     public void handle(Event<?, ?> event) {
-        logger.info("Entity Id : {}", event.getEntityId());
+        log.info("Entity Id : {}", event.getEntityId());
         try {
-            logger.debug("looking for process handler for {}-{}", Constants.DEFAULT_PROCESS_TYPE, Constants.DEFAULT_PROCESS_CODE);
-            Processor processor = registryService.getProcessHandler(Constants.DEFAULT_PROCESS_TYPE, Constants.DEFAULT_PROCESS_CODE);
+            String processType = getProcessType(event);
+            String processCode = getProcessCode(event);
+            log.debug("looking for process handler for {}-{}", processType, processCode);
+            Processor processor = this.registryService.getProcessors(processType, processCode);
             DefaultContext context = prepareContext(event);
             processor.process(context);
         } catch (ProcessHandlerNotFoundException | MultipleProcessHandlersFoundException e) {
-            logger.error("process handler is not defined for {} - {} process", processType, processCode);
+            log.error("error while getting the process handlers {}", e.getMessage());
         }
+    }
+
+    public String getProcessType(Event<?, ?> event) {
+        if (Constants.STEP_EVENT.equals(event.getEventType())) {
+            return Constants.MEASUREMENT_INSTANCE_TYPE;
+        }
+        return null;
+    }
+
+    public String getProcessCode(Event<?, ?> event) {
+        String processCode = null;
+        switch (event.getEventCode()) {
+            case Constants.STEP_CREATED:
+            case Constants.STEP_COMPLETED:
+                processCode = Constants.MEASUREMENT_INSTANCE_CREATE;
+                break;
+            case Constants.STEP_CANCELLED:
+                processCode = Constants.MEASUREMENT_INSTANCE_CANCEL;
+                break;
+        }
+        return processCode;
     }
 
 
@@ -70,6 +85,12 @@ public abstract class AbstractStepEventHandler implements EventHandler {
     }
 
 
+    /**
+     * prepares the step instance
+     *
+     * @param dto
+     * @return
+     */
     private StepInstance getStepInstance(StepInstanceDTO dto) {
         StepInstance instance = new StepInstance();
         instance.setId(dto.getId());

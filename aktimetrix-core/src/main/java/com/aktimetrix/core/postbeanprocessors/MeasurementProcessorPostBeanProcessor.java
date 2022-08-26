@@ -3,7 +3,7 @@ package com.aktimetrix.core.postbeanprocessors;
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.meter.api.MeasurementProcessor;
-import com.aktimetrix.core.stereotypes.ProcessHandler;
+import com.aktimetrix.core.stereotypes.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -36,8 +36,8 @@ public class MeasurementProcessorPostBeanProcessor implements BeanPostProcessor 
         if (bean instanceof MeasurementProcessor) {
             logger.trace("Called postProcessBeforeInitialization() for : {}", beanName);
 
-            ProcessHandler annotation =
-                    AnnotationUtils.findAnnotation(bean.getClass(), ProcessHandler.class);
+            Processor annotation =
+                    AnnotationUtils.findAnnotation(bean.getClass(), Processor.class);
             if (annotation == null) {
                 return bean;
             }

@@ -8,67 +8,104 @@ import com.aktimetrix.core.exception.MultipleProcessHandlersFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
 import com.aktimetrix.core.impl.DefaultContext;
 import com.aktimetrix.core.impl.DefaultProcessDefinitionProvider;
+import com.aktimetrix.core.impl.DefaultStepDefinitionProvider;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
+import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class AbstractEventHandler implements EventHandler {
 
+    private final RegistryService registryService;
+    private final DefaultProcessDefinitionProvider processDefinitionProvider;
+    private final DefaultStepDefinitionProvider stepDefinitionProvider;
+
     @Autowired
-    private DefaultProcessDefinitionProvider defaultProcessDefinitionProvider;
-    @Autowired
-    private RegistryService registryService;
+    public AbstractEventHandler(RegistryService registryService, DefaultProcessDefinitionProvider processDefinitionProvider,
+                                DefaultStepDefinitionProvider stepDefinitionProvider) {
+        this.registryService = registryService;
+        this.processDefinitionProvider = processDefinitionProvider;
+        this.stepDefinitionProvider = stepDefinitionProvider;
+    }
 
     /**
+     * event handler
+     *
      * @param event
      */
     @Override
     public void handle(Event<?, ?> event) {
-
         log.info("Entity Id : {}", event.getEntityId());
         // Query the Applicable Process Definitions based on the incoming event's event code.
-        try {
-            final List<ProcessDefinition> processDefinitions = getProcessDefinitions(event);
-            // create instance for all process definitions
-            if (!processDefinitions.isEmpty()) {
-                processDefinitions.forEach(definition -> {
-                    log.info("process definition : {}", definition);
-                    // should be changed to registry implementation.
-                    Processor processHandler = null;
-                    try {
-                        processHandler = registryService.getProcessHandler(definition.getProcessType(), definition.getProcessCode());
-                    } catch (ProcessHandlerNotFoundException | MultipleProcessHandlersFoundException e) {
-                        log.error("process handler is not defined for {} process", ProcessType.A2ATRANSPORT);
-                        return;
-                    }
-                    DefaultContext processContext = prepareContext(definition, event);
-                    processHandler.process(processContext);
-                });
-            }
-        } catch (DefinitionNotFoundException e) {
-            log.error(e.getMessage(), e);
+        final List<ProcessDefinition> processDefinitions = getProcessDefinitions(event.getTenantKey(), event.getEventCode());
+        if (processDefinitions != null && !processDefinitions.isEmpty()) {
+            handleProcessEvents(event, processDefinitions);
         }
+
+        final List<StepDefinition> stepDefinitions = getStepDefinitions(event.getTenantKey(), event.getEventCode());
+        if (stepDefinitions != null && !stepDefinitions.isEmpty()) {
+            handleStepEvents(event, stepDefinitions);
+        }
+    }
+
+    /**
+     * execute the step handlers based on the step code
+     *
+     * @param event
+     * @param stepDefinitions
+     */
+    private void handleStepEvents(Event<?, ?> event, List<StepDefinition> stepDefinitions) {
+        stepDefinitions.forEach(definition -> {
+            log.info("step definition: {}", definition);
+            try {
+                Processor processor = this.registryService
+                        .getProcessors("CiQ", definition.getStepCode());
+                DefaultContext processContext = prepareContext(definition, event);
+                processor.process(processContext);
+            } catch (ProcessHandlerNotFoundException | MultipleProcessHandlersFoundException e) {
+                log.error("process handler is not defined for {} process", ProcessType.A2ATRANSPORT);
+                return;
+            }
+        });
+    }
+
+    private List<StepDefinition> getStepDefinitions(String tenantKey, String eventCode) {
+        return stepDefinitionProvider.getDefinitions(tenantKey, eventCode);
+    }
+
+    /**
+     * @param event
+     * @param processDefinitions
+     */
+    private void handleProcessEvents(Event<?, ?> event, List<ProcessDefinition> processDefinitions) {
+        processDefinitions.forEach(definition -> {
+            log.info("process definition : {}", definition);
+            try {
+                Processor processor = this.registryService.getProcessors(definition.getProcessType(), definition.getProcessCode());
+                DefaultContext processContext = prepareContext(definition, event);
+                processor.process(processContext);
+            } catch (ProcessHandlerNotFoundException | MultipleProcessHandlersFoundException e) {
+                log.error("process handler is not defined for {} process", ProcessType.A2ATRANSPORT);
+                return;
+            }
+        });
     }
 
     /**
      * Returns the process definitions
      *
-     * @param event event
+     * @param tenantKey
+     * @param eventCode
      * @return Process Definition
      * @throws DefinitionNotFoundException
      */
-    public List<ProcessDefinition> getProcessDefinitions(Event<?, ?> event) throws DefinitionNotFoundException {
-        return defaultProcessDefinitionProvider.getDefinitions().stream()
-                .filter(definition -> "CONFIRMED".equalsIgnoreCase(definition.getStatus()))
-                .filter(definition -> definition.getStartEventCodes().contains(event.getEventCode()))
-                .filter(definition -> event.getTenantKey().equalsIgnoreCase(definition.getTenant()))
-                .collect(Collectors.toList());
+    public List<ProcessDefinition> getProcessDefinitions(String tenantKey, String eventCode) {
+        return this.processDefinitionProvider.getDefinitions(tenantKey, eventCode);
     }
 
 
@@ -81,7 +118,6 @@ public abstract class AbstractEventHandler implements EventHandler {
      */
     public DefaultContext prepareContext(ProcessDefinition definition, Event<?, ?> event) {
         DefaultContext processContext = new DefaultContext();
-
         processContext.setProperty("entityId", entityId(event));
         processContext.setProperty("entityType", entityType(event));
         processContext.setProperty("event", event);
@@ -92,6 +128,29 @@ public abstract class AbstractEventHandler implements EventHandler {
         processContext.setProcessType(definition.getProcessType());
         processContext.setProcessCode(definition.getProcessCode());
         return processContext;
+    }
+
+    /**
+     * prepares the ProcessContext
+     *
+     * @param definition process definition
+     * @param event      event
+     * @return Process Context
+     */
+    public DefaultContext prepareContext(StepDefinition definition, Event<?, ?> event) {
+        DefaultContext context = new DefaultContext();
+
+        context.setProperty("entityId", entityId(event));
+        context.setProperty("entityType", entityType(event));
+        context.setProperty("event", event);
+        context.setProperty("entity", event.getEntity());
+        context.setProperty("eventData", event.getEventDetails());
+        context.setTenant(event.getTenantKey());
+        context.setProperty("stepDefinition", definition);
+        context.setProperty("stepCode", definition.getStepCode());
+        context.setProcessType(definition.getProcessType());
+        context.setProcessCode(definition.getProcessCode());
+        return context;
     }
 
     protected String entityType(Event<?, ?> event) {

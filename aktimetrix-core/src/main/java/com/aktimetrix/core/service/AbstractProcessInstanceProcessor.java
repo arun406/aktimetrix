@@ -3,21 +3,24 @@ package com.aktimetrix.core.service;
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;
 import com.aktimetrix.core.api.Processor;
+import com.aktimetrix.core.exception.MultiplePostProcessFoundException;
+import com.aktimetrix.core.exception.PostProcessorNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.List;
 
 @Slf4j
 public abstract class AbstractProcessInstanceProcessor implements Processor {
 
-    @Autowired
-    private RegistryService registryService;
-    @Autowired
-    protected ProcessInstanceService processInstanceService;
-    @Autowired
-    protected ObjectMapper objectMapper;
+    final protected RegistryService registryService;
+    final protected ProcessInstanceService processInstanceService;
+    final protected ObjectMapper objectMapper;
+
+    public AbstractProcessInstanceProcessor(RegistryService registryService,
+                                            ProcessInstanceService processInstanceService, ObjectMapper objectMapper) {
+        this.registryService = registryService;
+        this.processInstanceService = processInstanceService;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * @param context process context
@@ -39,11 +42,16 @@ public abstract class AbstractProcessInstanceProcessor implements Processor {
     protected void executePreProcessors(Context context) {
     }
 
-    private void executePostProcessors(Context context) {
-        final List<PostProcessor> publisher = registryService.getPostProcessor("PPI_PUBLISHER");
-        if (!publisher.isEmpty()) {
+    protected void executePostProcessors(Context context) {
+        final PostProcessor publisher;
+        try {
+            publisher = registryService.getPostProcessor("PPI_PUBLISHER");
             log.debug("publishing the process plan instance..");
-            publisher.forEach(postProcessor -> postProcessor.process(context));
+            publisher.process(context);
+        } catch (PostProcessorNotFoundException e) {
+            log.error(e.getMessage(), e);
+        } catch (MultiplePostProcessFoundException e) {
+            log.error(e.getMessage(), e);
         }
     }
 }

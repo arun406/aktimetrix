@@ -6,7 +6,6 @@ import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.repository.StepInstanceRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -64,14 +63,13 @@ public class StepInstanceService {
     /**
      * Creates  step instances
      *
-     * @param tenant            tenant
-     * @param stepDefinitions   step definitions
-     * @param metadata          step metadata
-     * @param processInstanceId process instance id
+     * @param tenant          tenant
+     * @param stepDefinitions step definitions
+     * @param metadata        step metadata
      * @return step instance collection
      */
     public List<StepInstance> save(String tenant, List<StepDefinition> stepDefinitions,
-                                   Map<String, Object> metadata, String processInstanceId) {
+                                   Map<String, Object> metadata) {
 
         List<StepInstance> steps = new ArrayList<>();
         for (StepDefinition stepDefinition : stepDefinitions) {
@@ -79,15 +77,15 @@ public class StepInstanceService {
             final String groupCode = stepDefinition.getGroupCode();
             final String functionalCtx = stepDefinition.getFunctionalCtxCode();
             logger.info("step code: {}, step group code: {} ", stepCode, groupCode);
-            StepInstance stepInstance = prepareStepInstanceObject(tenant, processInstanceId, stepCode, functionalCtx,
-                    groupCode, Constants.DEFAULT_VERSION, Constants.STATUS_CREATED);
+            StepInstance stepInstance = prepareStepInstanceObject(tenant, stepCode, functionalCtx,
+                    groupCode, Constants.DEFAULT_VERSION, Constants.STEP_CREATED);
 //            if (StringUtils.equalsIgnoreCase(Constants.FLIGHT_GROUP_CODE, groupCode)) {
             stepInstance.setMetadata(metadata);
 //            }
 //            setStepLocation(itinerary, stepDefinition, stepInstance);
             steps.add(stepInstance);
         }
-          return steps;
+        return steps;
     }
 
 
@@ -113,7 +111,6 @@ public class StepInstanceService {
 
     /**
      * @param tenant
-     * @param processInstanceId
      * @param stepCode
      * @param functionalCtx
      * @param groupCode
@@ -121,9 +118,9 @@ public class StepInstanceService {
      * @param status
      * @return
      */
-    public StepInstance prepareStepInstanceObject(String tenant, String processInstanceId, String stepCode,
+    public StepInstance prepareStepInstanceObject(String tenant, String stepCode,
                                                   String functionalCtx, String groupCode, String version, String status) {
-        return new StepInstance(tenant, stepCode, processInstanceId, groupCode, functionalCtx, version, status, LocalDateTime.now());
+        return new StepInstance(tenant, stepCode, groupCode, functionalCtx, version, status, LocalDateTime.now());
     }
 
     /**

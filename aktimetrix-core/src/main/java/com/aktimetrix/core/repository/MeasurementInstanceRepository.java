@@ -1,7 +1,6 @@
 package com.aktimetrix.core.repository;
 
 import com.aktimetrix.core.model.MeasurementInstance;
-import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
@@ -33,8 +32,8 @@ public interface MeasurementInstanceRepository extends MongoRepository<Measureme
      * @param stepInstanceId    step instance id
      * @return list of measurement instances
      */
-    @Query(" { 'tenant': ?0 , 'processInstanceId': ?1 , 'stepInstanceId': ?2} ")
-    List<MeasurementInstance> findByProcessInstanceIdAndStepInstanceId(String tenant, ObjectId processInstanceId, ObjectId stepInstanceId);
+    @Query(" { 'tenant': ?0 , 'processInstanceId': ?1 , 'stepInstanceId': ?2 } ")
+    List<MeasurementInstance> findByProcessInstanceIdAndStepInstanceId(String tenant, String processInstanceId, String stepInstanceId);
 
     /**
      * @param tenant
