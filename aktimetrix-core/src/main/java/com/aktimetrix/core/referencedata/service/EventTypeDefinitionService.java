@@ -30,4 +30,8 @@ public class EventTypeDefinitionService {
     public List<EventTypeDefinition> list() {
         return this.repository.findAll();
     }
+
+    public void add(List<EventTypeDefinition> definitions) {
+        this.repository.saveAll(definitions);
+    }
 }

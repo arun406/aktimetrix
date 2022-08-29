@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Component
 @Slf4j
-@Processor(processCode = Constants.PROCESS_INSTANCE_CANCEL, processType = Constants.PROCESS_INSTANCE_TYPE, version = Constants.DEFAULT_VERSION)
+@Processor(processCode = Constants.PROCESS_INSTANCE_CANCEL, processType = Constants.PROCESS_INSTANCE_TYPE)
 public class ProcessInstanceCancellationProcessor implements com.aktimetrix.core.api.Processor {
 
     @Autowired

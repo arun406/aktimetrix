@@ -68,8 +68,8 @@ public class StepInstanceService {
      * @param metadata        step metadata
      * @return step instance collection
      */
-    public List<StepInstance> save(String tenant, List<StepDefinition> stepDefinitions,
-                                   Map<String, Object> metadata) {
+    public List<StepInstance> create(String tenant, List<StepDefinition> stepDefinitions,
+                                     Map<String, Object> metadata) {
 
         List<StepInstance> steps = new ArrayList<>();
         for (StepDefinition stepDefinition : stepDefinitions) {
@@ -79,10 +79,7 @@ public class StepInstanceService {
             logger.info("step code: {}, step group code: {} ", stepCode, groupCode);
             StepInstance stepInstance = prepareStepInstanceObject(tenant, stepCode, functionalCtx,
                     groupCode, Constants.DEFAULT_VERSION, Constants.STEP_CREATED);
-//            if (StringUtils.equalsIgnoreCase(Constants.FLIGHT_GROUP_CODE, groupCode)) {
             stepInstance.setMetadata(metadata);
-//            }
-//            setStepLocation(itinerary, stepDefinition, stepInstance);
             steps.add(stepInstance);
         }
         return steps;

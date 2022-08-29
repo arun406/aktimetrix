@@ -36,6 +36,13 @@ public class ProcessDefinitionService {
     }
 
     /**
+     * @param definitions
+     */
+    public void add(List<ProcessDefinition> definitions) {
+        this.repository.saveAll(definitions);
+    }
+
+    /**
      * returns the collection of process definitions
      *
      * @return
@@ -87,7 +94,6 @@ public class ProcessDefinitionService {
         return definitions;
     }
 
-
     /**
      * Returns Process Definitions by start event code
      *
@@ -110,6 +116,5 @@ public class ProcessDefinitionService {
                 .getMappedResults();
 
         return definitions;
-//        return this.repository.findByStartEventCode(tenant, eventCode);
     }
 }

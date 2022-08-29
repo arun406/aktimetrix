@@ -25,6 +25,16 @@ public class StepDefinitionService {
     }
 
     /**
+     * Saves a new Step Definition
+     *
+     * @param stepDefinitions
+     * @return
+     */
+    public void add(List<StepDefinition> stepDefinitions) {
+        repository.saveAll(stepDefinitions);
+    }
+
+    /**
      * Returns all Step Definitions
      *
      * @return
