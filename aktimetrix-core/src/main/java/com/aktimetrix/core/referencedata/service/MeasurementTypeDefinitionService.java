@@ -51,11 +51,14 @@ public class MeasurementTypeDefinitionService {
         return list;
     }
 
-
     /**
      * @param definition
      */
     public void add(MeasurementTypeDefinition definition) {
         this.repository.save(definition);
+    }
+
+    public void add(List<MeasurementTypeDefinition> definitions) {
+        this.repository.saveAll(definitions);
     }
 }

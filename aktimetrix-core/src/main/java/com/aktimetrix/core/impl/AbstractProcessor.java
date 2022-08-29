@@ -56,7 +56,7 @@ public abstract class AbstractProcessor implements Processor {
     }
 
     /**
-     * execute the pre processors
+     * execute the preprocessors
      *
      * @param context
      */
@@ -86,7 +86,7 @@ public abstract class AbstractProcessor implements Processor {
         if (stepInstances == null) {
             processInstance.getSteps().addAll(new ArrayList<>());
             log.debug("placing the process and step instance(s) into context");
-            context.setStepInstances(stepInstances);
+            context.setStepInstances(null);
             return;
         }
 
@@ -166,7 +166,7 @@ public abstract class AbstractProcessor implements Processor {
      */
     @Transactional
     public List<StepInstance> createStepInstances(String tenant, List<StepDefinition> stepDefinitions, Map<String, Object> metadata) {
-        return this.stepInstanceService.save(tenant, stepDefinitions, metadata);
+        return this.stepInstanceService.create(tenant, stepDefinitions, metadata);
     }
 
     /**

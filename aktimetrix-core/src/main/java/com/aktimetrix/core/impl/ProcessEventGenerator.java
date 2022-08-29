@@ -58,7 +58,7 @@ public class ProcessEventGenerator implements EventGenerator<ProcessInstanceDTO,
                 .processType(processInstance.getProcessType())
                 .complete(processInstance.isComplete())
                 .entityType(processInstance.getEntityType())
-                .id(processInstance.getId().toString())
+                .id(processInstance.getId())
                 .status(processInstance.getStatus())
                 .subCategoryCode(processInstance.getSubCategoryCode())
                 .tenant(processInstance.getTenant())
@@ -71,7 +71,7 @@ public class ProcessEventGenerator implements EventGenerator<ProcessInstanceDTO,
 
     private StepInstanceDTO getStepInstanceDTO(StepInstance instance) {
         return StepInstanceDTO.builder()
-                .id(instance.getId().toString())
+                .id(instance.getId())
                 .tenant(instance.getTenant())
                 .status(instance.getStatus())
                 .functionalCtx(instance.getFunctionalCtx())
@@ -80,7 +80,7 @@ public class ProcessEventGenerator implements EventGenerator<ProcessInstanceDTO,
                 .stepCode(instance.getStepCode())
                 .locationCode(instance.getLocationCode())
                 .metadata(instance.getMetadata())
-                .processInstanceId(instance.getProcessInstanceId().toString())
+                .processInstanceId(instance.getProcessInstanceId())
                 .createdOn(instance.getCreatedOn())
                 .build();
     }

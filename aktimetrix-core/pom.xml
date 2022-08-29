@@ -18,6 +18,7 @@
         <jackson-bom.version>2.13.2</jackson-bom.version>
         <spring-data-bom.version>2021.1.4</spring-data-bom.version>
         <httpclient.version>4.5.3</httpclient.version>
+        <software.amazon.awssdk.version>2.17.250</software.amazon.awssdk.version>
     </properties>
     <repositories>
         <repository>
@@ -66,6 +67,13 @@
                 <version>${spring-data-bom.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${software.amazon.awssdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -143,6 +151,16 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.6</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
         </dependency>
     </dependencies>
 </project>
