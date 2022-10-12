@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 public @interface Processor {
     String processType() default "";
 
-    String processCode();
+    String[] processCode() default {};
 
     String name() default "";
 

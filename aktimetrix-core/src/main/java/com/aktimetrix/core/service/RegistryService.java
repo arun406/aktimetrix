@@ -3,7 +3,6 @@ package com.aktimetrix.core.service;
 import com.aktimetrix.core.api.*;
 import com.aktimetrix.core.exception.*;
 import com.aktimetrix.core.impl.RegistryEntry;
-import com.aktimetrix.core.meter.api.MeasurementProcessor;
 import com.aktimetrix.core.meter.api.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -97,12 +97,18 @@ public class RegistryService {
      * @return Event Handler Object
      * @throws ProcessHandlerNotFoundException
      */
-    public Processor getProcessors(String processType, String processCode) throws ProcessHandlerNotFoundException, MultipleProcessHandlersFoundException {
+    public Processor getProcessors(String processType, String processCode) throws ProcessHandlerNotFoundException,
+            MultipleProcessHandlersFoundException {
+
         final List<Object> handlers = this.registry
-                .lookupAll(registryEntry -> registryEntry.hasAttribute(Constants.ATT_PROCESS_HANDLER_SERVICE) &&
-                        registryEntry.attribute(Constants.ATT_PROCESS_HANDLER_SERVICE).equals(Constants.VAL_YES) &&
-                        processType.equals(registryEntry.attribute(Constants.ATT_PROCESS_TYPE)) &&
-                        processCode.equals(registryEntry.attribute(Constants.ATT_PROCESS_CODE))
+                .lookupAll(registryEntry -> {
+                            final String processCodes = (String) registryEntry.attribute(Constants.ATT_PROCESS_CODE);
+                            final String[] split = processCodes.split(",");
+                            return registryEntry.hasAttribute(Constants.ATT_PROCESS_HANDLER_SERVICE) &&
+                                    registryEntry.attribute(Constants.ATT_PROCESS_HANDLER_SERVICE).equals(Constants.VAL_YES) &&
+                                    processType.equals(registryEntry.attribute(Constants.ATT_PROCESS_TYPE)) &&
+                                    Arrays.asList(split).contains(processCode);
+                        }
                 );
         logger.debug("applicable handlers {}", handlers);
         if (handlers == null || handlers.isEmpty()) {
@@ -146,31 +152,6 @@ public class RegistryService {
         return eventHandler;
     }
 
-
-    /**
-     * Returns the process Handler Based on Process Type
-     *
-     * @param processType event type
-     * @return Event Handler Object
-     * @throws ProcessHandlerNotFoundException
-     */
-    public MeasurementProcessor getMeasurementProcessHandler(String processType) throws ProcessHandlerNotFoundException {
-        final List<Object> handlers = this.registry
-                .lookupAll(registryEntry -> registryEntry.hasAttribute(com.aktimetrix.core.api.Constants.ATT_PROCESS_HANDLER_SERVICE) &&
-                        registryEntry.attribute(com.aktimetrix.core.api.Constants.ATT_PROCESS_HANDLER_SERVICE).equals(com.aktimetrix.core.api.Constants.VAL_YES) &&
-                        registryEntry.attribute(Constants.ATT_PROCESS_TYPE).equals(processType)
-                );
-        logger.debug("applicable handlers {}", handlers);
-        if (handlers == null || handlers.isEmpty()) {
-            throw new ProcessHandlerNotFoundException(String.format("process handlers not found for %s", processType));
-        }
-
-        MeasurementProcessor processHandler = null;
-        for (Object m : handlers) {
-            processHandler = (MeasurementProcessor) m;
-        }
-        return processHandler;
-    }
 
     /**
      * Return applicable plan meter instance

@@ -1,4 +1,4 @@
-package com.aktimetrix.core.impl;
+package com.aktimetrix.core.impl.publisher;
 
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.EventGenerator;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProcessPlanPublisher implements Publisher {
+public class ProcessPlanInstancePublisher implements Publisher {
 
     public static final String PROCESS_PLAN_INSTANCE_TOPIC_NAME = "process-plan-instance-out-0";
     private final StreamBridge streamBridge;
