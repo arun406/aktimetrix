@@ -1,4 +1,4 @@
-package com.aktimetrix.core.impl;
+package com.aktimetrix.core.impl.publisher;
 
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.EventGenerator;

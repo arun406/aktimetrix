@@ -94,4 +94,8 @@ public class Constants {
     public static final String MEASUREMENT_INSTANCE_CANCEL = "measurement-instance-cancelled";
     public static final String MEASUREMENT_INSTANCE_TYPE = "measurement-instance-type";
     public static final String STEP_INSTANCE_COMPLETED = "step-instance-completed";
+    public static final String STEP_INSTANCE_CANCELLED = "step-instance-cancelled";
+    public static final String STEP_INSTANCE_UPDATED = "step-instance-updated";
+    public static final String STEP_INSTANCE_CREATED = "step-instance-created";
+    public static final String STEP_UPDATED = "Updated";
 }

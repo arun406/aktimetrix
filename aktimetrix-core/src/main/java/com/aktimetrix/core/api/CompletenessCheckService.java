@@ -1,4 +1,4 @@
-package com.aktimetrix.core.service;
+package com.aktimetrix.core.api;
 
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;

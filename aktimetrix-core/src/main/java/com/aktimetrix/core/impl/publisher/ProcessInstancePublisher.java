@@ -1,9 +1,8 @@
-package com.aktimetrix.core.service;
+package com.aktimetrix.core.impl.publisher;
 
-import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.EventGenerator;
-import com.aktimetrix.core.api.PostProcessor;
+import com.aktimetrix.core.api.Publisher;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.ProcessInstanceDTO;
@@ -16,26 +15,32 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
-@com.aktimetrix.core.stereotypes.PostProcessor(code = "PI_PUBLISHER", processCode = Constants.DEFAULT_PROCESS_CODE, processType = Constants.DEFAULT_PROCESS_TYPE)
-public class ProcessInstancePublisherService implements PostProcessor {
+public class ProcessInstancePublisher implements Publisher {
+
+    public static final String PROCESS_INSTANCE_TOPIC_NAME = "process-instance-out-0";
 
     private final StreamBridge streamBridge;
     @Qualifier("ProcessEventGenerator")
     private final EventGenerator<ProcessInstanceDTO, Void> eventGenerator;
 
+
+    /**
+     * Publish event based on the context information
+     *
+     * @param context
+     */
     @Override
-    public void postProcess(Context context) {
+    public void publish(Context context) {
         log.debug("executing process instance publisher service");
         ProcessInstance processInstance = context.getProcessInstance();
-//        ProcessEventGenerator eventGenerator = new ProcessEventGenerator(processInstance);
-        final Event<ProcessInstanceDTO, Void> event = eventGenerator.generate(processInstance);
+        final Event<ProcessInstanceDTO, Void> event = this.eventGenerator.generate(processInstance);
         log.debug("process instance event : {}", event);
         final Message<Event<ProcessInstanceDTO, Void>> message = MessageBuilder.withPayload(event)
                 .setHeader(KafkaHeaders.MESSAGE_KEY, event.getEntityId())
                 .build();
-        this.streamBridge.send("process-instance-out-0", message);
+        this.streamBridge.send(PROCESS_INSTANCE_TOPIC_NAME, message);
     }
 }

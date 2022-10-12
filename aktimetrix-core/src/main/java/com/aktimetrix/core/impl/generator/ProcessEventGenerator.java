@@ -1,4 +1,4 @@
-package com.aktimetrix.core.impl;
+package com.aktimetrix.core.impl.generator;
 
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventGenerator;
