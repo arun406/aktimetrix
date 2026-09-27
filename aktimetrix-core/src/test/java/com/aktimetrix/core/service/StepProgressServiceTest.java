@@ -9,6 +9,8 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
 import com.aktimetrix.core.transferobjects.Event;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -24,6 +27,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,6 +55,8 @@ class StepProgressServiceTest {
     @Mock
     private StepInstancePublisherService stepInstancePublisherService;
     private StepProgressService service;
+    private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    private int nextSequence;
 
     private ProcessInstance process;
 
@@ -58,7 +64,7 @@ class StepProgressServiceTest {
     void setUp() {
         service = new StepProgressService(stepInstanceService, stepDefinitionService, processInstanceService,
                 measurementInstanceService, measurementInstancePublisherService, stepInstancePublisherService,
-                Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC));
+                new StepPlanner(), metrics(registry), Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC));
         process = new ProcessInstance();
         process.setId(new ObjectId());
         process.setTenant(TENANT);
@@ -191,7 +197,8 @@ class StepProgressServiceTest {
     void occurredAtIsConvertedToTheConfiguredZone() {
         StepProgressService inKolkata = new StepProgressService(stepInstanceService, stepDefinitionService,
                 processInstanceService, measurementInstanceService, measurementInstancePublisherService,
-                stepInstancePublisherService, Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneId.of("Asia/Kolkata")));
+                stepInstancePublisherService, new StepPlanner(), metrics(registry),
+                Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneId.of("Asia/Kolkata")));
         Event<Object, Object> event = new Event<>();
         assertThat(inKolkata.occurredAt(event)).isEqualTo(LocalDateTime.of(2022, 5, 23, 17, 30));
 
@@ -202,10 +209,87 @@ class StepProgressServiceTest {
         assertThat(inKolkata.occurredAt(event)).isEqualTo(LocalDateTime.of(2022, 5, 23, 3, 30));
     }
 
+    @Test
+    void lateStepPutsLaterStepsAtRisk() {
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        givenSteps(ship, deliver);
+        givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 3, 0));
+
+        assertThat(ship.getTimeliness()).isEqualTo(Timeliness.LATE);
+        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 11, 0));
+        assertThat(deliver.getTimeliness()).isEqualTo(Timeliness.AT_RISK);
+        verify(stepInstancePublisherService).publish(deliver, "AT_RISK");
+        assertThat(registry.get("aktimetrix.steps.at.risk").counter().count()).isEqualTo(1);
+        assertThat(registry.get("aktimetrix.steps.completed").tag("timeliness", "LATE").counter().count()).isEqualTo(1);
+    }
+
+    @Test
+    void completionWithinToleranceIsOnTime() {
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
+        ship.setLateAfter(LocalDateTime.of(2022, 5, 23, 2, 1));
+        givenSteps(ship);
+        givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
+
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 2, 0));
+
+        assertThat(ship.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
+    }
+
+    @Test
+    void completionPlansTheStepsThatCountFromIt() {
+        StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
+        StepInstance deliver = step("DELIVER", Constants.STATUS_CREATED);
+        givenSteps(ship, deliver);
+        givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
+        StepDefinition deliverDefinition = givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+        deliverDefinition.setPlannedAfter("SHIP");
+        deliverDefinition.setPlannedWithin("PT8H");
+        deliverDefinition.setTolerance("PT15M");
+
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, SHIPPED_AT);
+
+        assertThat(deliver.getPlannedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 9, 30));
+        assertThat(deliver.getLateAfter()).isEqualTo(LocalDateTime.of(2022, 5, 23, 9, 45));
+        verify(stepInstancePublisherService).publish(deliver, "PLANNED");
+    }
+
+    @Test
+    void overdueStepPutsLaterStepsAtRisk() {
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        when(stepInstanceService.getStepInstancesByProcessInstanceId(TENANT, process.getId())).thenReturn(List.of(ship, deliver));
+        givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+
+        service.markOverdue(ship, LocalDateTime.of(2022, 5, 23, 4, 0));
+
+        assertThat(ship.getTimeliness()).isEqualTo(Timeliness.OVERDUE);
+        verify(stepInstancePublisherService).publish(ship, "OVERDUE");
+        assertThat(deliver.getTimeliness()).isEqualTo(Timeliness.AT_RISK);
+        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 12, 0));
+        assertThat(registry.get("aktimetrix.steps.overdue").counter().count()).isEqualTo(1);
+    }
+
+    private static StepInstance planned(StepInstance step, LocalDateTime plannedAt) {
+        step.setPlannedAt(plannedAt);
+        step.setLateAfter(plannedAt);
+        return step;
+    }
+
+    static AktimetrixMetrics metrics(MeterRegistry registry) {
+        return new AktimetrixMetrics(new StaticListableBeanFactory(Map.of("registry", registry))
+                .getBeanProvider(MeterRegistry.class));
+    }
+
     private StepInstance step(String code, String status) {
         StepInstance step = new StepInstance(TENANT, code, process.getId(), null, null, "1.0.0", status,
                 LocalDateTime.now());
         step.setId(new ObjectId());
+        step.setSequence(nextSequence++);
         return step;
     }
 

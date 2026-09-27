@@ -67,6 +67,9 @@ public class StepEventGenerator implements EventGenerator {
                 .processInstanceId(instance.getProcessInstanceId().toString())
                 .createdOn(instance.getCreatedOn())
                 .plannedAt(instance.getPlannedAt())
+                .lateAfter(instance.getLateAfter())
+                .expectedAt(instance.getExpectedAt())
+                .sequence(instance.getSequence())
                 .actualAt(instance.getActualAt())
                 .timeliness(instance.getTimeliness())
                 .build();

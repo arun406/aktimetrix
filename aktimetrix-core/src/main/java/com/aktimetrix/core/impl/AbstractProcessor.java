@@ -11,15 +11,19 @@ import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.ProcessInstanceService;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.service.StepInstanceService;
+import com.aktimetrix.core.service.StepPlanner;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,6 +46,10 @@ public abstract class AbstractProcessor implements Processor {
     private ProcessInstanceService processInstanceService;
     @Autowired
     private RegistryService registryService;
+    @Autowired
+    private StepPlanner stepPlanner;
+    @Autowired
+    private AktimetrixMetrics metrics;
 
     /**
      * @param context process context
@@ -75,6 +83,7 @@ public abstract class AbstractProcessor implements Processor {
             final List<StepDefinition> stepDefinitions = getStepDefinitions(context);
             logger.info("Saving Process Instance");
             saveProcessInstance(processInstance);
+            metrics.processStarted(processInstance);
             logger.info("Saving the step instances..");
             final List<StepInstance> stepInstances = saveStepInstances(context.getTenant(), stepDefinitions,
                     processInstance.getId(), getStepMetadata(context));
@@ -88,12 +97,26 @@ public abstract class AbstractProcessor implements Processor {
     }
 
     /**
-     * Computes the planned measurements of the newly created steps with the registered meters.
+     * Plans the newly created steps: first with the registered meters, then from the durations in their
+     * definitions, and finally sets every planned step's deadline.
      */
     private void planSteps(Context context) {
         if (context.getStepInstances().isEmpty()) {
             return;
         }
+        runMeters(context);
+        final Map<String, StepDefinition> definitions = new HashMap<>();
+        try {
+            getStepDefinitions(context).forEach(definition -> definitions.put(definition.getStepCode(), definition));
+        } catch (DefinitionNotFoundException e) {
+            return;
+        }
+        stepPlanner.planNewSteps(context.getStepInstances(), definitions,
+                        context.getProcessInstance().getStartedAt())
+                .forEach(stepInstanceService::save);
+    }
+
+    private void runMeters(Context context) {
         final Processor meterProcessor;
         try {
             meterProcessor = registryService.getProcessHandler(Constants.METER_PROCESSOR);
@@ -150,6 +173,7 @@ public abstract class AbstractProcessor implements Processor {
             processInstance = new ProcessInstance(definition);
             processInstance.setMetadata(getProcessMetadata(context));
             processInstance.setEntityId(entityId);
+            processInstance.setStartedAt((LocalDateTime) context.getProperty(Constants.OCCURRED_AT));
         }
         return processInstance;
     }
