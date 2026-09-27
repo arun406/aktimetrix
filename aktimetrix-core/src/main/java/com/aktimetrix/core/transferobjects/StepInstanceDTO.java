@@ -28,6 +28,9 @@ public class StepInstanceDTO implements Serializable {
     private String tenant;
     private LocalDateTime createdOn;
     private LocalDateTime plannedAt;
+    private LocalDateTime lateAfter;
+    private LocalDateTime expectedAt;
+    private int sequence;
     private LocalDateTime actualAt;
     private Timeliness timeliness;
 }

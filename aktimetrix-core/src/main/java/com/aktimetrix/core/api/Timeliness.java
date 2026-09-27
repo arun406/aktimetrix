@@ -5,15 +5,19 @@ package com.aktimetrix.core.api;
  */
 public enum Timeliness {
     /**
-     * The step completed at or before its planned time.
+     * The step has not completed yet and is forecast to miss its deadline, because an earlier step ran late.
+     */
+    AT_RISK,
+    /**
+     * The step completed by its deadline: its planned time plus any tolerance.
      */
     ON_TIME,
     /**
-     * The step completed after its planned time.
+     * The step completed after its deadline.
      */
     LATE,
     /**
-     * The planned time has passed and the step has not completed yet.
+     * The deadline has passed and the step has not completed yet.
      */
     OVERDUE
 }

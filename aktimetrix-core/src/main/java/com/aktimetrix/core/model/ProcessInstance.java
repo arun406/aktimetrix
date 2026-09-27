@@ -42,6 +42,10 @@ public class ProcessInstance {
     private boolean complete;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdOn;
+    /**
+     * When the process started in the business: the time of the event that started it.
+     */
+    private LocalDateTime startedAt;
     private Map<String, Object> metadata;
     @Transient
     private List<StepInstance> steps = new ArrayList<>();

@@ -22,6 +22,7 @@ public class AktimetrixProperties {
     private final Events events = new Events();
     private final Definitions definitions = new Definitions();
     private final Monitor monitor = new Monitor();
+    private final Outbox outbox = new Outbox();
 
     @Data
     public static class Events {
@@ -62,5 +63,25 @@ public class AktimetrixProperties {
          * How often to check for overdue steps, as an ISO-8601 duration such as {@code PT1M}.
          */
         private Duration overdueCheckInterval = Duration.ofMinutes(1);
+    }
+
+    @Data
+    public static class Outbox {
+        /**
+         * How often the relay publishes pending events to Kafka, as an ISO-8601 duration such as {@code PT1S}.
+         */
+        private Duration relayInterval = Duration.ofSeconds(1);
+        /**
+         * Most events published per relay run.
+         */
+        private int batchSize = 100;
+        /**
+         * How long a relay holds a claimed event before another may retry it.
+         */
+        private Duration lease = Duration.ofSeconds(30);
+        /**
+         * How long sent events are kept before being purged.
+         */
+        private Duration retention = Duration.ofDays(7);
     }
 }

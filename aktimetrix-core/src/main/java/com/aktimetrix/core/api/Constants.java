@@ -72,4 +72,8 @@ public class Constants {
     public final static String ENTITY_ID = "entityId";
     public final static String EVENT_DATA = "eventData";
     public final static String ENTITY = "entity";
+    /**
+     * Context property: when the event being processed happened in the business, a {@code LocalDateTime}.
+     */
+    public final static String OCCURRED_AT = "occurredAt";
 }

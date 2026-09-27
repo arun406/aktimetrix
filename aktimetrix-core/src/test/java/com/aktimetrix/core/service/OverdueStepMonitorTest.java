@@ -1,6 +1,5 @@
 package com.aktimetrix.core.service;
 
-import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.repository.StepInstanceRepository;
 import org.junit.jupiter.api.Test;
@@ -24,24 +23,20 @@ class OverdueStepMonitorTest {
     @Mock
     private StepInstanceRepository stepInstanceRepository;
     @Mock
-    private StepInstanceService stepInstanceService;
-    @Mock
-    private StepInstancePublisherService stepInstancePublisherService;
+    private StepProgressService stepProgressService;
 
     @Test
-    void marksAndPublishesStepsPastTheirPlan() {
+    void marksStepsPastTheirDeadlineOverdue() {
         Clock clock = Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC);
+        LocalDateTime now = LocalDateTime.of(2022, 5, 23, 12, 0);
         StepInstance deliver = new StepInstance();
         deliver.setStepCode("DELIVER");
-        deliver.setPlannedAt(LocalDateTime.of(2022, 5, 23, 9, 46));
-        when(stepInstanceRepository.findOverdue(LocalDateTime.of(2022, 5, 23, 12, 0))).thenReturn(List.of(deliver));
+        when(stepInstanceRepository.findOverdue(now)).thenReturn(List.of(deliver));
 
-        List<StepInstance> overdue = new OverdueStepMonitor(stepInstanceRepository, stepInstanceService,
-                stepInstancePublisherService, clock).checkOverdueSteps();
+        List<StepInstance> overdue = new OverdueStepMonitor(stepInstanceRepository, stepProgressService, clock)
+                .checkOverdueSteps();
 
         assertThat(overdue).containsExactly(deliver);
-        assertThat(deliver.getTimeliness()).isEqualTo(Timeliness.OVERDUE);
-        verify(stepInstanceService).save(deliver);
-        verify(stepInstancePublisherService).publish(deliver, "OVERDUE");
+        verify(stepProgressService).markOverdue(deliver, now);
     }
 }

@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.event.handler.DefaultEventHandler;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
+import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,6 +33,8 @@ public class ProcessConfig {
     private RegistryService registryService;
     @Autowired
     private DefaultEventHandler defaultEventHandler;
+    @Autowired
+    private AktimetrixMetrics metrics;
 
     @Bean
     public Consumer<Message<String>> processor() {
@@ -44,13 +47,21 @@ public class ProcessConfig {
                 });
             } catch (JsonProcessingException e) {
                 logger.error("Ignoring an event that is not valid JSON: {}", e.getOriginalMessage());
+                metrics.eventReceived(null, null, "invalid");
                 return;
             }
             if (event.getEventCode() == null || event.getTenantKey() == null || event.getEntityId() == null) {
                 logger.error("Ignoring an event without eventCode, tenantKey or entityId: {}", payload);
+                metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "invalid");
                 return;
             }
-            eventHandler(event.getEventCode()).handle(event);
+            try {
+                eventHandler(event.getEventCode()).handle(event);
+                metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "handled");
+            } catch (RuntimeException e) {
+                metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "failed");
+                throw e;
+            }
         };
     }
 

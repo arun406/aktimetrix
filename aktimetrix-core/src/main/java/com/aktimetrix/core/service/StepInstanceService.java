@@ -74,6 +74,7 @@ public class StepInstanceService {
                                    Map<String, Object> metadata, ObjectId processInstanceId) {
 
         List<StepInstance> steps = new ArrayList<>();
+        int sequence = 0;
         for (StepDefinition stepDefinition : stepDefinitions) {
             final String stepCode = stepDefinition.getStepCode();
             final String groupCode = stepDefinition.getGroupCode();
@@ -82,6 +83,7 @@ public class StepInstanceService {
             StepInstance stepInstance = prepareStepInstanceObject(tenant, processInstanceId, stepCode, functionalCtx,
                     groupCode, Constants.DEFAULT_VERSION, Constants.STATUS_CREATED);
             stepInstance.setMetadata(metadata);
+            stepInstance.setSequence(sequence++);
             steps.add(stepInstance);
         }
         // save
