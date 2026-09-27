@@ -1,7 +1,6 @@
 package com.aktimetrix.core.stereotypes;
 
 import com.aktimetrix.core.api.Constants;
-import com.aktimetrix.core.api.ProcessType;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

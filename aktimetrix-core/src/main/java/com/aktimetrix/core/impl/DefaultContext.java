@@ -1,7 +1,6 @@
 package com.aktimetrix.core.impl;
 
 import com.aktimetrix.core.api.Context;
-import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;

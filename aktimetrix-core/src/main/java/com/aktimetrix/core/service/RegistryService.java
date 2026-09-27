@@ -11,7 +11,6 @@ import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
 import com.aktimetrix.core.exception.UnknownNameException;
 import com.aktimetrix.core.impl.RegistryEntry;
-import com.aktimetrix.core.meter.api.MeasurementProcessor;
 import com.aktimetrix.core.meter.api.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,31 +139,6 @@ public class RegistryService {
         return eventHandler;
     }
 
-
-    /**
-     * Returns the process Handler Based on Process Type
-     *
-     * @param processType event type
-     * @return Event Handler Object
-     * @throws ProcessHandlerNotFoundException
-     */
-    public MeasurementProcessor getMeasurementProcessHandler(String processType) throws ProcessHandlerNotFoundException {
-        final List<Object> handlers = this.registry
-                .lookupAll(registryEntry -> registryEntry.hasAttribute(com.aktimetrix.core.api.Constants.ATT_PROCESS_HANDLER_SERVICE) &&
-                        registryEntry.attribute(com.aktimetrix.core.api.Constants.ATT_PROCESS_HANDLER_SERVICE).equals(com.aktimetrix.core.api.Constants.VAL_YES) &&
-                        registryEntry.attribute(Constants.ATT_PROCESS_TYPE).equals(processType)
-                );
-        logger.debug("applicable handlers {}", handlers);
-        if (handlers == null || handlers.isEmpty()) {
-            throw new ProcessHandlerNotFoundException(String.format("process handlers not found for %s", processType));
-        }
-
-        MeasurementProcessor processHandler = null;
-        for (Object m : handlers) {
-            processHandler = (MeasurementProcessor) m;
-        }
-        return processHandler;
-    }
 
     /**
      * Return applicable meter instance
