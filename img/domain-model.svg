@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4A5B63"/>
+    </marker>
+    <style>
+      .tb { font-size: 17px; font-weight: 700; fill: #1F2D33; }
+      .ts { font-size: 13px; fill: #5B6B72; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; fill: #0F4C5C; }
+      .h  { font-size: 14px; font-weight: 700; letter-spacing: 1.5px; }
+      .def { fill: #EEF7EF; stroke: #2E8B47; stroke-width: 1.6; }
+      .ins { fill: #EAF1FB; stroke: #2F6FC4; stroke-width: 1.6; }
+      .edge { stroke: #4A5B63; stroke-width: 1.8; fill: none; }
+      .card { font-size: 13px; font-weight: 700; fill: #4A5B63; }
+    </style>
+  </defs>
+  <rect width="1280" height="560" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
+
+  <rect x="40" y="36" width="540" height="490" rx="14" fill="#FFFFFF" stroke="#CFE3D3"/>
+  <text x="64" y="72" class="h" fill="#2E8B47">DEFINITIONS · design time</text>
+  <text x="64" y="94" class="ts">Reference data stored in MongoDB. Defined once per tenant.</text>
+
+  <rect x="700" y="36" width="540" height="490" rx="14" fill="#FFFFFF" stroke="#CAD9EE"/>
+  <text x="724" y="72" class="h" fill="#2F6FC4">INSTANCES · run time</text>
+  <text x="724" y="94" class="ts">Created automatically, one set per business entity (e.g. per order).</text>
+
+  <!-- definitions -->
+  <rect x="160" y="120" width="300" height="96" rx="12" class="def"/>
+  <text x="310" y="150" text-anchor="middle" class="tb">ProcessDefinition</text>
+  <text x="310" y="174" text-anchor="middle" class="mono">ORDER_DELIVERY</text>
+  <text x="310" y="198" text-anchor="middle" class="ts">starts on ORDER_PLACED_EVENT</text>
+
+  <rect x="160" y="270" width="300" height="96" rx="12" class="def"/>
+  <text x="310" y="300" text-anchor="middle" class="tb">StepDefinition</text>
+  <text x="310" y="324" text-anchor="middle" class="mono">PLACE · SHIP · DELIVER</text>
+  <text x="310" y="348" text-anchor="middle" class="ts">ordered milestones of the process</text>
+
+  <rect x="160" y="420" width="300" height="86" rx="12" class="def"/>
+  <text x="310" y="450" text-anchor="middle" class="tb">StepMeasurement</text>
+  <text x="310" y="474" text-anchor="middle" class="mono">TIME (P) · PCS (P)</text>
+  <text x="310" y="494" text-anchor="middle" class="ts">what to measure — Planned / Actual</text>
+
+  <path d="M310,216 L310,268" class="edge" marker-end="url(#arr)"/>
+  <text x="322" y="248" class="card">1..*</text>
+  <path d="M310,366 L310,418" class="edge" marker-end="url(#arr)"/>
+  <text x="322" y="398" class="card">0..*</text>
+
+  <!-- instances -->
+  <rect x="820" y="120" width="300" height="96" rx="12" class="ins"/>
+  <text x="970" y="150" text-anchor="middle" class="tb">ProcessInstance</text>
+  <text x="970" y="174" text-anchor="middle" class="mono">ORDER_DELIVERY · #1234</text>
+  <text x="970" y="198" text-anchor="middle" class="ts">+ metadata { orderId, customerId, … }</text>
+
+  <rect x="820" y="270" width="300" height="96" rx="12" class="ins"/>
+  <text x="970" y="300" text-anchor="middle" class="tb">StepInstance</text>
+  <text x="970" y="324" text-anchor="middle" class="mono">SHIP · #1234</text>
+  <text x="970" y="348" text-anchor="middle" class="ts">+ metadata { orderedOn, … }</text>
+
+  <rect x="820" y="420" width="300" height="86" rx="12" class="ins"/>
+  <text x="970" y="450" text-anchor="middle" class="tb">MeasurementInstance</text>
+  <text x="970" y="474" text-anchor="middle" class="mono">TIME = 2022-05-23T01:46</text>
+  <text x="970" y="494" text-anchor="middle" class="ts">type P · unit TIMESTAMP</text>
+
+  <path d="M970,216 L970,268" class="edge" marker-end="url(#arr)"/>
+  <text x="982" y="248" class="card">1..*</text>
+  <path d="M970,366 L970,418" class="edge" marker-end="url(#arr)"/>
+  <text x="982" y="398" class="card">0..*</text>
+
+  <!-- instantiates -->
+  <g stroke="#8A9AA1" stroke-width="1.6" stroke-dasharray="6 5" fill="none">
+    <path d="M460,168 L818,168" marker-end="url(#arr)"/>
+    <path d="M460,318 L818,318" marker-end="url(#arr)"/>
+    <path d="M460,463 L818,463" marker-end="url(#arr)"/>
+  </g>
+  <g font-size="13" fill="#5B6B72" text-anchor="middle">
+    <rect x="570" y="156" width="140" height="24" rx="12" fill="#F7FAFB" stroke="#DCE5E8"/>
+    <text x="640" y="173">instantiated as</text>
+    <rect x="570" y="306" width="140" height="24" rx="12" fill="#F7FAFB" stroke="#DCE5E8"/>
+    <text x="640" y="323">instantiated as</text>
+    <rect x="570" y="451" width="140" height="24" rx="12" fill="#F7FAFB" stroke="#DCE5E8"/>
+    <text x="640" y="468">computed by Meter</text>
+  </g>
+</svg>
