@@ -7,8 +7,10 @@ import com.aktimetrix.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
 import com.aktimetrix.core.impl.DefaultContext;
 import com.aktimetrix.core.impl.DefaultProcessDefinitionProvider;
+import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.service.RegistryService;
+import com.aktimetrix.core.service.StepProgressService;
 import com.aktimetrix.core.transferobjects.Event;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,8 @@ public abstract class AbstractEventHandler implements EventHandler {
     private DefaultProcessDefinitionProvider defaultProcessDefinitionProvider;
     @Autowired
     private RegistryService registryService;
+    @Autowired
+    private StepProgressService stepProgressService;
 
     /**
      * @param event
@@ -47,6 +51,12 @@ public abstract class AbstractEventHandler implements EventHandler {
                     }
                     DefaultContext processContext = prepareContext(definition, event);
                     processHandler.process(processContext);
+                    // the start event is also a milestone: record the steps it starts or completes
+                    ProcessInstance processInstance = processContext.getProcessInstance();
+                    if (processInstance != null && processInstance.getId() != null) {
+                        stepProgressService.recordMilestone(event.getEventCode(), processInstance,
+                                StepProgressService.occurredAt(event));
+                    }
                 });
             }
         } catch (DefinitionNotFoundException e) {

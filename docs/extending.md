@@ -9,7 +9,9 @@ in its internal registry.
 
 | Annotation | Implement / extend | Selected by | Purpose |
 |---|---|---|---|
-| `@EventHandler(eventType)` | `AbstractEventHandler` or `api.EventHandler` | event's `eventCode` | Entry point for a business event. |
+| `@EventHandler(eventType)` | `AbstractEventHandler` | event's `eventCode` | Starts the processes whose `startEventCodes` contain the event. |
+| `@EventHandler(eventType)` | `AbstractMilestoneEventHandler` | event's `eventCode` | Advances the steps of a running process and records actual measurements. |
+| `@EventHandler(eventType)` | `api.EventHandler` | event's `eventCode` | Any other handling of a business event. |
 | `@ProcessHandler(processType)` | `AbstractProcessor` or `api.Processor` | definition's `processCode` | Creates process and step instances. |
 | `@Measurement(code, stepCode)` | `AbstractMeter` or `meter.api.Meter` | step code + measurement code | Computes a planned measurement value. |
 | `@PreProcessor(code, processType, priority)` | `api.PreProcessor` | process type | Runs before instances are created: validate, enrich, filter. |
@@ -72,6 +74,7 @@ public class LateDeliveryAlert implements com.aktimetrix.core.api.PostProcessor 
 | `StepEventHandler` (`STEP_EVENT`) | event handler | Feeds step-instance events into the meter pipeline. |
 | `DefaultMeasurementProcessor` (`METERPROCESSOR`) | process handler | Runs the meters for each planned measurement of a step. |
 | `MeasurementInstancePublisherService` (`MI_PUBLISHER`) | post-processor | Publishes measurement instances to `measurement-instance-out-0`. |
+| `StepProgressService` | service | Moves steps through `Created` → `Started` → `Completed`, records actual `TIME` measurements, and completes the process. Used by both event handler base classes. |
 
 ## Modelling your own process
 

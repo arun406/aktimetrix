@@ -77,6 +77,15 @@ public abstract class AbstractProcessor implements Processor {
     @Transactional
     public void doProcess(Context context) {
         ProcessInstance processInstance = getProcessInstance(context);
+        if (processInstance.getId() != null) {
+            // replayed start event: keep the existing steps and publish nothing new for them
+            logger.info("Process instance {} already exists", processInstance.getId());
+            processInstance.setSteps(stepInstanceService.getStepInstancesByProcessInstanceId(context.getTenant(),
+                    processInstance.getId()));
+            context.setStepInstances(new ArrayList<>());
+            context.setProcessInstance(processInstance);
+            return;
+        }
         try {
             // get Step definitions
             final List<StepDefinition> stepDefinitions = getStepDefinitions(context);
