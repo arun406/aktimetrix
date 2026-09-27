@@ -115,10 +115,25 @@ A step with only `startEventCodes` completes on that event. Give it `endEventCod
 is then `Started` by the start event and `Completed` by the end event. Mark a step `"optionalInd": "Y"` if the
 process can complete without it.
 
-### 4. Write the meters
+### 4. Plan the steps
 
-A meter computes a step's planned time. `@Measurement(code, stepCode)` must match a planned measurement in the
-step's definition. The step's metadata holds what you need, here the order time:
+The simplest plans need no code. Give a step a duration, from the process start or from another step's completion,
+and optionally a tolerance:
+
+```json
+{ "tenant": "AA", "stepCode": "DELIVER", "status": "CONFIRMED",
+  "startEventCodes": ["ORDER_DELIVERED_EVENT"],
+  "plannedAfter": "SHIP", "plannedWithin": "PT8H", "tolerance": "PT30M" }
+```
+
+`DELIVER` is then planned 8 hours after the order actually ships, and counts as late 30 minutes after that.
+
+For plans you compute, write a meter instead, as below.
+
+#### Meters
+
+A meter computes a step's planned time in code, for example from business hours or a customer's service level.
+`@Measurement(code, stepCode)` must match a planned measurement in the step's definition. The step's metadata holds what you need, here the order time:
 
 ```java
 @Component

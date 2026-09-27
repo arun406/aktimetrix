@@ -30,13 +30,41 @@ Every step instance moves through a simple lifecycle, driven by the business eve
 | `Started` | An event in the step's `startEventCodes` arrives, and the step also has `endEventCodes`. |
 | `Completed` | An event in the step's `endEventCodes` arrives. A step without end codes is a single milestone and completes on its start event. |
 
-Alongside its status, each step instance carries three monitoring fields:
+### Planning a step
 
-| Field | Set when |
+A step gets its planned time in one of two ways:
+
+| How | Step definition | Planned at |
+|---|---|---|
+| **Duration from the start** | `"plannedWithin": "PT3H"` | the process start + 3 h |
+| **Duration from another step** | `"plannedAfter": "SORT", "plannedWithin": "PT5H"` | when `SORT` completes, its actual time + 5 h |
+| **Meter** | `"measurements": [{ "measurementCode": "TIME", "type": "P" }]` and a `@Measurement` meter | the process start, from whatever your meter computes |
+
+`"tolerance": "PT15M"` lets a step run 15 minutes past its planned time before it counts as late. The step's
+**deadline** is its planned time plus the tolerance.
+
+### Monitoring fields
+
+Alongside its status, each step instance carries:
+
+| Field | Meaning |
 |---|---|
-| `plannedAt` | The process starts: the planned `TIME` your meter computes for the step. |
-| `actualAt` | The step completes: when its event happened (see [the event format](getting-started.md#the-event-format)). |
-| `timeliness` | `ON_TIME` or `LATE` when the step completes (actual vs. planned); `OVERDUE` when its planned time passes with no event. An overdue step that later completes becomes `LATE`, or `ON_TIME` if the event shows it happened in time. |
+| `plannedAt` | When the step should happen. |
+| `lateAfter` | Its deadline: `plannedAt` + tolerance. |
+| `expectedAt` | Forecast of when it will happen, once an earlier step has run late. |
+| `actualAt` | When it did happen: the time of its event (see [the event format](getting-started.md#the-event-format)). |
+| `timeliness` | How it compares with its plan (below). |
+
+| Timeliness | When |
+|---|---|
+| `AT_RISK` | Not completed, and forecast past its deadline because an earlier step is late or overdue by as much. |
+| `OVERDUE` | Not completed, and its deadline has passed. |
+| `ON_TIME` | Completed by its deadline. |
+| `LATE` | Completed after its deadline. |
+
+A step can pass through `AT_RISK` and `OVERDUE` before it completes; it ends as `ON_TIME` or `LATE`, judged by when its
+event says it happened. Every change is published to `step-instance-out-0`, including `PLANNED` for steps planned
+from another step's completion.
 
 Each completion is also recorded as an **actual** `TIME` measurement (type `A`) next to the **planned** one. When
 every non-optional step (`optionalInd` ≠ `Y`) is complete, the process instance is marked complete. Replayed events

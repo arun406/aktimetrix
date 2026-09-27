@@ -78,10 +78,13 @@ To react to steps becoming late or overdue, consume `step-instance-out-0` instea
 | `DefaultEventHandler` | Handles every event without its own `@EventHandler`: starts the processes it starts, then records it as a milestone. |
 | `DefaultProcessor` | Process handler for processes without their own `@ProcessHandler`. |
 | `DefaultMeasurementProcessor` | Runs the meters of each new step and sets its `plannedAt` from the planned `TIME`. |
+| `StepPlanner` | Plans steps from the durations in their definitions, sets deadlines, and forecasts the steps at risk. |
 | `StepProgressService` | Moves steps through their lifecycle, records actual times, judges `ON_TIME` / `LATE`, and completes processes. |
-| `OverdueStepMonitor` | Marks steps past their planned time as `OVERDUE`. |
+| `OverdueStepMonitor` | Marks steps past their deadline as `OVERDUE`, and puts later steps at risk. |
 | `DefinitionLoader` | Loads `aktimetrix/*.json` definitions at startup. |
-| `ProcessInstancePublisherService`, `StepInstancePublisherService`, `MeasurementInstancePublisherService` | Publish to the outbound topics. |
+| `ProcessInstancePublisherService`, `StepInstancePublisherService`, `MeasurementInstancePublisherService` | Queue events for the outbound topics in the outbox. |
+| `OutboxRelay` | Publishes queued events to Kafka. |
+| `AktimetrixMetrics` | Records the Micrometer metrics. |
 
 ## Modelling your own process
 

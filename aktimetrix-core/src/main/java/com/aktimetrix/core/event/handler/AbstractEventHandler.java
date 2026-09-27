@@ -1,5 +1,6 @@
 package com.aktimetrix.core.event.handler;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.api.Processor;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
@@ -75,6 +76,7 @@ public abstract class AbstractEventHandler implements EventHandler {
         processContext.setProperty("eventData", event.getEventDetails());
         processContext.setTenant(event.getTenantKey());
         processContext.setProperty("processDefinition", definition);
+        processContext.setProperty(Constants.OCCURRED_AT, occurredAt(event));
         // pre- and post-processors are selected by the process type, which defaults to the process code
         processContext.setProcessType(definition.getProcessType() != null ? definition.getProcessType()
                 : definition.getProcessCode());

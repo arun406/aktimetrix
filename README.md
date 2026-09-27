@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/arun406/aktimetrix/actions/workflows/ci.yml"><img src="https://github.com/arun406/aktimetrix/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/java-11%2B-0F4C5C?logo=openjdk&logoColor=white" alt="Java 11+"></a>
   <a href="https://spring.io/projects/spring-boot"><img src="https://img.shields.io/badge/spring%20boot-2.7-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 2.7"></a>
   <a href="https://spring.io/projects/spring-cloud-stream"><img src="https://img.shields.io/badge/spring%20cloud%20stream-2021.0-6DB33F?logo=spring&logoColor=white" alt="Spring Cloud Stream"></a>
@@ -54,21 +55,24 @@ small **meter** for each deadline, and Aktimetrix:
 
 - consumes your business events from Kafka,
 - creates a **process instance** with its **steps** for every business entity, such as every order,
-- **plans** each step with your meters: "this order should ship by 01:46",
+- **plans** each step, with a duration from the definition or with your own meter: "this order should ship by 01:46",
 - **records** what actually happens as events arrive: "shipped at 01:30", judged **on time** or **late**,
-- **flags** steps whose deadline passes with no event as **overdue**,
+- **forecasts** the steps put **at risk** when an earlier one runs late, and flags missed deadlines as **overdue**,
 - answers "where is order 1234?" over REST, and publishes every change to Kafka for dashboards and alerts.
 
 ## Features
 
 | | |
 |---|---|
-| **Plan vs. actual** | Every step gets a planned time from your meter and an actual time from its milestone event, and is judged `ON_TIME` or `LATE`. |
-| **Overdue detection** | A monitor flags steps whose planned time passes without their event: the delays you most need to know about. |
+| **Plan vs. actual** | Every step gets a planned time and an actual time from its milestone event, and is judged `ON_TIME` or `LATE` against its deadline. |
+| **Plans without code** | `"plannedWithin": "PT2H"` in a step definition plans it from the process start or from an earlier step; a meter handles anything more complex. Tolerances set how late is too late. |
+| **At-risk forecasting** | When a step runs late, later steps are forecast by the same delay and flagged `AT_RISK` before they miss their deadline. |
+| **Overdue detection** | A monitor flags steps whose deadline passes without their event: the delays you most need to know about. |
 | **Declarative processes** | Processes and steps are JSON files in your code base, loaded at startup, or managed through the REST API. |
 | **Minimal code** | Add the dependency, the JSON and your meters. Event routing and process handling have defaults; override them only when you need to. |
 | **Spring Boot auto-configuration** | No `@ComponentScan`, no Kafka binding boilerplate: point it at Kafka and MongoDB. |
-| **Event-driven** | Built on Spring Cloud Stream and Apache Kafka. Process, step, and measurement changes are published to outbound topics. |
+| **Event-driven, reliably** | Built on Spring Cloud Stream and Apache Kafka. Process, step, and measurement changes go through a MongoDB outbox, so a Kafka outage delays events instead of losing them. |
+| **Observable** | Micrometer metrics for events, processes, and steps by timeliness, ready for Prometheus. |
 | **Idempotent** | One process instance per *tenant + process + entity*, and each step completes once, so replayed events are harmless. |
 | **Multi-tenant** | Every definition and instance carries a tenant key, and definitions never leak across tenants. |
 
@@ -82,10 +86,12 @@ Every business event goes through the same stages:
 
 1. **Start.** If the event starts a process (it is in the process's `startEventCodes`), Aktimetrix creates the
    process instance and its steps for the entity.
-2. **Plan.** Right away, your meters compute each new step's planned time.
+2. **Plan.** Right away, each new step gets its planned time, from a duration in its definition or from your meter,
+   and a deadline: the planned time plus any tolerance.
 3. **Record.** The event is then applied to every running process of the entity: steps that list it complete
-   with the event's time as their actual time, and are judged against their plan.
-4. **Watch.** Separately, the overdue monitor looks for steps past their planned time with no event yet.
+   with the event's time as their actual time, and are judged against their deadline. A late step puts later
+   steps **at risk**, and steps planned to follow it get their planned time.
+4. **Watch.** Separately, the overdue monitor looks for steps past their deadline with no event yet.
 
 Here is one order being placed, then shipped:
 
@@ -174,7 +180,10 @@ whether it has a planned time.
 ]
 ```
 
-**3. Write a meter for each deadline:** "an order should ship within 2 hours".
+**3. Plan the deadlines.** A fixed duration needs no code: give the step `"plannedWithin": "PT2H"` (from the process
+start) or add `"plannedAfter": "SHIP"` (from when `SHIP` completes), and optionally `"tolerance": "PT15M"`. For
+anything computed, such as business hours or a customer's tier, write a meter instead: "an order should ship within
+2 hours".
 
 ```java
 @Component
@@ -231,19 +240,20 @@ aktimetrix/
 
 ## Roadmap
 
-Aktimetrix is **alpha** (`0.0.1-SNAPSHOT`): the full loop of plan, actual, and overdue works end to end, as the
-reference project's tests show. APIs may still change.
+Aktimetrix is **alpha** (`0.0.1-SNAPSHOT`): the full loop of plan, actual, at risk and overdue works end to end, as
+the tests on an embedded Kafka and an in-memory MongoDB show. APIs may still change.
 
 - [x] Actual measurements and plan-vs-actual timeliness (`ON_TIME`, `LATE`)
 - [x] Overdue detection for events that never arrive
 - [x] Query API: "where is order #1234?"
 - [x] Spring Boot auto-configuration and process definitions as code
-- [ ] At-risk prediction: flag a step *before* its deadline, from the progress of earlier steps
-- [ ] Planned durations and tolerances in the step definition, so simple deadlines need no meter
-- [ ] Reliable delivery: an outbox so MongoDB and Kafka stay consistent under failure
-- [ ] Metrics with Micrometer
-- [ ] Publish to Maven Central
-- [ ] Continuous integration
+- [x] At-risk forecasting from the delays of earlier steps
+- [x] Planned durations and tolerances in the step definition, so simple deadlines need no meter
+- [x] Reliable delivery through a MongoDB outbox
+- [x] Metrics with Micrometer
+- [x] Continuous integration on JDK 11, 17 and 21
+- [ ] Publish to Maven Central: the release pipeline is ready ([RELEASING.md](./RELEASING.md)); the first release
+  waits on the Maven Central namespace and signing key
 
 ## Contributing
 
