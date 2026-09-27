@@ -19,7 +19,14 @@ public class StepDefinitionService {
      * @param stepDefinition
      * @return
      */
+    /**
+     * Saves the step definition, replacing an existing one with the same tenant and step code.
+     */
     public StepDefinition add(StepDefinition stepDefinition) {
+        StepDefinition existing = repository.findByStepCode(stepDefinition.getTenant(), stepDefinition.getStepCode());
+        if (existing != null) {
+            stepDefinition.setId(existing.getId());
+        }
         repository.save(stepDefinition);
         return stepDefinition;
     }

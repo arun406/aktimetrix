@@ -2,21 +2,27 @@
 
 [← Back to README](../README.md)
 
-## Annotations
+A monitor needs only definitions and meters. Everything else has a default you can replace with a Spring bean that
+carries a stereotype annotation; Aktimetrix discovers it at startup.
 
-Every extension is a Spring bean with a stereotype annotation. Aktimetrix discovers it at startup and registers it
-in its internal registry.
+## Extension points
 
-| Annotation | Implement / extend | Selected by | Purpose |
-|---|---|---|---|
-| `@EventHandler(eventType)` | `AbstractEventHandler` or `api.EventHandler` | event's `eventCode` | Entry point for a business event. |
-| `@ProcessHandler(processType)` | `AbstractProcessor` or `api.Processor` | definition's `processCode` | Creates process and step instances. |
-| `@Measurement(code, stepCode)` | `AbstractMeter` or `meter.api.Meter` | step code + measurement code | Computes a planned measurement value. |
-| `@PreProcessor(code, processType, priority)` | `api.PreProcessor` | process type | Runs before instances are created: validate, enrich, filter. |
-| `@PostProcessor(code, processType, priority)` | `api.PostProcessor` | process type | Runs after instances are created: publish, notify, integrate. |
-| `@Loggable` | any bean exposing an interface | n/a | Logs entry, exit, and execution time of its methods. |
+| Annotation | Extend / implement | Selected by | Default when absent | Purpose |
+|---|---|---|---|---|
+| `@Measurement(code, stepCode)` | `AbstractMeter` or `meter.api.Meter` | step code + measurement code | none: the planned value is skipped, with a warning | Computes a step's planned value. |
+| `@ProcessHandler(processType)` | `AbstractProcessor` | the process code | `DefaultProcessor`: the event's entity becomes the metadata | Chooses the metadata of the process and its steps. |
+| `@EventHandler(eventType)` | `AbstractEventHandler` | the event code | `DefaultEventHandler` | Starts processes and records milestones; override to read the entity id or event time differently. |
+| `@EventHandler(eventType)` | `AbstractMilestoneEventHandler` | the event code | `DefaultEventHandler` | Records milestones only, for events that never start a process. |
+| `@PreProcessor(code, processType, priority)` | `api.PreProcessor` | the process type, or `*` | none | Runs before a process instance is created: validate, enrich. |
+| `@PostProcessor(code, processType, priority)` | `api.PostProcessor` | the process type, or `*` | none | Runs after a process instance is created and planned: notify, integrate. |
+| `@Loggable` | any bean with an interface | n/a | n/a | Logs entry, exit, and execution time of its methods. |
 
-### Example: enrich the context before processing
+**Process type.** Pre- and post-processors are selected by the process definition's `processType`, which defaults
+to its `processCode`, so `processType = "ORDER_DELIVERY"` targets that process. Use `processType = "*"` for every
+process. Several processors for one process run in ascending `priority` order; the default is `1`, and the built-in
+publishers run last with `1000`.
+
+### Example: enrich the order before the process starts
 
 ```java
 @Component
@@ -37,45 +43,49 @@ public class CustomerTierPreProcessor implements com.aktimetrix.core.api.PreProc
 }
 ```
 
-> Pre-processors are matched on the definition's `processType` field, so add `"processType": "ORDER_DELIVERY"`
-> to the process definition when you use them.
+A meter can then plan from `customerTier`, for example giving premium customers a shorter delivery deadline.
 
-### Example: react to newly computed measurements
+### Example: act on a newly planned process
 
-Measurement post-processors run in the meter pipeline under the `METERPROCESSOR` process type, next to the
-built-in `MI_PUBLISHER`:
+Post-processors see the created process instance and its planned steps:
 
 ```java
 @Slf4j
 @Component
-@PostProcessor(code = "LATE_DELIVERY_ALERT", processType = "METERPROCESSOR")
-public class LateDeliveryAlert implements com.aktimetrix.core.api.PostProcessor {
+@PostProcessor(code = "LATE_EVENING_ORDERS", processType = "ORDER_DELIVERY")
+public class LateEveningDeliveryWarning implements com.aktimetrix.core.api.PostProcessor {
 
     private static final LocalTime CUT_OFF = LocalTime.of(20, 0);
 
     @Override
     public void postProcess(Context context) {
-        context.getMeasurementInstances().stream()
-                .filter(m -> "DELIVER".equals(m.getStepCode()) && "TIME".equals(m.getCode()))
-                .filter(m -> LocalDateTime.parse(m.getValue()).toLocalTime().isAfter(CUT_OFF))
-                .forEach(m -> log.warn("Delivery planned after cut-off: {}", m));
+        context.getProcessInstance().getSteps().stream()
+                .filter(step -> "DELIVER".equals(step.getStepCode()) && step.getPlannedAt() != null)
+                .filter(step -> step.getPlannedAt().toLocalTime().isAfter(CUT_OFF))
+                .forEach(step -> log.warn("Order {} is planned for delivery after {}",
+                        context.getProperty(Constants.ENTITY_ID), CUT_OFF));
     }
 }
 ```
 
-### Built-in components
+To react to steps becoming late or overdue, consume `step-instance-out-0` instead: see the
+[configuration reference](configuration.md#kafka-topics).
 
-| Component | Type | Role |
-|---|---|---|
-| `ProcessInstancePublisherService` (`PI_PUBLISHER`) | post-processor | Publishes process instances to `process-instance-out-0`. |
-| `StepInstancePublisherService` (`SI_PUBLISHER`) | post-processor | Publishes step instances to `step-instance-out-0`. |
-| `StepEventHandler` (`STEP_EVENT`) | event handler | Feeds step-instance events into the meter pipeline. |
-| `DefaultMeasurementProcessor` (`METERPROCESSOR`) | process handler | Runs the meters for each planned measurement of a step. |
-| `MeasurementInstancePublisherService` (`MI_PUBLISHER`) | post-processor | Publishes measurement instances to `measurement-instance-out-0`. |
+## Built-in components
+
+| Component | Role |
+|---|---|
+| `DefaultEventHandler` | Handles every event without its own `@EventHandler`: starts the processes it starts, then records it as a milestone. |
+| `DefaultProcessor` | Process handler for processes without their own `@ProcessHandler`. |
+| `DefaultMeasurementProcessor` | Runs the meters of each new step and sets its `plannedAt` from the planned `TIME`. |
+| `StepProgressService` | Moves steps through their lifecycle, records actual times, judges `ON_TIME` / `LATE`, and completes processes. |
+| `OverdueStepMonitor` | Marks steps past their planned time as `OVERDUE`. |
+| `DefinitionLoader` | Loads `aktimetrix/*.json` definitions at startup. |
+| `ProcessInstancePublisherService`, `StepInstancePublisherService`, `MeasurementInstancePublisherService` | Publish to the outbound topics. |
 
 ## Modelling your own process
 
-Monitoring a new domain mostly means writing new reference data. A loan-origination process might look like this:
+Monitoring a new domain is mostly writing new definitions. A loan-origination process might look like this:
 
 ```json
 {
@@ -94,13 +104,14 @@ Monitoring a new domain mostly means writing new reference data. A loan-originat
 }
 ```
 
-Then add:
+Then:
 
-1. an `@EventHandler(eventType = "LOAN_APPLICATION_SUBMITTED")`,
-2. an `@ProcessHandler(processType = "LOAN_ORIGINATION")` that copies the applicant and product details into
-   metadata,
-3. one `@Measurement` meter per planned value, for example `@Measurement(code = "TIME", stepCode = "APPROVAL")`
-   returning *submitted + 48 business hours*.
+1. define each step with the event that completes it, e.g. `APPROVAL` completed by `LOAN_APPROVED`, and a planned
+   `TIME` where there is a deadline;
+2. write one `@Measurement(code = "TIME", stepCode = "…")` meter per deadline, for example `APPROVAL` at
+   *submitted + 48 business hours*;
+3. optionally, add a `@ProcessHandler(processType = "LOAN_ORIGINATION")` that keeps the applicant and product
+   details as metadata.
 
 ---
 

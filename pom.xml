@@ -21,7 +21,7 @@
         <spring-cloud.version>2021.0.1</spring-cloud.version>
         <springfox.version>3.0.0</springfox.version>
         <spring-boot.version>2.7.0</spring-boot.version>
-        <lombok.version>1.18.24</lombok.version>
+        <lombok.version>1.18.34</lombok.version>
         <jackson-bom.version>2.13.2</jackson-bom.version>
         <spring-data-bom.version>2021.1.4</spring-data-bom.version>
     </properties>
