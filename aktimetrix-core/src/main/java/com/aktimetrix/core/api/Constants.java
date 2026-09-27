@@ -31,6 +31,18 @@ public class Constants {
     public static final String CREATED = "C";
     public static final String STATUS_CREATED = "Created";
     public static final String STATUS_STARTED = "Started";
+    /**
+     * Process type of pre- and post-processors that apply to every process.
+     */
+    public static final String ALL_PROCESS_TYPES = "*";
+    /**
+     * Priority of the built-in publishers: they run after post-processors with the default priority.
+     */
+    public static final int BUILT_IN_PRIORITY = 1000;
+    /**
+     * Process type of the built-in processor that runs the meters of a step.
+     */
+    public static final String METER_PROCESSOR = "METERPROCESSOR";
     public static final String STATUS_COMPLETED = "Completed";
     public static final String MEASUREMENT_CODE_TIME = "TIME";
     public static final String MEASUREMENT_UNIT_TIMESTAMP = "TIMESTAMP";

@@ -1,5 +1,8 @@
 package com.aktimetrix.core.model;
 
+import com.aktimetrix.core.api.Timeliness;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
@@ -13,7 +16,9 @@ public class StepInstance {
 
     private String tenant;
     @Id
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId processInstanceId;
     private String stepCode;
     private String locationCode;
@@ -23,6 +28,18 @@ public class StepInstance {
     private String functionalCtx;
     private Map<String, Object> metadata;
     private LocalDateTime createdOn;
+    /**
+     * When the step should happen: the planned TIME measurement computed by its meter, if any.
+     */
+    private LocalDateTime plannedAt;
+    /**
+     * When the step actually completed.
+     */
+    private LocalDateTime actualAt;
+    /**
+     * How the step compares with its plan; {@code null} until it can be judged.
+     */
+    private Timeliness timeliness;
 
     public StepInstance() {
         super();

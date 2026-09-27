@@ -4,113 +4,44 @@
 
 ## Run the reference project
 
-The quickest way to see Aktimetrix run is the
-[**Order Monitor reference project**](https://github.com/arun406/aktimetrix-reference-project-order-monitor).
-
-### Prerequisites
-
-- JDK 11 or newer
-- Docker (for local Kafka and MongoDB), or your own Kafka and MongoDB instances
-- Git
-
-### 1. Build and install the framework
-
-Aktimetrix is not yet published to Maven Central, so install it into your local Maven repository:
+The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) is a complete Aktimetrix
+application: it monitors order delivery (placed → shipped within 2 hours → delivered within 10 hours). You need
+**JDK 11+** and **Docker**.
 
 ```bash
+# 1. Build and install the framework (it is not on Maven Central yet)
 git clone https://github.com/arun406/aktimetrix.git
-cd aktimetrix
-./mvnw clean install
-```
+(cd aktimetrix && ./mvnw install -DskipTests)
 
-### 2. Start Kafka and MongoDB
-
-Save this as `docker-compose.yml` in the `aktimetrix` directory and run `docker compose up -d`:
-
-```yaml
-services:
-  kafka:
-    image: apache/kafka:3.7.0      # single-node KRaft broker on localhost:9092
-    ports: ["9092:9092"]
-  mongo:
-    image: mongo:6
-    ports: ["27017:27017"]
-```
-
-### 3. Load the reference data
-
-```bash
-cd ..
+# 2. Start Kafka and MongoDB, then the monitor
 git clone https://github.com/arun406/aktimetrix-reference-project-order-monitor.git
 cd aktimetrix-reference-project-order-monitor
-
-for c in processDefinitions stepDefinitions eventTypeDefinitions measurementTypeDefinitions; do
-  docker compose -f ../aktimetrix/docker-compose.yml exec -T mongo \
-    mongoimport --db svm --collection "$c" --jsonArray < "src/main/resources/$c.json"
-done
-```
-
-### 4. Run the monitor
-
-Point the application at your local services (these override `application.yml`):
-
-```bash
-export SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/svm
-export SPRING_KAFKA_PROPERTIES_BOOTSTRAP_SERVERS=localhost:9092
-export SPRING_KAFKA_PROPERTIES_SECURITY_PROTOCOL=PLAINTEXT
+docker compose up -d
 ./mvnw spring-boot:run
 ```
 
-### 5. Send a business event and watch the plan appear
+In a second terminal, send order `1234`'s events and check on it after each one:
 
 ```bash
-# publish an ORDER_PLACED_EVENT
-docker compose -f ../aktimetrix/docker-compose.yml exec -T kafka \
-  /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 \
-  --topic order-event-topic < requests/request1.json
+send() { docker compose exec -T kafka /opt/kafka/bin/kafka-console-producer.sh \
+           --bootstrap-server localhost:9092 --topic order-events < "events/$1"; }
 
-# read the planned measurements
-docker compose -f ../aktimetrix/docker-compose.yml exec kafka \
-  /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
-  --topic measurement-instance-out-0 --from-beginning
+send order-placed.json
+curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'   # SHIP planned 01:46, DELIVER 09:46
+
+send order-shipped.json
+curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'   # SHIP ON_TIME
+
+send order-delivered.json
+curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'   # DELIVER LATE, process Completed
 ```
 
-Then report the shipment and watch the actual time arrive next to the plan:
-
-```bash
-# publish an ORDER_SHIPPED_EVENT for the same order
-docker compose -f ../aktimetrix/docker-compose.yml exec -T kafka \
-  /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 \
-  --topic order-event-topic < requests/request2.json
-```
-
-Each message on `measurement-instance-out-0` looks like this (`type` is `P` for planned, `A` for actual):
-
-```json
-{
-  "tenantKey": "AA",
-  "eventType": "Measurement_Event",
-  "eventCode": "CREATED",
-  "eventName": "Measurement Instance Created Event",
-  "source": "Meter",
-  "entityType": "com.aktimetrix.measurement.instance",
-  "entity": {
-    "tenant": "AA",
-    "stepCode": "SHIP",
-    "code": "TIME",
-    "value": "2022-05-23T01:46",
-    "unit": "TIMESTAMP",
-    "type": "P",
-    "processInstanceId": "62a1…",
-    "stepInstanceId": "62a1…"
-  }
-}
-```
+The reference project's README explains each result, and `./mvnw test` runs the same story against an embedded
+Kafka and an in-memory MongoDB, with no Docker needed.
 
 ## Build a monitor step by step
 
-This section rebuilds the order monitor from scratch. You need three pieces of code: an **event handler**, a
-**process handler**, and one **meter** per planned measurement.
+This section builds the order monitor from scratch.
 
 ### 1. Add the dependency
 
@@ -122,120 +53,72 @@ This section rebuilds the order monitor from scratch. You need three pieces of c
 </dependency>
 ```
 
-### 2. Scan the Aktimetrix components
+It brings Spring Web, Spring Data MongoDB and Spring Cloud Stream with the Kafka binder, and configures itself
+through Spring Boot auto-configuration. Your application class is a plain `@SpringBootApplication`.
 
-```java
-@SpringBootApplication
-@ComponentScan(basePackages = {"com.example.ordermonitor", "com.aktimetrix.core"})
-public class OrderMonitorApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(OrderMonitorApplication.class, args);
-    }
-}
+### 2. Point it at Kafka and MongoDB
+
+```yaml
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/order-monitor}
+  kafka:
+    properties:
+      bootstrap.servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+aktimetrix:
+  events:
+    topic: order-events   # the topic your systems publish business events to
 ```
 
-### 3. Describe the process as reference data
+Everything else has defaults; see the [configuration reference](configuration.md).
 
-A process definition ties the process to the events that start it and the steps it contains:
+### 3. Describe the process
+
+Definitions live with your code under `src/main/resources/aktimetrix/` and are loaded at startup, replacing any
+existing definition with the same tenant and code.
+
+`process-definitions.json` names the process, the entity it follows, the events that start it, and its steps in
+order:
 
 ```json
-{
-  "tenant": "AA",
-  "processCode": "ORDER_DELIVERY",
-  "processName": "Order Delivery process",
-  "categoryCode": "ORDER",
-  "subCategoryCode": "DELIVERY",
-  "entityType": "com.ecom.order",
-  "startEventCodes": ["ORDER_PLACED_EVENT"],
-  "status": "CONFIRMED",
-  "steps": [ { "stepCode": "PLACE" }, { "stepCode": "SHIP" }, { "stepCode": "DELIVER" } ]
-}
+[
+  {
+    "tenant": "AA",
+    "processCode": "ORDER_DELIVERY",
+    "processName": "Order delivery",
+    "entityType": "com.ecom.order",
+    "startEventCodes": ["ORDER_PLACED_EVENT"],
+    "status": "CONFIRMED",
+    "steps": [ { "stepCode": "PLACE" }, { "stepCode": "SHIP" }, { "stepCode": "DELIVER" } ]
+  }
+]
 ```
 
-Each step definition declares what should be measured at that step (`P` = planned, `A` = actual):
+`step-definitions.json` says which event completes each step, and which steps have a planned time (`P`):
 
 ```json
-{
-  "tenant": "AA",
-  "stepCode": "SHIP",
-  "stepName": "Order Shipped Step",
-  "status": "CONFIRMED",
-  "startEventCodes": ["ORDER_SHIPPED_EVENT"],
-  "measurements": [ { "measurementCode": "TIME", "type": "P" } ]
-}
+[
+  { "tenant": "AA", "stepCode": "PLACE", "status": "CONFIRMED",
+    "startEventCodes": ["ORDER_PLACED_EVENT"] },
+  { "tenant": "AA", "stepCode": "SHIP", "status": "CONFIRMED",
+    "startEventCodes": ["ORDER_SHIPPED_EVENT"],
+    "measurements": [ { "measurementCode": "TIME", "type": "P" } ] },
+  { "tenant": "AA", "stepCode": "DELIVER", "status": "CONFIRMED",
+    "startEventCodes": ["ORDER_DELIVERED_EVENT"],
+    "measurements": [ { "measurementCode": "TIME", "type": "P" } ] }
+]
 ```
 
-### 4. Handle the triggering event
+A step with only `startEventCodes` completes on that event. Give it `endEventCodes` too when it has a duration: it
+is then `Started` by the start event and `Completed` by the end event. Mark a step `"optionalInd": "Y"` if the
+process can complete without it.
 
-An event handler receives every event whose `eventCode` matches `eventType`. The built-in
-`AbstractEventHandler` resolves the matching process definitions and dispatches to their process handlers, so
-most handlers are one line:
+### 4. Write the meters
 
-```java
-@Component
-@EventHandler(eventType = "ORDER_PLACED_EVENT")
-public class OrderPlacedEventHandler extends AbstractEventHandler {
-}
-```
-
-Inbound events use the standard Aktimetrix envelope. Your domain object goes in `entity`:
-
-```json
-{
-  "tenantKey": "AA",
-  "eventId": "51541182-81fa-4727-afd5-114acdf086b1",
-  "eventType": "ORDER",
-  "eventCode": "ORDER_PLACED_EVENT",
-  "eventName": "order placed event",
-  "eventTime": "2015-11-18T00:00:00.000+0200",
-  "eventUTCTime": "2015-11-18 00:00:00",
-  "source": "AA",
-  "entityId": "1234",
-  "entityType": "com.ecom.order",
-  "entity": {
-    "orderId": "1234",
-    "orderedOn": "2022-05-22 23:46:00",
-    "customerId": "1",
-    "orderTotal": 100,
-    "orderCurrency": "USD"
-  },
-  "eventDetails": {}
-}
-```
-
-### 5. Create the process handler
-
-The process handler's `processType` must equal the definition's `processCode`. Extend `AbstractProcessor` and
-decide which metadata to keep on the process instance and on each step instance:
-
-```java
-@Component
-@ProcessHandler(processType = "ORDER_DELIVERY")
-public class OrderProcessor extends AbstractProcessor {
-
-    private static final DateTimeFormatter IN = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    @Override
-    protected Map<String, Object> getProcessMetadata(Context context) {
-        // keep the whole order on the process instance
-        return (Map<String, Object>) context.getProperty(Constants.ENTITY);
-    }
-
-    @Override
-    protected Map<String, Object> getStepMetadata(Context context) {
-        Map<String, Object> order = (Map<String, Object>) context.getProperty(Constants.ENTITY);
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("orderId", order.get("orderId"));
-        metadata.put("orderedOn", LocalDateTime.parse((String) order.get("orderedOn"), IN));
-        return metadata;
-    }
-}
-```
-
-### 6. Write the meters
-
-A meter computes one measurement for one step. `@Measurement(code, stepCode)` must match a
-`measurementCode` in that step's definition:
+A meter computes a step's planned time. `@Measurement(code, stepCode)` must match a planned measurement in the
+step's definition. The step's metadata holds what you need, here the order time:
 
 ```java
 @Component
@@ -250,56 +133,103 @@ public class OrderShippedPlanTimeMeter extends AbstractMeter {
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
         // orders should ship within 2 hours of being placed
-        LocalDateTime orderedOn = LocalDateTime.parse((String) step.getMetadata().get("orderedOn"));
-        return String.valueOf(orderedOn.plusHours(2));
+        return String.valueOf(metadataTime(step, "orderedOn").plusHours(2));
     }
 }
 ```
+
+Write one meter per planned step (`OrderDeliveredPlanTimeMeter` returns *ordered + 10 h*). A planned `TIME` must be an
+ISO-8601 local date-time, which `String.valueOf(LocalDateTime)` produces. `metadataTime` reads a date-time from the
+metadata whether it is stored as a `LocalDateTime`, a `Date`, or a string.
+
+That is a working monitor: events start the process, meters plan it, milestone events complete its steps, and the
+overdue monitor watches the deadlines.
+
+### 5. Optional: choose the metadata
+
+By default, the event's entity becomes the metadata of the process and of every step. To keep only what you need,
+or to convert it, add a process handler for the process code:
 
 ```java
 @Component
-@Measurement(code = "TIME", stepCode = "DELIVER")
-public class OrderDeliveredPlanTimeMeter extends AbstractMeter {
+@ProcessHandler(processType = "ORDER_DELIVERY")
+public class OrderProcessor extends AbstractProcessor {
 
-    @Override
-    protected String getMeasurementUnit(String tenant, StepInstance step) {
-        return "TIMESTAMP";
+    private final ObjectMapper objectMapper;
+
+    public OrderProcessor(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @Override
-    protected String getMeasurementValue(String tenant, StepInstance step) {
-        // and be delivered within 10 hours
-        LocalDateTime orderedOn = LocalDateTime.parse((String) step.getMetadata().get("orderedOn"));
-        return String.valueOf(orderedOn.plusHours(10));
+    protected Map<String, Object> getProcessMetadata(Context context) {
+        Order order = objectMapper.convertValue(context.getProperty(Constants.ENTITY), Order.class);
+        return Map.of("orderId", order.getOrderId(), "customerId", order.getCustomerId());
+    }
+
+    @Override
+    protected Map<String, Object> getStepMetadata(Context context) {
+        Order order = objectMapper.convertValue(context.getProperty(Constants.ENTITY), Order.class);
+        return Map.of("orderId", order.getOrderId(), "orderedOn", order.getOrderedOn());
     }
 }
 ```
 
-That's a working plan: three small classes and some JSON.
+### 6. Optional: read the event time from the entity
 
-### 7. Track what actually happens
-
-To record when orders really ship and are delivered, add one milestone handler per milestone event. Aktimetrix
-finds the order's active process instance, completes every step whose definition lists the event code, and
-publishes an actual `TIME` measurement:
+A step's actual time is when its event *happened*. Aktimetrix reads it from the event envelope. If your events carry
+it inside the entity instead, for example `"shippedAt"`, add an event handler for that event code and override
+`occurredAt`:
 
 ```java
 @Component
 @EventHandler(eventType = "ORDER_SHIPPED_EVENT")
 public class OrderShippedEventHandler extends AbstractMilestoneEventHandler {
-}
 
-@Component
-@EventHandler(eventType = "ORDER_DELIVERED_EVENT")
-public class OrderDeliveredEventHandler extends AbstractMilestoneEventHandler {
+    @Override
+    protected LocalDateTime occurredAt(Event<?, ?> event) {
+        Map<?, ?> order = (Map<?, ?>) event.getEntity();
+        return LocalDateTime.parse(order.get("shippedAt").toString(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
 }
 ```
 
-Milestone events use the same envelope as the start event and must carry the same `entityType` and `entityId`.
-The actual time is taken from `eventTime` (falling back to `eventUTCTime`); override `occurredAt(event)` to read
-it from your entity instead.
+Extend `AbstractEventHandler` instead for an event that can also start a process. See
+[Extending Aktimetrix](extending.md) for the other extension points.
 
-That's the whole monitor: five small classes and some JSON.
+## The event format
+
+Every business event uses the same envelope. Your domain object goes in `entity`:
+
+```json
+{
+  "tenantKey": "AA",
+  "eventId": "51541182-81fa-4727-afd5-114acdf086b1",
+  "eventType": "ORDER",
+  "eventCode": "ORDER_PLACED_EVENT",
+  "eventName": "Order placed",
+  "eventTime": "2022-05-22T23:46:00.000+0000",
+  "eventUTCTime": "2022-05-22 23:46:00",
+  "source": "shop",
+  "entityType": "com.ecom.order",
+  "entityId": "1234",
+  "entity": { "orderId": "1234", "orderedOn": "2022-05-22 23:46:00", "customerId": "1" },
+  "eventDetails": {}
+}
+```
+
+| Field | Required | Used for |
+|---|---|---|
+| `tenantKey` | yes | Selects the tenant's definitions and instances. |
+| `eventCode` | yes | Which processes the event starts, and which steps it completes. |
+| `entityId` | yes | Identifies the business entity: all events of order `1234` carry `"1234"`. |
+| `entityType` | yes | Must equal the process definition's `entityType`. |
+| `eventTime` | recommended | When it happened (`yyyy-MM-dd'T'HH:mm:ss.SSSZ`), converted to `aktimetrix.time-zone`. |
+| `eventUTCTime` | fallback | When it happened, in UTC (`yyyy-MM-dd HH:mm:ss`), if `eventTime` is absent. |
+| `entity` | no | Your domain object; becomes metadata. |
+
+Events with a missing `tenantKey`, `eventCode` or `entityId` are logged and skipped. Publish all events of one entity
+with the entity id as the Kafka key, so they are processed in order.
 
 ---
 

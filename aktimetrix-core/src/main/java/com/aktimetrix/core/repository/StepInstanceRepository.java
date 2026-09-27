@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -30,6 +31,12 @@ public interface StepInstanceRepository extends MongoRepository<StepInstance, St
 
     @Query("{ 'tenant' : ?0 , 'processInstanceId': ?1 }")
     List<StepInstance> findByTenantAndProcessInstanceId(String tenant, ObjectId processInstanceId);
+
+    /**
+     * Steps whose planned time is before {@code now}, that have not completed and have not been judged yet.
+     */
+    @Query("{ 'status' : { $ne: 'Completed' }, 'plannedAt': { $lt: ?0 }, 'timeliness': null }")
+    List<StepInstance> findOverdue(LocalDateTime now);
 
     /**
      * @param tenant

@@ -1,0 +1,5 @@
+[
+  { "tenant": "T1", "stepCode": "BOOK", "status": "CONFIRMED", "startEventCodes": ["PARCEL_BOOKED"] },
+  { "tenant": "T1", "stepCode": "PICKUP", "status": "CONFIRMED", "startEventCodes": ["PARCEL_PICKED_UP"],
+    "measurements": [ { "measurementCode": "TIME", "type": "P" } ] }
+]
