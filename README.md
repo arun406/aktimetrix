@@ -8,7 +8,7 @@
   <a href="https://spring.io/projects/spring-cloud-stream"><img src="https://img.shields.io/badge/spring%20cloud%20stream-2021.0-6DB33F?logo=spring&logoColor=white" alt="Spring Cloud Stream"></a>
   <a href="https://kafka.apache.org/"><img src="https://img.shields.io/badge/apache%20kafka-supported-231F20?logo=apachekafka&logoColor=white" alt="Apache Kafka"></a>
   <a href="https://www.mongodb.com/"><img src="https://img.shields.io/badge/mongodb-supported-47A248?logo=mongodb&logoColor=white" alt="MongoDB"></a>
-  <a href="#license"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
   <a href="#project-status--roadmap"><img src="https://img.shields.io/badge/status-alpha-F5A524" alt="Status: alpha"></a>
 </p>
 
@@ -676,6 +676,6 @@ For larger changes, please open an issue first so the design can be discussed.
 
 ## License
 
-Aktimetrix is open source software released under the **MIT License**.
+Aktimetrix is open source software released under the [MIT License](./LICENSE).
 
 <p align="center"><sub>Built by <a href="https://github.com/arun406">Arun Kumar Kandakatla</a> and contributors.</sub></p>
