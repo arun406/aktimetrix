@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="380" viewBox="0 0 1280 380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <style>
+      .tb { font-size: 17px; font-weight: 700; fill: #1F2D33; }
+      .t { font-size: 14px; fill: #1F2D33; }
+      .ts { font-size: 13px; fill: #5B6B72; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; fill: #0F4C5C; }
+      .tick { font-size: 12px; fill: #8A9AA1; }
+    </style>
+  </defs>
+  <rect width="1280" height="380" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="40" y="50" class="tb">Process instance ORDER_DELIVERY · order #1234</text>
+  <text x="40" y="74" class="ts">Planned TIME measurements produced by the reference project's Meters after one ORDER_PLACED_EVENT</text>
+
+  <!-- axis: 0h at x=180, 10h at x=1100 => 92px per hour -->
+  <line x1="180" y1="200" x2="1100" y2="200" stroke="#CAD5D9" stroke-width="8" stroke-linecap="round"/>
+  <g class="tick" text-anchor="middle">
+    <line x1="180" y1="222" x2="180" y2="230" stroke="#B7C7CD"/><text x="180" y="246">+0h</text>
+    <line x1="364" y1="222" x2="364" y2="230" stroke="#B7C7CD"/><text x="364" y="246">+2h</text>
+    <line x1="548" y1="222" x2="548" y2="230" stroke="#B7C7CD"/><text x="548" y="246">+4h</text>
+    <line x1="732" y1="222" x2="732" y2="230" stroke="#B7C7CD"/><text x="732" y="246">+6h</text>
+    <line x1="916" y1="222" x2="916" y2="230" stroke="#B7C7CD"/><text x="916" y="246">+8h</text>
+    <line x1="1100" y1="222" x2="1100" y2="230" stroke="#B7C7CD"/><text x="1100" y="246">+10h</text>
+  </g>
+
+  <!-- PLACE -->
+  <circle cx="180" cy="200" r="20" fill="#2E8B47"/>
+  <polyline points="171,200 177,207 190,193" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="180" y="150" text-anchor="middle" class="tb">PLACE</text>
+  <text x="180" y="170" text-anchor="middle" class="ts">order placed</text>
+  <rect x="84" y="270" width="192" height="72" rx="10" fill="#FFFFFF" stroke="#CFE3D3"/>
+  <text x="180" y="294" text-anchor="middle" class="ts">orderedOn (event)</text>
+  <text x="180" y="316" text-anchor="middle" class="mono">2022-05-22T23:46</text>
+
+  <!-- SHIP -->
+  <circle cx="364" cy="200" r="20" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="5"/>
+  <text x="364" y="150" text-anchor="middle" class="tb">SHIP</text>
+  <text x="364" y="170" text-anchor="middle" class="ts">planned</text>
+  <rect x="300" y="270" width="264" height="72" rx="10" fill="#FFFFFF" stroke="#CAD9EE"/>
+  <text x="432" y="294" text-anchor="middle" class="ts">OrderShippedPlanTimeMeter · +2h</text>
+  <text x="432" y="316" text-anchor="middle" class="mono">TIME = 2022-05-23T01:46</text>
+
+  <!-- DELIVER -->
+  <circle cx="1100" cy="200" r="20" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="5"/>
+  <text x="1100" y="150" text-anchor="middle" class="tb">DELIVER</text>
+  <text x="1100" y="170" text-anchor="middle" class="ts">planned</text>
+  <rect x="900" y="270" width="284" height="72" rx="10" fill="#FFFFFF" stroke="#CAD9EE"/>
+  <text x="1042" y="294" text-anchor="middle" class="ts">OrderDeliveredPlanTimeMeter · +10h</text>
+  <text x="1042" y="316" text-anchor="middle" class="mono">TIME = 2022-05-23T09:46</text>
+
+  <!-- legend -->
+  <g transform="translate(900 44)">
+    <circle cx="8" cy="0" r="8" fill="#2E8B47"/><text x="24" y="5" class="ts">reached</text>
+    <circle cx="112" cy="0" r="7" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="3"/><text x="128" y="5" class="ts">planned (Meter output)</text>
+  </g>
+</svg>
