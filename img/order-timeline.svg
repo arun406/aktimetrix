@@ -10,10 +10,11 @@
   </defs>
   <rect width="1280" height="380" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
   <text x="40" y="50" class="tb">Process instance ORDER_DELIVERY · order #1234</text>
-  <text x="40" y="74" class="ts">Planned TIME measurements produced by the reference project's Meters after one ORDER_PLACED_EVENT</text>
+  <text x="40" y="74" class="ts">Planned TIME from the meters, actual TIME from each milestone event, and how they compare</text>
 
   <!-- axis: 0h at x=180, 10h at x=1100 => 92px per hour -->
-  <line x1="180" y1="200" x2="1100" y2="200" stroke="#CAD5D9" stroke-width="8" stroke-linecap="round"/>
+  <line x1="180" y1="200" x2="1180" y2="200" stroke="#CAD5D9" stroke-width="8" stroke-linecap="round"/>
+  <line x1="180" y1="200" x2="340" y2="200" stroke="#2E8B47" stroke-width="8" stroke-linecap="round"/>
   <g class="tick" text-anchor="middle">
     <line x1="180" y1="222" x2="180" y2="230" stroke="#B7C7CD"/><text x="180" y="246">+0h</text>
     <line x1="364" y1="222" x2="364" y2="230" stroke="#B7C7CD"/><text x="364" y="246">+2h</text>
@@ -28,29 +29,39 @@
   <polyline points="171,200 177,207 190,193" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="180" y="150" text-anchor="middle" class="tb">PLACE</text>
   <text x="180" y="170" text-anchor="middle" class="ts">order placed</text>
-  <rect x="84" y="270" width="192" height="72" rx="10" fill="#FFFFFF" stroke="#CFE3D3"/>
-  <text x="180" y="294" text-anchor="middle" class="ts">orderedOn (event)</text>
-  <text x="180" y="316" text-anchor="middle" class="mono">2022-05-22T23:46</text>
+  <rect x="40" y="270" width="250" height="72" rx="10" fill="#FFFFFF" stroke="#CFE3D3"/>
+  <text x="180" y="294" text-anchor="middle" class="ts">ORDER_PLACED_EVENT</text>
+  <text x="180" y="316" text-anchor="middle" class="mono" style="fill:#2E8B47">A  TIME = 2022-05-22T23:46</text>
 
   <!-- SHIP -->
-  <circle cx="364" cy="200" r="20" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="5"/>
-  <text x="364" y="150" text-anchor="middle" class="tb">SHIP</text>
-  <text x="364" y="170" text-anchor="middle" class="ts">planned</text>
-  <rect x="300" y="270" width="264" height="72" rx="10" fill="#FFFFFF" stroke="#CAD9EE"/>
-  <text x="432" y="294" text-anchor="middle" class="ts">OrderShippedPlanTimeMeter · +2h</text>
-  <text x="432" y="316" text-anchor="middle" class="mono">TIME = 2022-05-23T01:46</text>
+  <circle cx="340" cy="200" r="15" fill="#2E8B47"/>
+  <polyline points="333,200 338,205 347,195" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="366" cy="200" r="7" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="3"/>
+  <text x="356" y="150" text-anchor="middle" class="tb">SHIP</text>
+  <text x="356" y="170" text-anchor="middle" class="ts" fill="#2E8B47">16 min early</text>
+  <rect x="300" y="262" width="276" height="88" rx="10" fill="#FFFFFF" stroke="#CFE3D3"/>
+  <text x="438" y="286" text-anchor="middle" class="ts">OrderShippedPlanTimeMeter · +2h</text>
+  <text x="438" y="308" text-anchor="middle" class="mono">P  TIME = 2022-05-23T01:46</text>
+  <text x="438" y="330" text-anchor="middle" class="mono" style="fill:#2E8B47">A  TIME = 2022-05-23T01:30</text>
 
   <!-- DELIVER -->
-  <circle cx="1100" cy="200" r="20" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="5"/>
-  <text x="1100" y="150" text-anchor="middle" class="tb">DELIVER</text>
-  <text x="1100" y="170" text-anchor="middle" class="ts">planned</text>
-  <rect x="900" y="270" width="284" height="72" rx="10" fill="#FFFFFF" stroke="#CAD9EE"/>
-  <text x="1042" y="294" text-anchor="middle" class="ts">OrderDeliveredPlanTimeMeter · +10h</text>
-  <text x="1042" y="316" text-anchor="middle" class="mono">TIME = 2022-05-23T09:46</text>
+  <line x1="340" y1="200" x2="1167" y2="200" stroke="#2E8B47" stroke-width="8" stroke-linecap="round" opacity="0.35"/>
+  <circle cx="1100" cy="200" r="7" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="3"/>
+  <circle cx="1167" cy="200" r="15" fill="#D1580B"/>
+  <line x1="1167" y1="192" x2="1167" y2="202" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="1167" cy="208" r="2.2" fill="#fff"/>
+  <text x="1150" y="150" text-anchor="middle" class="tb">DELIVER</text>
+  <text x="1150" y="170" text-anchor="middle" class="ts" style="fill:#D1580B">44 min late</text>
+  <rect x="900" y="262" width="296" height="88" rx="10" fill="#FFFFFF" stroke="#F0C9AE"/>
+  <text x="1048" y="286" text-anchor="middle" class="ts">OrderDeliveredPlanTimeMeter · +10h</text>
+  <text x="1048" y="308" text-anchor="middle" class="mono">P  TIME = 2022-05-23T09:46</text>
+  <text x="1048" y="330" text-anchor="middle" class="mono" style="fill:#D1580B">A  TIME = 2022-05-23T10:30</text>
 
   <!-- legend -->
-  <g transform="translate(900 44)">
-    <circle cx="8" cy="0" r="8" fill="#2E8B47"/><text x="24" y="5" class="ts">reached</text>
-    <circle cx="112" cy="0" r="7" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="3"/><text x="128" y="5" class="ts">planned (Meter output)</text>
+  <g transform="translate(830 44)">
+    <circle cx="8" cy="0" r="8" fill="#2E8B47"/><text x="24" y="5" class="ts">on time</text>
+    <circle cx="96" cy="0" r="8" fill="#D1580B"/><text x="112" y="5" class="ts">late</text>
+    <circle cx="164" cy="0" r="7" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="3"/><text x="180" y="5" class="ts">planned (P)</text>
+    <text x="270" y="5" class="ts">A = actual</text>
   </g>
 </svg>

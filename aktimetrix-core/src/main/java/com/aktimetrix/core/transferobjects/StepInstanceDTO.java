@@ -1,7 +1,10 @@
 package com.aktimetrix.core.transferobjects;
 
+import com.aktimetrix.core.api.Timeliness;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -9,6 +12,8 @@ import java.util.Map;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class StepInstanceDTO implements Serializable {
 
     private String id;
@@ -22,4 +27,7 @@ public class StepInstanceDTO implements Serializable {
     private Map<String, Object> metadata;
     private String tenant;
     private LocalDateTime createdOn;
+    private LocalDateTime plannedAt;
+    private LocalDateTime actualAt;
+    private Timeliness timeliness;
 }

@@ -5,6 +5,7 @@ import com.aktimetrix.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DefaultStepDefinitionProvider implements DefinitionProvider<StepDefinition> {
@@ -23,10 +24,7 @@ public class DefaultStepDefinitionProvider implements DefinitionProvider<StepDef
      */
     @Override
     public List<StepDefinition> getDefinitions() throws DefinitionNotFoundException {
-        if (!processDefinition.getSteps().isEmpty()) {
-            return processDefinition.getSteps();
-        }
-        // get the step definitions from database
-        return null;
+        final List<StepDefinition> steps = processDefinition.getSteps();
+        return steps != null ? steps : new ArrayList<>();
     }
 }

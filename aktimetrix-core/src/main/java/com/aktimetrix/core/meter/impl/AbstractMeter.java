@@ -7,7 +7,10 @@ import com.aktimetrix.core.model.StepInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Date;
 
 /**
  * Base class for all Meters
@@ -38,6 +41,23 @@ public abstract class AbstractMeter implements Meter {
     protected abstract String getMeasurementUnit(String tenant, StepInstance step);
 
     protected abstract String getMeasurementValue(String tenant, StepInstance step);
+
+    /**
+     * Reads a date-time from the step's metadata, whether it is stored as a {@link LocalDateTime}, a
+     * {@link Date} (as read back from MongoDB) or an ISO-8601 string (as read back from JSON).
+     *
+     * @return the value, or {@code null} when the key is absent
+     */
+    protected LocalDateTime metadataTime(StepInstance step, String key) {
+        final Object value = step.getMetadata() == null ? null : step.getMetadata().get(key);
+        if (value == null || value instanceof LocalDateTime) {
+            return (LocalDateTime) value;
+        }
+        if (value instanceof Date) {
+            return LocalDateTime.ofInstant(((Date) value).toInstant(), ZoneId.systemDefault());
+        }
+        return LocalDateTime.parse(value.toString().replace(' ', 'T'));
+    }
 
 
     /**

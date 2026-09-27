@@ -35,7 +35,7 @@
 3. [How it works](#how-it-works)
 4. [Core concepts](#core-concepts)
 5. [Quick start](#quick-start)
-6. [Your first monitor in three classes](#your-first-monitor-in-three-classes)
+6. [Your first monitor](#your-first-monitor)
 7. [Documentation](#documentation)
 8. [Roadmap](#roadmap)
 9. [Contributing](#contributing) · [License](#license)
@@ -49,24 +49,28 @@ journey, and delays surface only when a customer complains.
 **Business process monitoring** fixes this by following each business entity through a defined sequence of
 milestones and comparing what *should* happen (the plan) with what *does* happen (the actuals).
 
-Aktimetrix is a lightweight Java framework for building those monitors. You describe the process once as data,
-write a few small annotated Spring beans for the domain-specific logic, and Aktimetrix:
+Aktimetrix is a lightweight Java framework for building those monitors. You describe the process as JSON, write a
+small **meter** for each deadline, and Aktimetrix:
 
-- consumes business events from Kafka,
-- creates a **process instance** and its **step instances** for every business entity,
-- computes **planned measurements**, such as "this order should ship by 01:46",
-- publishes every change as an event, so dashboards, alerts, and planners can react in real time.
+- consumes your business events from Kafka,
+- creates a **process instance** with its **steps** for every business entity, such as every order,
+- **plans** each step with your meters: "this order should ship by 01:46",
+- **records** what actually happens as events arrive: "shipped at 01:30", judged **on time** or **late**,
+- **flags** steps whose deadline passes with no event as **overdue**,
+- answers "where is order 1234?" over REST, and publishes every change to Kafka for dashboards and alerts.
 
 ## Features
 
 | | |
 |---|---|
-| **Declarative process model** | Processes, steps, and measurements are reference data in MongoDB. Change a process without redeploying. |
-| **Annotation-driven** | `@EventHandler`, `@ProcessHandler`, `@Measurement`, `@PreProcessor`, `@PostProcessor`. Extend a small base class and it is wired in automatically. |
-| **Event-driven** | Built on Spring Cloud Stream and Apache Kafka. Every instance created is published to an outbound topic. |
-| **Idempotent** | One process instance per *tenant + process + entity*, so replayed events never create duplicates. |
-| **Multi-tenant** | Every definition and instance carries a tenant key. |
-| **Domain agnostic** | E-commerce, banking, air cargo, logistics: if it has milestones, you can monitor it. |
+| **Plan vs. actual** | Every step gets a planned time from your meter and an actual time from its milestone event, and is judged `ON_TIME` or `LATE`. |
+| **Overdue detection** | A monitor flags steps whose planned time passes without their event: the delays you most need to know about. |
+| **Declarative processes** | Processes and steps are JSON files in your code base, loaded at startup, or managed through the REST API. |
+| **Minimal code** | Add the dependency, the JSON and your meters. Event routing and process handling have defaults; override them only when you need to. |
+| **Spring Boot auto-configuration** | No `@ComponentScan`, no Kafka binding boilerplate: point it at Kafka and MongoDB. |
+| **Event-driven** | Built on Spring Cloud Stream and Apache Kafka. Process, step, and measurement changes are published to outbound topics. |
+| **Idempotent** | One process instance per *tenant + process + entity*, and each step completes once, so replayed events are harmless. |
+| **Multi-tenant** | Every definition and instance carries a tenant key, and definitions never leak across tenants. |
 
 ## How it works
 
@@ -74,18 +78,19 @@ write a few small annotated Spring beans for the domain-specific logic, and Akti
   <img src="./img/architecture.svg" alt="Aktimetrix runtime architecture" width="100%">
 </p>
 
-An Aktimetrix application is a Spring Boot service with two pipelines:
+Every business event goes through the same stages:
 
-1. **Processor.** A business event arrives on the inbound topic. The event handler for its `eventCode` finds the
-   process definitions it starts, and the process handler creates the process instance and one step instance per
-   step, then publishes them.
-2. **Meter.** Aktimetrix consumes its own step events. For each planned measurement defined on the step, it calls
-   the matching meter, saves the result, and publishes it to `measurement-instance-out-0`.
+1. **Start.** If the event starts a process (it is in the process's `startEventCodes`), Aktimetrix creates the
+   process instance and its steps for the entity.
+2. **Plan.** Right away, your meters compute each new step's planned time.
+3. **Record.** The event is then applied to every running process of the entity: steps that list it complete
+   with the event's time as their actual time, and are judged against their plan.
+4. **Watch.** Separately, the overdue monitor looks for steps past their planned time with no event yet.
 
-Here is the full journey of one `ORDER_PLACED_EVENT`:
+Here is one order being placed, then shipped:
 
 <p align="center">
-  <img src="./img/sequence.svg" alt="Sequence of one order event through the processor and meter pipelines" width="100%">
+  <img src="./img/sequence.svg" alt="Sequence of an order being placed and then shipped" width="100%">
 </p>
 
 ## Core concepts
@@ -97,81 +102,79 @@ Here is the full journey of one `ORDER_PLACED_EVENT`:
 | Definition (design time) | Instance (run time, one per business entity) |
 |---|---|
 | **Process**: a named business process, e.g. `ORDER_DELIVERY`, and the events that start it | **Process instance**: that process for one order, e.g. order `#1234` |
-| **Step**: one milestone, e.g. `SHIP` | **Step instance**: `SHIP` for order `#1234` |
-| **Measurement**: what to measure at a step (`TIME`, `PCS`, …), **P**lanned or **A**ctual | **Measurement instance**: a computed value, e.g. *planned TIME = 2022-05-23T01:46* |
+| **Step**: one milestone, e.g. `SHIP`, and the events that complete it | **Step instance**: `SHIP` for order `#1234`, with its planned time, actual time, and timeliness |
+| **Measurement**: what to measure at a step (`TIME`, …), **P**lanned or **A**ctual | **Measurement instance**: a value, e.g. *planned TIME = 2022-05-23T01:46* |
 
-Instances carry **metadata**: key/value pairs from your domain (order id, customer, location) that meters and
-downstream consumers use. See **[Core concepts](./docs/concepts.md)** for the full model, a worked example, and
-the same model applied to banking and air cargo.
+Instances carry **metadata**: key/value pairs from your domain (order id, customer, order time) that meters use to
+plan. See **[Core concepts](./docs/concepts.md)** for the step lifecycle and the same model applied to banking and
+air cargo.
 
 ## Quick start
 
-Run the [Order Monitor example](https://github.com/arun406/aktimetrix-reference-project-order-monitor) against
-local Kafka and MongoDB. You need **JDK 11+** and **Docker**.
+The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) reference project is a
+complete application. You need **JDK 11+** and **Docker**.
 
 ```bash
-# 1. Build and install the framework (not yet on Maven Central)
-git clone https://github.com/arun406/aktimetrix.git && cd aktimetrix
-./mvnw clean install
+git clone https://github.com/arun406/aktimetrix.git
+(cd aktimetrix && ./mvnw install -DskipTests)      # not on Maven Central yet
 
-# 2. Start Kafka and MongoDB, load the example's reference data, and run it
-#    (the full commands are in the Getting started guide)
-
-# 3. From the example project directory, publish an order event…
-kafka-console-producer.sh --bootstrap-server localhost:9092 --topic order-event-topic < requests/request1.json
-
-# 4. …and read the plan Aktimetrix computed for it
-kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic measurement-instance-out-0 --from-beginning
+git clone https://github.com/arun406/aktimetrix-reference-project-order-monitor.git
+cd aktimetrix-reference-project-order-monitor
+docker compose up -d                               # Kafka and MongoDB
+./mvnw spring-boot:run
 ```
 
-Each order produces a plan like this:
+Then send an order's events and ask where it is:
+
+```bash
+send() { docker compose exec -T kafka /opt/kafka/bin/kafka-console-producer.sh \
+           --bootstrap-server localhost:9092 --topic order-events < "events/$1"; }
+send order-placed.json; send order-shipped.json; send order-delivered.json
+
+curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'
+```
 
 <p align="center">
-  <img src="./img/order-timeline.svg" alt="Planned timeline for order #1234" width="100%">
+  <img src="./img/order-timeline.svg" alt="Planned and actual timeline of order 1234" width="100%">
 </p>
 
-➡️ **[Getting started](./docs/getting-started.md)** has every command, including the Docker Compose file and data
-loading.
+## Your first monitor
 
-## Your first monitor in three classes
+**1. Add the dependency.** It brings Spring Web, Spring Data MongoDB and Spring Cloud Stream for Kafka, and
+configures itself.
 
-Once the process is defined as reference data, a working monitor is three small Spring beans.
-
-**1. An event handler** starts the process when an order is placed:
-
-```java
-@Component
-@EventHandler(eventType = "ORDER_PLACED_EVENT")
-public class OrderPlacedEventHandler extends AbstractEventHandler {
-}
+```xml
+<dependency>
+    <groupId>com.aktimetrix</groupId>
+    <artifactId>aktimetrix-core</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
 ```
 
-**2. A process handler** decides which metadata to keep on each instance:
+**2. Describe the process** in `src/main/resources/aktimetrix/process-definitions.json`:
 
-```java
-@Component
-@ProcessHandler(processType = "ORDER_DELIVERY")
-public class OrderProcessor extends AbstractProcessor {
-
-    private static final DateTimeFormatter IN = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    @Override
-    protected Map<String, Object> getProcessMetadata(Context context) {
-        return (Map<String, Object>) context.getProperty(Constants.ENTITY);
-    }
-
-    @Override
-    protected Map<String, Object> getStepMetadata(Context context) {
-        Map<String, Object> order = (Map<String, Object>) context.getProperty(Constants.ENTITY);
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("orderId", order.get("orderId"));
-        metadata.put("orderedOn", LocalDateTime.parse((String) order.get("orderedOn"), IN));
-        return metadata;
-    }
-}
+```json
+[{
+  "tenant": "AA", "processCode": "ORDER_DELIVERY", "entityType": "com.ecom.order", "status": "CONFIRMED",
+  "startEventCodes": ["ORDER_PLACED_EVENT"],
+  "steps": [{ "stepCode": "PLACE" }, { "stepCode": "SHIP" }, { "stepCode": "DELIVER" }]
+}]
 ```
 
-**3. A meter** computes a planned value, here "ship within 2 hours of the order":
+and its steps in `src/main/resources/aktimetrix/step-definitions.json`: the event that completes each step, and
+whether it has a planned time.
+
+```json
+[
+  { "tenant": "AA", "stepCode": "PLACE",   "status": "CONFIRMED", "startEventCodes": ["ORDER_PLACED_EVENT"] },
+  { "tenant": "AA", "stepCode": "SHIP",    "status": "CONFIRMED", "startEventCodes": ["ORDER_SHIPPED_EVENT"],
+    "measurements": [{ "measurementCode": "TIME", "type": "P" }] },
+  { "tenant": "AA", "stepCode": "DELIVER", "status": "CONFIRMED", "startEventCodes": ["ORDER_DELIVERED_EVENT"],
+    "measurements": [{ "measurementCode": "TIME", "type": "P" }] }
+]
+```
+
+**3. Write a meter for each deadline:** "an order should ship within 2 hours".
 
 ```java
 @Component
@@ -185,29 +188,42 @@ public class OrderShippedPlanTimeMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        LocalDateTime orderedOn = LocalDateTime.parse((String) step.getMetadata().get("orderedOn"));
-        return String.valueOf(orderedOn.plusHours(2));
+        return String.valueOf(metadataTime(step, "orderedOn").plusHours(2));
     }
 }
 ```
 
-➡️ The **[step-by-step guide](./docs/getting-started.md#build-a-monitor-step-by-step)** walks through the
-reference data, the event format, and every class.
+**4. Point it at your infrastructure** in `application.yml`:
+
+```yaml
+spring:
+  data.mongodb.uri: mongodb://localhost:27017/order-monitor
+  kafka.properties.bootstrap.servers: localhost:9092
+aktimetrix:
+  events.topic: order-events
+```
+
+That's a working monitor. By default the whole event entity becomes the metadata meters read. Add a
+`@ProcessHandler` to choose it yourself, as the reference project does. The
+**[step-by-step guide](./docs/getting-started.md)** covers the event format and every option.
 
 ## Documentation
 
 | Guide | What's inside |
 |---|---|
-| 📘 [Core concepts](./docs/concepts.md) | Processes, steps, measurements, instances, metadata; worked example; other domains |
-| 🚀 [Getting started](./docs/getting-started.md) | Run the example locally; build a monitor from scratch |
-| 🧩 [Extending Aktimetrix](./docs/extending.md) | All annotations, pre- and post-processor examples, built-in components, modelling a new process |
-| ⚙️ [Configuration & API reference](./docs/configuration.md) | `application.yml`, Kafka bindings and topics, MongoDB collections, REST endpoints |
+| 📘 [Core concepts](./docs/concepts.md) | Processes, steps, measurements, instances, metadata; step lifecycle and timeliness; other domains |
+| 🚀 [Getting started](./docs/getting-started.md) | Run the reference project; build a monitor from scratch; the event format |
+| 🧩 [Extending Aktimetrix](./docs/extending.md) | Process handlers, event handlers, pre- and post-processors, built-in components, modelling a new process |
+| ⚙️ [Configuration & API reference](./docs/configuration.md) | `aktimetrix.*` properties, Kafka topics, MongoDB collections, REST endpoints |
 
 **Project layout**
 
 ```
 aktimetrix/
-├── aktimetrix-core/        the framework: api, stereotypes, handlers, meters, reference data, configuration
+├── aktimetrix-core/        the framework
+│   └── src/main/java/com/aktimetrix/
+│       ├── autoconfigure/  Spring Boot auto-configuration and default properties
+│       └── core/           api, stereotypes, event handlers, processors, meters, monitor, reference data, REST
 ├── docs/                   the guides above
 ├── img/                    diagrams
 └── pom.xml
@@ -215,26 +231,19 @@ aktimetrix/
 
 ## Roadmap
 
-Aktimetrix is **alpha** (`0.0.1-SNAPSHOT`). The core pipeline, from events to process and step instances to
-planned measurements, works end to end. APIs may still change.
+Aktimetrix is **alpha** (`0.0.1-SNAPSHOT`): the full loop of plan, actual, and overdue works end to end, as the
+reference project's tests show. APIs may still change.
 
-**Next: close the monitoring loop**
-- [ ] **Actual measurements:** record when each step really happens, using the step definitions' `startEventCodes` / `endEventCodes`
-- [ ] **Plan vs. actual status:** mark each step and process *on time*, *at risk*, or *late*
-- [ ] **Deadline detection:** raise an alert when an expected event *doesn't* arrive by its planned time
-- [ ] **Query API:** answer "where is order #1234?" over REST
-
-**Then: make it easy to adopt**
-- [ ] Spring Boot starter with auto-configuration (no `@ComponentScan("com.aktimetrix.core")`)
-- [ ] Process definitions as code: YAML loaded at startup, with versioning
-- [ ] Remove domain-specific leftovers (air-cargo constants, the hard-coded `A2ATRANSPORT` post-processor type)
-- [ ] Publish to Maven Central
-
-**Throughout: production readiness**
-- [ ] Reliable delivery: idempotent event handling, and an outbox so MongoDB and Kafka stay consistent
+- [x] Actual measurements and plan-vs-actual timeliness (`ON_TIME`, `LATE`)
+- [x] Overdue detection for events that never arrive
+- [x] Query API: "where is order #1234?"
+- [x] Spring Boot auto-configuration and process definitions as code
+- [ ] At-risk prediction: flag a step *before* its deadline, from the progress of earlier steps
+- [ ] Planned durations and tolerances in the step definition, so simple deadlines need no meter
+- [ ] Reliable delivery: an outbox so MongoDB and Kafka stay consistent under failure
 - [ ] Metrics with Micrometer
-- [ ] Test suite with Testcontainers, and CI
-- [ ] Fix: `POST /reference-data/process-definitions` ignores the JSON body (use `mongoimport` for now)
+- [ ] Publish to Maven Central
+- [ ] Continuous integration
 
 ## Contributing
 

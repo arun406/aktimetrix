@@ -51,7 +51,7 @@ public class ProcessEventGenerator implements EventGenerator {
 
     private ProcessInstanceDTO getProcessInstanceDTO(ProcessInstance processInstance) {
 
-        final List<StepInstanceDTO> stepInstanceDTOS = new ArrayList<>(processInstance.getSteps().stream().map(this::getStepInstanceDTO).collect(Collectors.toList()));
+        final List<StepInstanceDTO> stepInstanceDTOS = new ArrayList<>(processInstance.getSteps().stream().map(StepEventGenerator::getStepInstanceDTO).collect(Collectors.toList()));
 
         return ProcessInstanceDTO.builder()
                 .entityId(processInstance.getEntityId())
@@ -68,22 +68,6 @@ public class ProcessEventGenerator implements EventGenerator {
                 .version(processInstance.getVersion())
                 .metadata(processInstance.getMetadata())
                 .steps(stepInstanceDTOS)
-                .build();
-    }
-
-    private StepInstanceDTO getStepInstanceDTO(StepInstance instance) {
-        return StepInstanceDTO.builder()
-                .id(instance.getId().toString())
-                .tenant(instance.getTenant())
-                .status(instance.getStatus())
-                .functionalCtx(instance.getFunctionalCtx())
-                .groupCode(instance.getGroupCode())
-                .version(instance.getVersion())
-                .stepCode(instance.getStepCode())
-                .locationCode(instance.getLocationCode())
-                .metadata(instance.getMetadata())
-                .processInstanceId(instance.getProcessInstanceId().toString())
-                .createdOn(instance.getCreatedOn())
                 .build();
     }
 }
