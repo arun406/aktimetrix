@@ -7,8 +7,6 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.referencedata.model.StepMeasurement;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
-import com.aktimetrix.core.service.MeasurementInstanceService;
-import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.stereotypes.ProcessHandler;
 import com.aktimetrix.core.util.CollectionUtil;
 import lombok.RequiredArgsConstructor;
@@ -16,21 +14,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Change this to DefaultMeasurementServiceImpl //TODO
+ * Computes the planned measurements of one step instance: for every planned (P) measurement in the step's
+ * definition, calls the meter registered for that step and measurement code. A planned TIME measurement also
+ * becomes the step's {@code plannedAt}, which the monitor compares with the actual time.
  */
 @Component
 @RequiredArgsConstructor
-@ProcessHandler(processType = "METERPROCESSOR")
+@ProcessHandler(processType = Constants.METER_PROCESSOR)
 public class DefaultMeasurementProcessor implements Processor {
     final private Logger logger = LoggerFactory.getLogger(DefaultMeasurementProcessor.class);
 
     final private StepDefinitionService stepDefinitionService;
     final private MeasurementInstanceService measurementInstanceService;
+    final private StepInstanceService stepInstanceService;
     final private RegistryService registryService;
 
     /**
@@ -50,7 +53,7 @@ public class DefaultMeasurementProcessor implements Processor {
         // get the preprocessors from registry
         logger.debug("executing the preprocessors");
 
-        final List<PreProcessor> preProcessors = registryService.getPreProcessor("METERPROCESSOR"); // TODO remove the hard coding
+        final List<PreProcessor> preProcessors = registryService.getPreProcessor(Constants.METER_PROCESSOR, false);
         preProcessors.forEach(preProcessor -> preProcessor.process(context));
     }
 
@@ -61,7 +64,7 @@ public class DefaultMeasurementProcessor implements Processor {
      */
     private void executePostProcessors(Context context) {
         logger.debug("executing post processors");
-        final List<PostProcessor> postProcessors = registryService.getPostProcessor("METERPROCESSOR"); // TODO remove the hard coding
+        final List<PostProcessor> postProcessors = registryService.getPostProcessor(Constants.METER_PROCESSOR, false);
         postProcessors.forEach(postProcessor -> postProcessor.process(context));
     }
 
@@ -90,8 +93,24 @@ public class DefaultMeasurementProcessor implements Processor {
             if (!measurementInstances.isEmpty()) {
                 this.measurementInstanceService.saveMeasurementInstances(measurementInstances);
                 context.setMeasurementInstances(measurementInstances);
+                recordPlannedTime(stepInstance, measurementInstances);
             }
         }
+    }
+
+    private void recordPlannedTime(StepInstance step, List<MeasurementInstance> measurements) {
+        measurements.stream()
+                .filter(m -> Constants.MEASUREMENT_CODE_TIME.equals(m.getCode()))
+                .findFirst()
+                .ifPresent(time -> {
+                    try {
+                        step.setPlannedAt(LocalDateTime.parse(time.getValue()));
+                        stepInstanceService.save(step);
+                    } catch (DateTimeParseException e) {
+                        logger.warn("Planned TIME of the {} step is not an ISO date-time: {}", step.getStepCode(),
+                                time.getValue());
+                    }
+                });
     }
 
     private MeasurementInstance measure(Context context, StepInstance stepInstance, StepDefinition stepDefinition,
@@ -104,6 +123,8 @@ public class DefaultMeasurementProcessor implements Processor {
                 logger.debug("measurement instance found for " + meter.getClass().getName());
                 return measurement;
             }
+            logger.warn("No meter registered for planned {} measurement of the {} step",
+                    stepMeasurement.getMeasurementCode(), stepDefinition.getStepCode());
         }
         return null;
     }

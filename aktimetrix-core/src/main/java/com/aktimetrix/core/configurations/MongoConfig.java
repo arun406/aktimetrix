@@ -6,10 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
-import org.springframework.data.mongodb.MongoDatabaseFactory;
-import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
-import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -17,15 +14,7 @@ import java.util.Arrays;
 import java.util.Date;
 
 @Configuration
-@EnableMongoRepositories(basePackages = {"com.aktimetrix.core.repository",
-        "com.aktimetrix.core.referencedata.repository",
-        "com.aktimetrix.core.tenant.repository"})
 public class MongoConfig {
-    @Bean
-    MongoTransactionManager transactionManager(MongoDatabaseFactory dbFactory) {
-        return new MongoTransactionManager(dbFactory);
-    }
-
     @Bean
     public MongoCustomConversions mongoCustomConversions() {
         return new MongoCustomConversions(

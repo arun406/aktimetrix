@@ -1,13 +1,16 @@
 package com.aktimetrix.core.service;
 
-import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.repository.ProcessInstanceRepository;
+import com.aktimetrix.core.repository.StepInstanceRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -16,7 +19,7 @@ public class ProcessInstanceService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceService.class);
 
     private final ProcessInstanceRepository repository;
-    private final Registry registry;
+    private final StepInstanceRepository stepInstanceRepository;
 
     /**
      * saves the process instance object to database.
@@ -41,8 +44,30 @@ public class ProcessInstanceService {
      * @return process instance
      */
     public ProcessInstance getProcessInstance(String tenant, String processCode, String entityType, String entityId) {
+        // not filtered by status, so a completed process is not re-created when its start event is replayed
         return this.repository
-                .findByTenantAndProcessCodeAndEntityTypeAndEntityIdAndStatus(tenant, processCode, entityType, entityId, "Created");
+                .findByTenantAndProcessCodeAndEntityTypeAndEntityId(tenant, processCode, entityType, entityId)
+                .stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Returns every process instance of the business entity, with its step instances.
+     *
+     * @param entityType entity type to match, or {@code null} for any
+     */
+    public List<ProcessInstance> getProcessInstancesWithSteps(String tenant, String entityType, String entityId) {
+        final List<ProcessInstance> instances = this.repository.findByTenantAndEntityId(tenant, entityId).stream()
+                .filter(instance -> entityType == null || entityType.equals(instance.getEntityType()))
+                .collect(Collectors.toList());
+        instances.forEach(instance -> instance.setSteps(stepInstanceRepository.findByTenantAndProcessInstanceId(tenant, instance.getId())));
+        return instances;
+    }
+
+    /**
+     * Returns the process instances of the given business entity that are not complete yet.
+     */
+    public List<ProcessInstance> getActiveProcessInstances(String tenant, String entityType, String entityId) {
+        return this.repository.findActiveByTenantAndEntityTypeAndEntityId(tenant, entityType, entityId);
     }
 
 

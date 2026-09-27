@@ -32,4 +32,14 @@ public interface ProcessInstanceRepository extends MongoRepository<ProcessInstan
     ProcessInstance findByTenantAndProcessCodeAndEntityTypeAndEntityIdAndStatus(String tenant, String processCode,
                                                                                 String entityType, String entityId,
                                                                                 String status);
+
+    @Query("{'tenant': ?0 , 'processCode' : ?1 , 'entityType' : ?2, 'entityId': ?3 }")
+    List<ProcessInstance> findByTenantAndProcessCodeAndEntityTypeAndEntityId(String tenant, String processCode,
+                                                                             String entityType, String entityId);
+
+    @Query("{'tenant': ?0 , 'entityId': ?1 }")
+    List<ProcessInstance> findByTenantAndEntityId(String tenant, String entityId);
+
+    @Query("{'tenant': ?0 , 'entityType' : ?1, 'entityId': ?2 , 'complete': false }")
+    List<ProcessInstance> findActiveByTenantAndEntityTypeAndEntityId(String tenant, String entityType, String entityId);
 }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,7 +21,7 @@ public class ProcessDefinitionResource {
     ProcessDefinitionService service;
 
     @PostMapping
-    public ResponseEntity add(ProcessDefinition definition) {
+    public ResponseEntity add(@RequestBody ProcessDefinition definition) {
         this.service.add(definition);
         return ResponseEntity.created(URI.create("/reference-data/process-definitions/" + definition.getId())).build();
     }

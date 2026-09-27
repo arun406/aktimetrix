@@ -1,9 +1,10 @@
 package com.aktimetrix.core.service;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;
-import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.impl.StepEventGenerator;
+import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@com.aktimetrix.core.stereotypes.PostProcessor(code = "SI_PUBLISHER", processType = "A2ATRANSPORT")
+@com.aktimetrix.core.stereotypes.PostProcessor(code = "SI_PUBLISHER", processType = Constants.ALL_PROCESS_TYPES, priority = Constants.BUILT_IN_PRIORITY)
 public class StepInstancePublisherService implements PostProcessor {
 
     final private StreamBridge streamBridge;
@@ -28,14 +29,20 @@ public class StepInstancePublisherService implements PostProcessor {
         if (context.getStepInstances() == null || context.getStepInstances().isEmpty()) {
             return;
         }
-        context.getStepInstances().forEach(step -> {
-            StepEventGenerator eventGenerator = new StepEventGenerator(step);
-            Event<StepInstanceDTO, Void> event = eventGenerator.generate();
-            log.debug("step instance event : {}", event);
-            final Message<Event<StepInstanceDTO, Void>> message = MessageBuilder.withPayload(event)
-                    .setHeader(KafkaHeaders.MESSAGE_KEY, event.getEntityId())
-                    .build();
-            this.streamBridge.send("step-instance-out-0", message);
-        });
+        context.getStepInstances().forEach(step -> publish(step, "CREATED"));
+    }
+
+    /**
+     * Publishes a change of the step instance to {@code step-instance-out-0}.
+     *
+     * @param eventCode what happened: CREATED, STARTED, COMPLETED or OVERDUE
+     */
+    public void publish(StepInstance step, String eventCode) {
+        Event<StepInstanceDTO, Void> event = new StepEventGenerator(step, eventCode).generate();
+        log.debug("step instance event : {}", event);
+        final Message<Event<StepInstanceDTO, Void>> message = MessageBuilder.withPayload(event)
+                .setHeader(KafkaHeaders.MESSAGE_KEY, event.getEntityId())
+                .build();
+        this.streamBridge.send("step-instance-out-0", message);
     }
 }

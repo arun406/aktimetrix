@@ -2,15 +2,14 @@ package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventHandler;
-import com.aktimetrix.core.api.EventType;
 import com.aktimetrix.core.api.PostProcessor;
 import com.aktimetrix.core.api.PreProcessor;
-import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.api.Processor;
 import com.aktimetrix.core.api.Registry;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
+import com.aktimetrix.core.exception.UnknownNameException;
 import com.aktimetrix.core.impl.RegistryEntry;
 import com.aktimetrix.core.meter.api.MeasurementProcessor;
 import com.aktimetrix.core.meter.api.Meter;
@@ -20,7 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -31,33 +32,65 @@ public class RegistryService {
     @Autowired
     private Registry registry;
 
+    /**
+     * Pre-processors registered for the process type or for all processes ({@code "*"}), lowest priority first.
+     */
     public List<PreProcessor> getPreProcessor(String processType) {
-        Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_PRE_PROCESSOR_SERVICE)
-                && re.attribute(Constants.ATT_PRE_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate2 = re -> (re.attribute(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE).equals(processType));
-
-        final List<Object> preProcessors = this.registry.lookupAll(predicate1.and(predicate2));
-        logger.debug("Applicable pre processors {}", preProcessors);
-
-        if (preProcessors != null && !preProcessors.isEmpty()) {
-            return preProcessors.stream().map(m -> (PreProcessor) m).collect(Collectors.toList());
-        }
-        return new ArrayList<>();
+        return getPreProcessor(processType, true);
     }
 
+    /**
+     * Pre-processors registered for the process type, lowest priority first.
+     *
+     * @param includeAllProcesses whether to include pre-processors registered for all processes ({@code "*"})
+     */
+    public List<PreProcessor> getPreProcessor(String processType, boolean includeAllProcesses) {
+        return lookupByPriority(Constants.ATT_PRE_PROCESSOR_SERVICE, Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE,
+                processType, includeAllProcesses, PreProcessor.class);
+    }
+
+    /**
+     * Post-processors registered for the process type or for all processes ({@code "*"}), lowest priority first.
+     */
     public List<PostProcessor> getPostProcessor(String processType) {
-        Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_SERVICE)
-                && re.attribute(Constants.ATT_POST_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE) &&
-                (processType.equals(re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE)));
+        return getPostProcessor(processType, true);
+    }
 
-        final List<Object> postProcessors = this.registry.lookupAll(predicate1.and(predicate2));
-        logger.debug("Applicable post processors {}", postProcessors);
+    /**
+     * Post-processors registered for the process type, lowest priority first.
+     *
+     * @param includeAllProcesses whether to include post-processors registered for all processes ({@code "*"})
+     */
+    public List<PostProcessor> getPostProcessor(String processType, boolean includeAllProcesses) {
+        return lookupByPriority(Constants.ATT_POST_PROCESSOR_SERVICE, Constants.ATT_POST_PROCESSOR_PROCESS_TYPE,
+                processType, includeAllProcesses, PostProcessor.class);
+    }
 
-        if (postProcessors != null && !postProcessors.isEmpty()) {
-            return postProcessors.stream().map(m -> (PostProcessor) m).collect(Collectors.toList());
+    private <T> List<T> lookupByPriority(String serviceAttribute, String processTypeAttribute, String processType,
+                                         boolean includeAllProcesses, Class<T> type) {
+        Predicate<RegistryEntry> isService = re -> Constants.VAL_YES.equals(re.attribute(serviceAttribute));
+        Predicate<RegistryEntry> matchesType = re -> {
+            Object registeredType = re.attribute(processTypeAttribute);
+            return Objects.equals(registeredType, processType)
+                    || (includeAllProcesses && Constants.ALL_PROCESS_TYPES.equals(registeredType));
+        };
+        Comparator<RegistryEntry> byPriority = Comparator.comparingInt(re -> priority(re.attribute(Constants.ATT_PRE_PROCESSOR_PRIORITY)));
+        final List<Object> found;
+        try {
+            found = this.registry.lookupAll(isService.and(matchesType), byPriority);
+        } catch (UnknownNameException e) {
+            return new ArrayList<>();
         }
-        return new ArrayList<>();
+        logger.debug("Applicable {}s for {}: {}", type.getSimpleName(), processType, found);
+        return found.stream().map(type::cast).collect(Collectors.toList());
+    }
+
+    private static int priority(Object value) {
+        try {
+            return value == null ? 1 : Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            return 1;
+        }
     }
 
     /**
@@ -74,11 +107,10 @@ public class RegistryService {
                         processType.equals(registryEntry.attribute(Constants.ATT_PROCESS_TYPE))
                 );
         logger.debug("applicable handlers {}", handlers);
-        Processor processHandler = null;
-        for (Object m : handlers) {
-            processHandler = (Processor) m;
+        if (handlers.isEmpty()) {
+            throw new ProcessHandlerNotFoundException("No @ProcessHandler registered for " + processType);
         }
-        return processHandler;
+        return (Processor) handlers.get(handlers.size() - 1);
     }
 
     /**
