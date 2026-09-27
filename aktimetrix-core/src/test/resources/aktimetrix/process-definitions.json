@@ -5,6 +5,6 @@
     "entityType": "parcel",
     "startEventCodes": ["PARCEL_BOOKED"],
     "status": "CONFIRMED",
-    "steps": [ { "stepCode": "BOOK" }, { "stepCode": "PICKUP" } ]
+    "steps": [ { "stepCode": "BOOK" }, { "stepCode": "PICKUP" }, { "stepCode": "SORT" }, { "stepCode": "DELIVER" } ]
   }
 ]

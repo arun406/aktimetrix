@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Records what actually happens to a process instance: moves its steps through their lifecycle when a business
@@ -43,6 +45,8 @@ public class StepProgressService {
     private final MeasurementInstanceService measurementInstanceService;
     private final MeasurementInstancePublisherService measurementInstancePublisherService;
     private final StepInstancePublisherService stepInstancePublisherService;
+    private final StepPlanner stepPlanner;
+    private final AktimetrixMetrics metrics;
     private final Clock clock;
 
     /**
@@ -75,12 +79,12 @@ public class StepProgressService {
                                                      LocalDateTime occurredAt) {
         final String tenant = processInstance.getTenant();
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(tenant, processInstance.getId());
-        final Map<String, StepDefinition> definitions = new HashMap<>();
+        final Map<String, StepDefinition> definitions = definitions(tenant, steps);
         final List<MeasurementInstance> actuals = new ArrayList<>();
+        final List<StepInstance> completed = new ArrayList<>();
 
         for (StepInstance step : steps) {
-            final StepDefinition definition = definitions.computeIfAbsent(step.getStepCode(),
-                    code -> stepDefinitionService.findByStepCode(tenant, code));
+            final StepDefinition definition = definitions.get(step.getStepCode());
             if (definition == null) {
                 logger.warn("step definition not found for {} step", step.getStepCode());
                 continue;
@@ -94,11 +98,22 @@ public class StepProgressService {
             step.setStatus(nextStatus);
             if (Constants.STATUS_COMPLETED.equals(nextStatus)) {
                 step.setActualAt(occurredAt);
-                step.setTimeliness(timeliness(step.getPlannedAt(), occurredAt));
+                step.setTimeliness(stepPlanner.judge(step, occurredAt));
                 actuals.add(actualTime(step, occurredAt));
+                completed.add(step);
+                metrics.stepCompleted(step);
             }
             stepInstanceService.save(step);
             stepInstancePublisherService.publish(step, nextStatus.toUpperCase());
+        }
+
+        for (StepInstance step : completed) {
+            stepPlanner.planAfter(step, steps, definitions).forEach(planned -> {
+                stepInstanceService.save(planned);
+                stepInstancePublisherService.publish(planned, "PLANNED");
+            });
+            forecast(step, step.getPlannedAt() == null ? null : Duration.between(step.getPlannedAt(), occurredAt),
+                    steps, definitions);
         }
 
         if (!actuals.isEmpty()) {
@@ -110,6 +125,43 @@ public class StepProgressService {
             completeProcessIfDone(processInstance, steps, definitions);
         }
         return actuals;
+    }
+
+    /**
+     * Marks a step whose deadline has passed without its event as {@link Timeliness#OVERDUE}, and forecasts the
+     * later steps of its process as delayed by at least as much.
+     */
+    public void markOverdue(StepInstance step, LocalDateTime now) {
+        logger.warn("Step {} of process instance {} is overdue: planned at {}", step.getStepCode(),
+                step.getProcessInstanceId(), step.getPlannedAt());
+        step.setTimeliness(Timeliness.OVERDUE);
+        stepInstanceService.save(step);
+        stepInstancePublisherService.publish(step, Timeliness.OVERDUE.name());
+        metrics.stepOverdue(step);
+
+        final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(step.getTenant(),
+                step.getProcessInstanceId());
+        forecast(step, Duration.between(step.getPlannedAt(), now), steps, definitions(step.getTenant(), steps));
+    }
+
+    private void forecast(StepInstance source, Duration delay, List<StepInstance> steps,
+                          Map<String, StepDefinition> definitions) {
+        stepPlanner.forecast(source, delay, steps, definitions).forEach(atRisk -> {
+            logger.warn("Step {} of process instance {} is at risk: expected at {}, after its deadline {}",
+                    atRisk.getStepCode(), atRisk.getProcessInstanceId(), atRisk.getExpectedAt(), atRisk.getLateAfter());
+            stepInstanceService.save(atRisk);
+            stepInstancePublisherService.publish(atRisk, Timeliness.AT_RISK.name());
+            metrics.stepAtRisk(atRisk);
+        });
+    }
+
+    private Map<String, StepDefinition> definitions(String tenant, List<StepInstance> steps) {
+        final Map<String, StepDefinition> definitions = new HashMap<>();
+        for (StepInstance step : steps) {
+            definitions.computeIfAbsent(step.getStepCode(), code -> stepDefinitionService.findByStepCode(tenant, code));
+        }
+        definitions.values().removeIf(Objects::isNull);
+        return definitions;
     }
 
     /**
@@ -145,13 +197,6 @@ public class StepProgressService {
         return null;
     }
 
-    static Timeliness timeliness(LocalDateTime plannedAt, LocalDateTime actualAt) {
-        if (plannedAt == null) {
-            return null;
-        }
-        return actualAt.isAfter(plannedAt) ? Timeliness.LATE : Timeliness.ON_TIME;
-    }
-
     private MeasurementInstance actualTime(StepInstance step, LocalDateTime occurredAt) {
         return new MeasurementInstance(step.getTenant(), Constants.MEASUREMENT_CODE_TIME, String.valueOf(occurredAt),
                 Constants.MEASUREMENT_UNIT_TIMESTAMP, step.getProcessInstanceId(), step.getId(), step.getStepCode(),
@@ -168,6 +213,7 @@ public class StepProgressService {
             processInstance.setComplete(true);
             processInstance.setStatus(Constants.STATUS_COMPLETED);
             processInstanceService.saveProcessInstance(processInstance);
+            metrics.processCompleted(processInstance);
         }
     }
 

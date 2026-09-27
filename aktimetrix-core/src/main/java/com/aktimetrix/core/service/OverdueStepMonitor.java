@@ -4,8 +4,6 @@ import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.repository.StepInstanceRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -15,8 +13,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Detects events that never arrive: periodically marks steps whose planned time has passed without completing as
- * {@link Timeliness#OVERDUE}, and publishes an OVERDUE step event for each so consumers can alert on it.
+ * Detects events that never arrive: periodically marks steps whose deadline (planned time plus tolerance) has passed
+ * without completing as {@link Timeliness#OVERDUE}, publishes an OVERDUE step event for each so consumers can alert
+ * on it, and forecasts the later steps of the process as at risk.
  * <p>
  * Disable with {@code aktimetrix.monitor.enabled=false}; tune with {@code aktimetrix.monitor.overdue-check-interval}.
  */
@@ -24,11 +23,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "aktimetrix.monitor", name = "enabled", matchIfMissing = true)
 public class OverdueStepMonitor {
-    private static final Logger logger = LoggerFactory.getLogger(OverdueStepMonitor.class);
-
     private final StepInstanceRepository stepInstanceRepository;
-    private final StepInstanceService stepInstanceService;
-    private final StepInstancePublisherService stepInstancePublisherService;
+    private final StepProgressService stepProgressService;
     private final Clock clock;
 
     /**
@@ -37,14 +33,9 @@ public class OverdueStepMonitor {
     @Scheduled(fixedDelayString = "${aktimetrix.monitor.overdue-check-interval:PT1M}",
             initialDelayString = "${aktimetrix.monitor.overdue-check-interval:PT1M}")
     public List<StepInstance> checkOverdueSteps() {
-        final List<StepInstance> overdue = stepInstanceRepository.findOverdue(LocalDateTime.now(clock));
-        for (StepInstance step : overdue) {
-            logger.warn("Step {} of process instance {} is overdue: planned at {}", step.getStepCode(),
-                    step.getProcessInstanceId(), step.getPlannedAt());
-            step.setTimeliness(Timeliness.OVERDUE);
-            stepInstanceService.save(step);
-            stepInstancePublisherService.publish(step, Timeliness.OVERDUE.name());
-        }
+        final LocalDateTime now = LocalDateTime.now(clock);
+        final List<StepInstance> overdue = stepInstanceRepository.findOverdue(now);
+        overdue.forEach(step -> stepProgressService.markOverdue(step, now));
         return overdue;
     }
 }

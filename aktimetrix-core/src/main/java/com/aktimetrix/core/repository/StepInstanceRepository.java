@@ -33,9 +33,10 @@ public interface StepInstanceRepository extends MongoRepository<StepInstance, St
     List<StepInstance> findByTenantAndProcessInstanceId(String tenant, ObjectId processInstanceId);
 
     /**
-     * Steps whose planned time is before {@code now}, that have not completed and have not been judged yet.
+     * Steps whose deadline ({@code lateAfter}) is before {@code now}, that have not completed and are not already
+     * overdue.
      */
-    @Query("{ 'status' : { $ne: 'Completed' }, 'plannedAt': { $lt: ?0 }, 'timeliness': null }")
+    @Query("{ 'status' : { $ne: 'Completed' }, 'lateAfter': { $lt: ?0 }, 'timeliness': { $ne: 'OVERDUE' } }")
     List<StepInstance> findOverdue(LocalDateTime now);
 
     /**
