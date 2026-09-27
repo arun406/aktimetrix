@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="722" viewBox="0 0 1280 722" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4A5B63"/></marker>
+    <marker id="ak" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C77C02"/></marker>
+  </defs>
+  <rect width="1280" height="722" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <rect x="16" y="152" width="1248" height="272" rx="10" fill="#EEF6F8" stroke="#0F4C5C" stroke-dasharray="5 4"/>
+  <text x="28" y="170" font-size="12" font-weight="700" letter-spacing="1.2" fill="#0F4C5C">① PROCESSOR</text>
+  <rect x="16" y="428" width="1248" height="226" rx="10" fill="#F3F0FA" stroke="#6B4FA0" stroke-dasharray="5 4"/>
+  <text x="28" y="446" font-size="12" font-weight="700" letter-spacing="1.2" fill="#6B4FA0">② METER</text>
+  <line x1="90" y1="90" x2="90" y2="698" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="12" y="30" width="156" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
+  <text x="90" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Order service</text>
+  <text x="90" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">source</text>
+  <line x1="270" y1="90" x2="270" y2="698" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="192" y="30" width="156" height="60" rx="10" fill="#FFF4DE" stroke="#C77C02" stroke-width="1.6"/>
+  <text x="270" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Kafka</text>
+  <text x="270" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">broker</text>
+  <line x1="450" y1="90" x2="450" y2="698" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="372" y="30" width="156" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
+  <text x="450" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Event handler</text>
+  <text x="450" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">@EventHandler</text>
+  <line x1="640" y1="90" x2="640" y2="698" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="562" y="30" width="156" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
+  <text x="640" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Process handler</text>
+  <text x="640" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">@ProcessHandler</text>
+  <line x1="820" y1="90" x2="820" y2="698" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="742" y="30" width="156" height="60" rx="10" fill="#E9F5EC" stroke="#2E8B47" stroke-width="1.6"/>
+  <text x="820" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">MongoDB</text>
+  <text x="820" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">state</text>
+  <line x1="1000" y1="90" x2="1000" y2="698" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="922" y="30" width="156" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
+  <text x="1000" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Meter pipeline</text>
+  <text x="1000" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">METERPROCESSOR</text>
+  <line x1="1175" y1="90" x2="1175" y2="698" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="1097" y="30" width="156" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
+  <text x="1175" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Meter</text>
+  <text x="1175" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">@Measurement</text>
+  <line x1="94" y1="130" x2="266" y2="130" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
+  <text x="124" y="121" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F7FAFB" stroke-width="6" stroke-linejoin="round" paint-order="stroke">ORDER_PLACED_EVENT · order #1234</text>
+  <circle cx="106" cy="130" r="10" fill="#C77C02"/><text x="106" y="134" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">1</text>
+  <line x1="274" y1="176" x2="446" y2="176" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
+  <text x="304" y="167" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">consume order-event-topic</text>
+  <circle cx="286" cy="176" r="10" fill="#C77C02"/><text x="286" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">2</text>
+  <line x1="454" y1="222" x2="816" y2="222" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
+  <text x="484" y="213" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">find CONFIRMED definitions for this event</text>
+  <circle cx="466" cy="222" r="10" fill="#4A5B63"/><text x="466" y="226" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">3</text>
+  <line x1="454" y1="268" x2="636" y2="268" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
+  <text x="484" y="259" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">process(context)</text>
+  <circle cx="466" cy="268" r="10" fill="#4A5B63"/><text x="466" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">4</text>
+  <line x1="644" y1="314" x2="816" y2="314" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
+  <text x="674" y="305" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">save ProcessInstance ORDER_DELIVERY #1234</text>
+  <circle cx="656" cy="314" r="10" fill="#4A5B63"/><text x="656" y="318" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">5</text>
+  <line x1="644" y1="360" x2="816" y2="360" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
+  <text x="674" y="351" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">save StepInstances PLACE · SHIP · DELIVER</text>
+  <circle cx="656" cy="360" r="10" fill="#4A5B63"/><text x="656" y="364" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">6</text>
+  <line x1="636" y1="406" x2="274" y2="406" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
+  <text x="606" y="397" text-anchor="end" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">publish process + step instance events</text>
+  <circle cx="624" cy="406" r="10" fill="#C77C02"/><text x="624" y="410" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">7</text>
+  <line x1="274" y1="452" x2="996" y2="452" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
+  <text x="304" y="443" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">consume step-instance-out-0</text>
+  <circle cx="286" cy="452" r="10" fill="#C77C02"/><text x="286" y="456" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">8</text>
+  <line x1="1004" y1="498" x2="1171" y2="498" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
+  <text x="1034" y="489" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">measure(tenant, SHIP step)</text>
+  <circle cx="1016" cy="498" r="10" fill="#4A5B63"/><text x="1016" y="502" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">9</text>
+  <line x1="1171" y1="544" x2="1004" y2="544" stroke="#4A5B63" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#a)"/>
+  <text x="1141" y="535" text-anchor="end" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">TIME = 2022-05-23T01:46</text>
+  <circle cx="1159" cy="544" r="10" fill="#4A5B63"/><text x="1159" y="548" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">10</text>
+  <line x1="996" y1="590" x2="824" y2="590" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
+  <text x="966" y="581" text-anchor="end" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">save MeasurementInstance</text>
+  <circle cx="984" cy="590" r="10" fill="#4A5B63"/><text x="984" y="594" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">11</text>
+  <line x1="996" y1="636" x2="274" y2="636" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
+  <text x="966" y="627" text-anchor="end" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">publish measurement-instance-out-0</text>
+  <circle cx="984" cy="636" r="10" fill="#C77C02"/><text x="984" y="640" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">12</text>
+</svg>
