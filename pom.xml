@@ -12,11 +12,40 @@
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>aktimetrix</name>
-    <description>Demo project for Spring Boot</description>
+    <name>Aktimetrix</name>
+    <description>Event-driven business process monitoring for the JVM: plans each step of a business process,
+        records what actually happens, and flags steps that are late, at risk, or overdue.</description>
+    <url>https://github.com/arun406/aktimetrix</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>arun406</id>
+            <name>Arun Kumar Kandakatla</name>
+            <url>https://github.com/arun406</url>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:https://github.com/arun406/aktimetrix.git</connection>
+        <developerConnection>scm:git:git@github.com:arun406/aktimetrix.git</developerConnection>
+        <url>https://github.com/arun406/aktimetrix</url>
+    </scm>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/arun406/aktimetrix/issues</url>
+    </issueManagement>
+
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <!-- compile against the Java 11 API, whatever JDK builds it -->
+        <maven.compiler.release>11</maven.compiler.release>
         <java.version>11</java.version>
         <spring-cloud.version>2021.0.1</spring-cloud.version>
         <springfox.version>3.0.0</springfox.version>
@@ -72,4 +101,76 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <profiles>
+        <!--
+          Publishing to Maven Central: sources and javadoc jars, GPG signatures, and upload through the Sonatype
+          Central Portal. Used by .github/workflows/release.yml; see RELEASING.md.
+        -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <doclint>none</doclint>
+                            <quiet>true</quiet>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.5.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

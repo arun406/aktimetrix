@@ -5,14 +5,11 @@ import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;
 import com.aktimetrix.core.impl.StepEventGenerator;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,7 +18,7 @@ import org.springframework.stereotype.Service;
 @com.aktimetrix.core.stereotypes.PostProcessor(code = "SI_PUBLISHER", processType = Constants.ALL_PROCESS_TYPES, priority = Constants.BUILT_IN_PRIORITY)
 public class StepInstancePublisherService implements PostProcessor {
 
-    final private StreamBridge streamBridge;
+    final private Outbox outbox;
 
     @Override
     public void postProcess(Context context) {
@@ -40,9 +37,6 @@ public class StepInstancePublisherService implements PostProcessor {
     public void publish(StepInstance step, String eventCode) {
         Event<StepInstanceDTO, Void> event = new StepEventGenerator(step, eventCode).generate();
         log.debug("step instance event : {}", event);
-        final Message<Event<StepInstanceDTO, Void>> message = MessageBuilder.withPayload(event)
-                .setHeader(KafkaHeaders.MESSAGE_KEY, event.getEntityId())
-                .build();
-        this.streamBridge.send("step-instance-out-0", message);
+        outbox.enqueue("step-instance-out-0", event.getEntityId(), event);
     }
 }

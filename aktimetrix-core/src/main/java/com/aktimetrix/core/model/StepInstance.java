@@ -21,6 +21,10 @@ public class StepInstance {
     @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId processInstanceId;
     private String stepCode;
+    /**
+     * Position of the step in its process, from 0.
+     */
+    private int sequence;
     private String locationCode;
     private String groupCode;
     private String status;
@@ -32,6 +36,14 @@ public class StepInstance {
      * When the step should happen: the planned TIME measurement computed by its meter, if any.
      */
     private LocalDateTime plannedAt;
+    /**
+     * When the step counts as late: {@code plannedAt} plus the step definition's tolerance.
+     */
+    private LocalDateTime lateAfter;
+    /**
+     * Forecast of when the step will happen, when an earlier step ran late.
+     */
+    private LocalDateTime expectedAt;
     /**
      * When the step actually completed.
      */
