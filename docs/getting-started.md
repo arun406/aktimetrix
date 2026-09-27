@@ -75,7 +75,16 @@ docker compose -f ../aktimetrix/docker-compose.yml exec kafka \
   --topic measurement-instance-out-0 --from-beginning
 ```
 
-Each message on `measurement-instance-out-0` looks like this:
+Then report the shipment and watch the actual time arrive next to the plan:
+
+```bash
+# publish an ORDER_SHIPPED_EVENT for the same order
+docker compose -f ../aktimetrix/docker-compose.yml exec -T kafka \
+  /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 \
+  --topic order-event-topic < requests/request2.json
+```
+
+Each message on `measurement-instance-out-0` looks like this (`type` is `P` for planned, `A` for actual):
 
 ```json
 {
@@ -266,7 +275,31 @@ public class OrderDeliveredPlanTimeMeter extends AbstractMeter {
 }
 ```
 
-That's the whole monitor: three small classes and some JSON.
+That's a working plan: three small classes and some JSON.
+
+### 7. Track what actually happens
+
+To record when orders really ship and are delivered, add one milestone handler per milestone event. Aktimetrix
+finds the order's active process instance, completes every step whose definition lists the event code, and
+publishes an actual `TIME` measurement:
+
+```java
+@Component
+@EventHandler(eventType = "ORDER_SHIPPED_EVENT")
+public class OrderShippedEventHandler extends AbstractMilestoneEventHandler {
+}
+
+@Component
+@EventHandler(eventType = "ORDER_DELIVERED_EVENT")
+public class OrderDeliveredEventHandler extends AbstractMilestoneEventHandler {
+}
+```
+
+Milestone events use the same envelope as the start event and must carry the same `entityType` and `entityId`.
+The actual time is taken from `eventTime` (falling back to `eventUTCTime`); override `occurredAt(event)` to read
+it from your entity instead.
+
+That's the whole monitor: five small classes and some JSON.
 
 ---
 

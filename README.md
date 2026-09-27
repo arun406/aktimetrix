@@ -55,6 +55,7 @@ write a few small annotated Spring beans for the domain-specific logic, and Akti
 - consumes business events from Kafka,
 - creates a **process instance** and its **step instances** for every business entity,
 - computes **planned measurements**, such as "this order should ship by 01:46",
+- records **actual measurements** as milestone events arrive, such as "shipped at 01:30",
 - publishes every change as an event, so dashboards, alerts, and planners can react in real time.
 
 ## Features
@@ -64,7 +65,8 @@ write a few small annotated Spring beans for the domain-specific logic, and Akti
 | **Declarative process model** | Processes, steps, and measurements are reference data in MongoDB. Change a process without redeploying. |
 | **Annotation-driven** | `@EventHandler`, `@ProcessHandler`, `@Measurement`, `@PreProcessor`, `@PostProcessor`. Extend a small base class and it is wired in automatically. |
 | **Event-driven** | Built on Spring Cloud Stream and Apache Kafka. Every instance created is published to an outbound topic. |
-| **Idempotent** | One process instance per *tenant + process + entity*, so replayed events never create duplicates. |
+| **Plan and actual** | Meters compute when each step *should* happen; milestone events record when it *did*, and complete the step and the process. |
+| **Idempotent** | One process instance per *tenant + process + entity*, and each step completes once, so replayed events never create duplicates. |
 | **Multi-tenant** | Every definition and instance carries a tenant key. |
 | **Domain agnostic** | E-commerce, banking, air cargo, logistics: if it has milestones, you can monitor it. |
 
@@ -81,6 +83,8 @@ An Aktimetrix application is a Spring Boot service with two pipelines:
    step, then publishes them.
 2. **Meter.** Aktimetrix consumes its own step events. For each planned measurement defined on the step, it calls
    the matching meter, saves the result, and publishes it to `measurement-instance-out-0`.
+3. **Milestones.** Later events about the same entity (e.g. `ORDER_SHIPPED_EVENT`) complete the steps that list
+   them, and record an actual `TIME` measurement on the same topic.
 
 Here is the full journey of one `ORDER_PLACED_EVENT`:
 
@@ -135,7 +139,7 @@ loading.
 
 ## Your first monitor in three classes
 
-Once the process is defined as reference data, a working monitor is three small Spring beans.
+Once the process is defined as reference data, a working plan is three small Spring beans.
 
 **1. An event handler** starts the process when an order is placed:
 
@@ -191,6 +195,15 @@ public class OrderShippedPlanTimeMeter extends AbstractMeter {
 }
 ```
 
+**Then track what actually happens** with a one-line handler per milestone event:
+
+```java
+@Component
+@EventHandler(eventType = "ORDER_SHIPPED_EVENT")
+public class OrderShippedEventHandler extends AbstractMilestoneEventHandler {
+}
+```
+
 ➡️ The **[step-by-step guide](./docs/getting-started.md#build-a-monitor-step-by-step)** walks through the
 reference data, the event format, and every class.
 
@@ -216,10 +229,10 @@ aktimetrix/
 ## Roadmap
 
 Aktimetrix is **alpha** (`0.0.1-SNAPSHOT`). The core pipeline, from events to process and step instances to
-planned measurements, works end to end. APIs may still change.
+planned and actual measurements, works end to end. APIs may still change.
 
 **Next: close the monitoring loop**
-- [ ] **Actual measurements:** record when each step really happens, using the step definitions' `startEventCodes` / `endEventCodes`
+- [x] **Actual measurements:** record when each step really happens, using the step definitions' `startEventCodes` / `endEventCodes`
 - [ ] **Plan vs. actual status:** mark each step and process *on time*, *at risk*, or *late*
 - [ ] **Deadline detection:** raise an alert when an expected event *doesn't* arrive by its planned time
 - [ ] **Query API:** answer "where is order #1234?" over REST
@@ -233,7 +246,7 @@ planned measurements, works end to end. APIs may still change.
 **Throughout: production readiness**
 - [ ] Reliable delivery: idempotent event handling, and an outbox so MongoDB and Kafka stay consistent
 - [ ] Metrics with Micrometer
-- [ ] Test suite with Testcontainers, and CI
+- [ ] Integration tests with Testcontainers, and CI (unit tests are in place)
 - [ ] Fix: `POST /reference-data/process-definitions` ignores the JSON body (use `mongoimport` for now)
 
 ## Contributing

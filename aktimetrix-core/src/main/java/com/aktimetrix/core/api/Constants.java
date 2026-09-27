@@ -30,6 +30,10 @@ public class Constants {
     public static final String ACTUAL_MEASUREMENT_TYPE = "A";
     public static final String CREATED = "C";
     public static final String STATUS_CREATED = "Created";
+    public static final String STATUS_STARTED = "Started";
+    public static final String STATUS_COMPLETED = "Completed";
+    public static final String MEASUREMENT_CODE_TIME = "TIME";
+    public static final String MEASUREMENT_UNIT_TIMESTAMP = "TIMESTAMP";
 
     public static final String ATT_EVENT_HANDLER_SERVICE = "event-handler-service";
     public static final String ATT_EVENT_HANDLER_NAME = "event-handler-name";

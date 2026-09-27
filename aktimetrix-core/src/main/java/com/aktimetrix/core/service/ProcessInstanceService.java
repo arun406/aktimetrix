@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ProcessInstanceService {
@@ -41,8 +43,17 @@ public class ProcessInstanceService {
      * @return process instance
      */
     public ProcessInstance getProcessInstance(String tenant, String processCode, String entityType, String entityId) {
+        // not filtered by status, so a completed process is not re-created when its start event is replayed
         return this.repository
-                .findByTenantAndProcessCodeAndEntityTypeAndEntityIdAndStatus(tenant, processCode, entityType, entityId, "Created");
+                .findByTenantAndProcessCodeAndEntityTypeAndEntityId(tenant, processCode, entityType, entityId)
+                .stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Returns the process instances of the given business entity that are not complete yet.
+     */
+    public List<ProcessInstance> getActiveProcessInstances(String tenant, String entityType, String entityId) {
+        return this.repository.findActiveByTenantAndEntityTypeAndEntityId(tenant, entityType, entityId);
     }
 
 
