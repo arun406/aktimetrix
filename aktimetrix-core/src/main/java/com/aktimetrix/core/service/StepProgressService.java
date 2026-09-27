@@ -1,6 +1,7 @@
 package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.api.Constants;
+import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.impl.DefaultContext;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
@@ -13,7 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,8 +25,8 @@ import java.util.Map;
 
 /**
  * Records what actually happens to a process instance: moves its steps through their lifecycle when a business
- * event matches the step definition's start or end event codes, and captures an actual TIME measurement when a
- * step completes.
+ * event matches the step definition's start or end event codes, captures an actual TIME measurement when a step
+ * completes, and judges the step against its plan.
  * <p>
  * A step whose definition has no end event codes is a single milestone and completes on its start event.
  *
@@ -39,6 +42,26 @@ public class StepProgressService {
     private final ProcessInstanceService processInstanceService;
     private final MeasurementInstanceService measurementInstanceService;
     private final MeasurementInstancePublisherService measurementInstancePublisherService;
+    private final StepInstancePublisherService stepInstancePublisherService;
+    private final Clock clock;
+
+    /**
+     * Applies the event to every active process instance of the business entity.
+     *
+     * @return actual measurements recorded for the steps this event completed
+     */
+    public List<MeasurementInstance> recordMilestones(String tenant, String entityType, String entityId,
+                                                      String eventCode, LocalDateTime occurredAt) {
+        final List<MeasurementInstance> actuals = new ArrayList<>();
+        final List<ProcessInstance> processInstances =
+                processInstanceService.getActiveProcessInstances(tenant, entityType, entityId);
+        if (processInstances.isEmpty()) {
+            logger.debug("No active process instance for {} {}; {} records nothing", entityType, entityId, eventCode);
+        }
+        processInstances.forEach(processInstance ->
+                actuals.addAll(recordMilestone(eventCode, processInstance, occurredAt)));
+        return actuals;
+    }
 
     /**
      * Applies the event to the steps of the process instance, then saves and publishes the actual measurements.
@@ -69,10 +92,13 @@ public class StepProgressService {
             logger.info("Step {} of process instance {}: {} -> {}", step.getStepCode(), processInstance.getId(),
                     step.getStatus(), nextStatus);
             step.setStatus(nextStatus);
-            stepInstanceService.save(step);
             if (Constants.STATUS_COMPLETED.equals(nextStatus)) {
+                step.setActualAt(occurredAt);
+                step.setTimeliness(timeliness(step.getPlannedAt(), occurredAt));
                 actuals.add(actualTime(step, occurredAt));
             }
+            stepInstanceService.save(step);
+            stepInstancePublisherService.publish(step, nextStatus.toUpperCase());
         }
 
         if (!actuals.isEmpty()) {
@@ -87,14 +113,17 @@ public class StepProgressService {
     }
 
     /**
-     * When the event happened in the business: the local time of {@code eventTime}, else {@code eventUTCTime},
-     * else the time it is processed.
+     * When the event happened in the business, in the configured time zone: {@code eventTime} if present, else
+     * {@code eventUTCTime}, else the time it is processed.
      */
-    public static LocalDateTime occurredAt(Event<?, ?> event) {
+    public LocalDateTime occurredAt(Event<?, ?> event) {
         if (event.getEventTime() != null) {
-            return event.getEventTime().toLocalDateTime();
+            return event.getEventTime().withZoneSameInstant(clock.getZone()).toLocalDateTime();
         }
-        return event.getEventUTCTime() != null ? event.getEventUTCTime() : LocalDateTime.now();
+        if (event.getEventUTCTime() != null) {
+            return event.getEventUTCTime().atZone(ZoneOffset.UTC).withZoneSameInstant(clock.getZone()).toLocalDateTime();
+        }
+        return LocalDateTime.now(clock);
     }
 
     /**
@@ -116,10 +145,17 @@ public class StepProgressService {
         return null;
     }
 
+    static Timeliness timeliness(LocalDateTime plannedAt, LocalDateTime actualAt) {
+        if (plannedAt == null) {
+            return null;
+        }
+        return actualAt.isAfter(plannedAt) ? Timeliness.LATE : Timeliness.ON_TIME;
+    }
+
     private MeasurementInstance actualTime(StepInstance step, LocalDateTime occurredAt) {
         return new MeasurementInstance(step.getTenant(), Constants.MEASUREMENT_CODE_TIME, String.valueOf(occurredAt),
                 Constants.MEASUREMENT_UNIT_TIMESTAMP, step.getProcessInstanceId(), step.getId(), step.getStepCode(),
-                Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(), ZonedDateTime.now());
+                Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(), ZonedDateTime.now(clock));
     }
 
     private void completeProcessIfDone(ProcessInstance processInstance, List<StepInstance> steps,

@@ -1,28 +1,27 @@
 package com.aktimetrix.core.configurations;
 
 import com.aktimetrix.core.api.EventHandler;
-import com.aktimetrix.core.api.EventType;
-import com.aktimetrix.core.api.Registry;
+import com.aktimetrix.core.event.handler.DefaultEventHandler;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
-import com.aktimetrix.core.exception.ProcessorException;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.transferobjects.Event;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 
 import java.util.function.Consumer;
 
+/**
+ * Consumes the inbound business events (binding {@code processor-in-0}, topic {@code aktimetrix.events.topic}) and
+ * routes each to the {@code @EventHandler} registered for its event code, or to {@link DefaultEventHandler}.
+ */
 @Configuration
 public class ProcessConfig {
 
@@ -30,31 +29,38 @@ public class ProcessConfig {
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private Registry registry;
-    @Autowired
     private RegistryService registryService;
+    @Autowired
+    private DefaultEventHandler defaultEventHandler;
 
     @Bean
-    public Consumer<Message<String>> processor() throws ProcessorException {
+    public Consumer<Message<String>> processor() {
         return message -> {
             final String payload = message.getPayload();
-            final Acknowledgment acknowledgment = message.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT, Acknowledgment.class);
             logger.debug("payload: {}", payload);
-            final JsonNode node;
+            final Event<?, ?> event;
             try {
-                node = objectMapper.readTree(payload);
-                String eventCode = node.get("eventCode").asText();
-                String eventType = node.get("eventType").asText();
-                logger.info("Event Code: {}, Event Type: {}", eventCode, eventType);
-
-                final Event<?, ?> event = objectMapper.readValue(payload, new TypeReference<Event>() {
+                event = objectMapper.readValue(payload, new TypeReference<Event<Object, Object>>() {
                 });
-                logger.info(String.format("Event : %s ", event));
-                EventHandler eventHandler = registryService.getEventHandler(eventCode);
-                eventHandler.handle(event);
-            } catch (JsonProcessingException | EventHandlerNotFoundException | MultipleEventHandlerFoundException e) {
-                logger.error("Something happened bad. please contact system administrator.", e);
+            } catch (JsonProcessingException e) {
+                logger.error("Ignoring an event that is not valid JSON: {}", e.getOriginalMessage());
+                return;
             }
+            if (event.getEventCode() == null || event.getTenantKey() == null || event.getEntityId() == null) {
+                logger.error("Ignoring an event without eventCode, tenantKey or entityId: {}", payload);
+                return;
+            }
+            eventHandler(event.getEventCode()).handle(event);
         };
+    }
+
+    private EventHandler eventHandler(String eventCode) {
+        try {
+            return registryService.getEventHandler(eventCode);
+        } catch (EventHandlerNotFoundException e) {
+            return defaultEventHandler;
+        } catch (MultipleEventHandlerFoundException e) {
+            throw new IllegalStateException("More than one @EventHandler is registered for " + eventCode, e);
+        }
     }
 }

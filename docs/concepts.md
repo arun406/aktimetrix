@@ -30,18 +30,24 @@ Every step instance moves through a simple lifecycle, driven by the business eve
 | `Started` | An event in the step's `startEventCodes` arrives, and the step also has `endEventCodes`. |
 | `Completed` | An event in the step's `endEventCodes` arrives. A step without end codes is a single milestone and completes on its start event. |
 
-When a step completes, Aktimetrix records an **actual** `TIME` measurement (type `A`) holding the moment the event
-happened, next to the **planned** values your meters computed. When every non-optional step (`optionalInd` ≠ `Y`)
-is complete, the process instance is marked complete. Replayed events are ignored, so a completed step is never
-recorded twice.
+Alongside its status, each step instance carries three monitoring fields:
+
+| Field | Set when |
+|---|---|
+| `plannedAt` | The process starts: the planned `TIME` your meter computes for the step. |
+| `actualAt` | The step completes: when its event happened (see [the event format](getting-started.md#the-event-format)). |
+| `timeliness` | `ON_TIME` or `LATE` when the step completes (actual vs. planned); `OVERDUE` when its planned time passes with no event. An overdue step that later completes becomes `LATE`, or `ON_TIME` if the event shows it happened in time. |
+
+Each completion is also recorded as an **actual** `TIME` measurement (type `A`) next to the **planned** one. When
+every non-optional step (`optionalInd` ≠ `Y`) is complete, the process instance is marked complete. Replayed events
+are ignored, so a completed step is never recorded twice.
 
 ### Example: one order through the process
 
 When `ORDER_PLACED_EVENT` arrives for order `#1234` (placed at `2022-05-22 23:46`), the
 [reference project](https://github.com/arun406/aktimetrix-reference-project-order-monitor) creates one
 `ORDER_DELIVERY` process instance with three step instances, and its meters compute the plan. The start event
-completes `PLACE`; when `ORDER_SHIPPED_EVENT` arrives at 01:30, `SHIP` completes with an actual time 16 minutes
-ahead of plan:
+completes `PLACE`. `SHIP` completes at 01:30, 16 minutes ahead of plan, and `DELIVER` at 10:30, 44 minutes late:
 
 <p align="center">
   <img src="../img/order-timeline.svg" alt="Planned timeline for order #1234" width="100%">

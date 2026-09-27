@@ -1,8 +1,8 @@
 package com.aktimetrix.core.service;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;
-import com.aktimetrix.core.api.ProcessType;
 import com.aktimetrix.core.impl.ProcessEventGenerator;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.ProcessInstanceDTO;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@com.aktimetrix.core.stereotypes.PostProcessor(code = "PI_PUBLISHER", processType = "A2ATRANSPORT")
+@com.aktimetrix.core.stereotypes.PostProcessor(code = "PI_PUBLISHER", processType = Constants.ALL_PROCESS_TYPES, priority = Constants.BUILT_IN_PRIORITY)
 public class ProcessInstancePublisherService implements PostProcessor {
 
     final private StreamBridge streamBridge;

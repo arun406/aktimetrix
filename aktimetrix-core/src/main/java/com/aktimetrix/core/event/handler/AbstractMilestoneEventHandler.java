@@ -1,20 +1,19 @@
 package com.aktimetrix.core.event.handler;
 
 import com.aktimetrix.core.api.EventHandler;
-import com.aktimetrix.core.model.ProcessInstance;
-import com.aktimetrix.core.service.ProcessInstanceService;
 import com.aktimetrix.core.service.StepProgressService;
 import com.aktimetrix.core.transferobjects.Event;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
- * Base class for handlers of milestone events: business events that report progress on a process that is already
- * running, such as ORDER_SHIPPED_EVENT. For every active process instance of the event's business entity, the
- * steps whose definitions list the event code are started or completed, and actual measurements are recorded.
+ * Base class for handlers of milestone events that never start a process: for every active process instance of
+ * the event's business entity, the steps whose definitions list the event code are started or completed, and
+ * actual measurements are recorded.
+ * <p>
+ * Events without an {@code @EventHandler} are already handled this way by {@link DefaultEventHandler}; extend this
+ * class only to customise how the entity or the event time is read.
  * <pre>
  * &#64;Component
  * &#64;EventHandler(eventType = "ORDER_SHIPPED_EVENT")
@@ -24,26 +23,15 @@ import java.util.List;
  *
  * @author arun kumar kandakatla
  */
-@Slf4j
 public abstract class AbstractMilestoneEventHandler implements EventHandler {
 
-    @Autowired
-    private ProcessInstanceService processInstanceService;
     @Autowired
     private StepProgressService stepProgressService;
 
     @Override
     public void handle(Event<?, ?> event) {
-        final List<ProcessInstance> processInstances = processInstanceService
-                .getActiveProcessInstances(event.getTenantKey(), entityType(event), entityId(event));
-        if (processInstances.isEmpty()) {
-            log.warn("No active process instance for {} {}; ignoring {}", entityType(event), entityId(event),
-                    event.getEventCode());
-            return;
-        }
-        final LocalDateTime occurredAt = occurredAt(event);
-        processInstances.forEach(processInstance ->
-                stepProgressService.recordMilestone(event.getEventCode(), processInstance, occurredAt));
+        stepProgressService.recordMilestones(event.getTenantKey(), entityType(event), entityId(event),
+                event.getEventCode(), occurredAt(event));
     }
 
     /**
@@ -51,7 +39,7 @@ public abstract class AbstractMilestoneEventHandler implements EventHandler {
      * {@link StepProgressService#occurredAt(Event)}; override to read it from the entity instead.
      */
     protected LocalDateTime occurredAt(Event<?, ?> event) {
-        return StepProgressService.occurredAt(event);
+        return stepProgressService.occurredAt(event);
     }
 
     protected String entityType(Event<?, ?> event) {

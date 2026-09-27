@@ -13,9 +13,18 @@ import java.util.UUID;
 public class StepEventGenerator implements EventGenerator {
 
     private final StepInstance stepInstance;
+    private final String eventCode;
 
     public StepEventGenerator(StepInstance stepInstance) {
+        this(stepInstance, "CREATED");
+    }
+
+    /**
+     * @param eventCode what happened to the step: CREATED, STARTED, COMPLETED or OVERDUE
+     */
+    public StepEventGenerator(StepInstance stepInstance, String eventCode) {
         this.stepInstance = stepInstance;
+        this.eventCode = eventCode;
     }
 
     /**
@@ -32,8 +41,8 @@ public class StepEventGenerator implements EventGenerator {
         Event<StepInstanceDTO, Void> event = new Event<>();
         event.setEventId(UUID.randomUUID().toString());
         event.setEventType("Step_Event");
-        event.setEventCode("CREATED");
-        event.setEventName("Step Instance Created Event");
+        event.setEventCode(eventCode);
+        event.setEventName("Step Instance " + eventCode + " Event");
         event.setEventTime(ZonedDateTime.now());
         event.setEventUTCTime(LocalDateTime.now(ZoneOffset.UTC));
         event.setEntityId(String.valueOf(instance.getId()));
@@ -44,7 +53,7 @@ public class StepEventGenerator implements EventGenerator {
         return event;
     }
 
-    private StepInstanceDTO getStepInstanceDTO(StepInstance instance) {
+    static StepInstanceDTO getStepInstanceDTO(StepInstance instance) {
         return StepInstanceDTO.builder()
                 .id(instance.getId().toString())
                 .tenant(instance.getTenant())
@@ -57,6 +66,9 @@ public class StepEventGenerator implements EventGenerator {
                 .metadata(instance.getMetadata())
                 .processInstanceId(instance.getProcessInstanceId().toString())
                 .createdOn(instance.getCreatedOn())
+                .plannedAt(instance.getPlannedAt())
+                .actualAt(instance.getActualAt())
+                .timeliness(instance.getTimeliness())
                 .build();
     }
 }
