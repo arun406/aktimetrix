@@ -1,6 +1,5 @@
 package com.aktimetrix.core.configurations;
 
-import org.javatuples.Pair;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -19,27 +18,8 @@ public class MongoConfig {
     public MongoCustomConversions mongoCustomConversions() {
         return new MongoCustomConversions(
                 Arrays.asList(
-                        new StringToPairConverter(),
-                        new PairToStringConverter(),
                         new ZonedDateTimeReadConverter(),
                         new ZonedDateTimeWriteConverter()));
-    }
-
-    @WritingConverter
-    public static class PairToStringConverter implements Converter<Pair<String, String>, String> {
-        @Override
-        public String convert(Pair source) {
-            return source.getValue0() + "#" + source.getValue1();
-        }
-    }
-
-    @ReadingConverter
-    public static class StringToPairConverter implements Converter<String, Pair<String, String>> {
-        @Override
-        public Pair<String, String> convert(String source) {
-            final String[] split = source.split("#");
-            return Pair.with(split[0], split[1]);
-        }
     }
 
     @ReadingConverter
