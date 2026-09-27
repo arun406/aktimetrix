@@ -81,10 +81,7 @@ public class StepInstanceService {
             logger.info("step code: {}, step group code: {} ", stepCode, groupCode);
             StepInstance stepInstance = prepareStepInstanceObject(tenant, processInstanceId, stepCode, functionalCtx,
                     groupCode, Constants.DEFAULT_VERSION, Constants.STATUS_CREATED);
-//            if (StringUtils.equalsIgnoreCase(Constants.FLIGHT_GROUP_CODE, groupCode)) {
             stepInstance.setMetadata(metadata);
-//            }
-//            setStepLocation(itinerary, stepDefinition, stepInstance);
             steps.add(stepInstance);
         }
         // save
@@ -93,25 +90,6 @@ public class StepInstanceService {
     }
 
 
-    /**
-     * @param itinerary
-     * @param stepDefinition
-     * @param stepInstance
-     *//*
-    private void setStepLocation(Itinerary itinerary, StepDefinition stepDefinition, StepInstance stepInstance) {
-        if (StringUtils.equalsIgnoreCase("E", stepDefinition.getFunctionalCtxCode())) {
-            stepInstance.setLocationCode(itinerary.getBoardPoint().getCode());
-        } else if (StringUtils.equalsIgnoreCase("I", stepDefinition.getFunctionalCtxCode())) {
-            stepInstance.setLocationCode(itinerary.getOffPoint().getCode());
-        } else {
-            // this need to corrected TODO
-            if (StringUtils.equalsIgnoreCase(stepDefinition.getStepCode(), "DEP-T")) {
-                stepInstance.setLocationCode(itinerary.getBoardPoint().getCode());
-            } else {
-                stepInstance.setLocationCode(itinerary.getOffPoint().getCode());
-            }
-        }
-    }*/
 
     /**
      * @param tenant
@@ -154,12 +132,6 @@ public class StepInstanceService {
      * @return step instance
      */
     public StepInstance getStepInstancesByProcessInstanceIdAndId(String tenant, String processInstanceId, String stepInstanceId) {
-        /*final StepInstance stepInstance = this.repository
-                .getStepInstancesByProcessInstanceIdAndId(tenant, new ObjectId(processInstanceId), new ObjectId(stepInstanceId));
-        final List<MeasurementInstance> stepMeasurements = this.measurementInstanceService
-                .getStepMeasurements(tenant, new ObjectId(processInstanceId), new ObjectId(stepInstanceId));
-        stepInstance.setMeasurements(stepMeasurements);
-        return stepInstance;*/
         return this.repository.getStepInstancesWithMeasurements(tenant, new ObjectId(processInstanceId), new ObjectId(stepInstanceId));
     }
 }
