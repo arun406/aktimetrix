@@ -44,7 +44,7 @@ public class ProcessorPostBeanProcessor implements BeanPostProcessor {
             logger.info("Event Type: {}, Name : {}, Version {}", annotation.processType(), annotation.name(), annotation.version());
             Map<String, String> attributes = new HashMap<>();
             attributes.put(Constants.ATT_PROCESS_HANDLER_SERVICE, Constants.VAL_YES);
-            attributes.put(Constants.ATT_PROCESS_TYPE, annotation.processType().name());
+            attributes.put(Constants.ATT_PROCESS_TYPE, annotation.processType());
             attributes.put(Constants.ATT_PROCESS_HANDLER_NAME, annotation.name());
             attributes.put(Constants.ATT_PROCESS_HANDLER_VERSION, annotation.version());
             logger.debug("registering the {} bean with attributes {}", beanName, attributes);

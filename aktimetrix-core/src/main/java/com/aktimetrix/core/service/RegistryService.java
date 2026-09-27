@@ -31,10 +31,10 @@ public class RegistryService {
     @Autowired
     private Registry registry;
 
-    public List<PreProcessor> getPreProcessor(ProcessType processType) {
+    public List<PreProcessor> getPreProcessor(String processType) {
         Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_PRE_PROCESSOR_SERVICE)
                 && re.attribute(Constants.ATT_PRE_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate2 = re -> (re.attribute(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE) == processType);
+        Predicate<RegistryEntry> predicate2 = re -> (re.attribute(Constants.ATT_PRE_PROCESSOR_PROCESS_TYPE).equals(processType));
 
         final List<Object> preProcessors = this.registry.lookupAll(predicate1.and(predicate2));
         logger.debug("Applicable pre processors {}", preProcessors);
@@ -45,11 +45,11 @@ public class RegistryService {
         return new ArrayList<>();
     }
 
-    public List<PostProcessor> getPostProcessor(ProcessType processType) {
+    public List<PostProcessor> getPostProcessor(String processType) {
         Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_SERVICE)
                 && re.attribute(Constants.ATT_POST_PROCESSOR_SERVICE).equals(Constants.VAL_YES);
         Predicate<RegistryEntry> predicate2 = re -> re.hasAttribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE) &&
-                (processType == ProcessType.valueOf((String) re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE)));
+                (processType.equals(re.attribute(Constants.ATT_POST_PROCESSOR_PROCESS_TYPE)));
 
         final List<Object> postProcessors = this.registry.lookupAll(predicate1.and(predicate2));
         logger.debug("Applicable post processors {}", postProcessors);
@@ -67,11 +67,11 @@ public class RegistryService {
      * @return Event Handler Object
      * @throws ProcessHandlerNotFoundException
      */
-    public Processor getProcessHandler(ProcessType processType) throws ProcessHandlerNotFoundException {
+    public Processor getProcessHandler(String processType) throws ProcessHandlerNotFoundException {
         final List<Object> handlers = this.registry
                 .lookupAll(registryEntry -> registryEntry.hasAttribute(Constants.ATT_PROCESS_HANDLER_SERVICE) &&
                         registryEntry.attribute(Constants.ATT_PROCESS_HANDLER_SERVICE).equals(Constants.VAL_YES) &&
-                        (ProcessType.valueOf((String) registryEntry.attribute(Constants.ATT_PROCESS_TYPE)) == processType)
+                        processType.equals(registryEntry.attribute(Constants.ATT_PROCESS_TYPE))
                 );
         logger.debug("applicable handlers {}", handlers);
         Processor processHandler = null;
@@ -88,10 +88,10 @@ public class RegistryService {
      * @return Event Handler Object
      * @throws EventHandlerNotFoundException
      */
-    public EventHandler getEventHandler(EventType eventType) throws EventHandlerNotFoundException, MultipleEventHandlerFoundException {
+    public EventHandler getEventHandler(String eventType) throws EventHandlerNotFoundException, MultipleEventHandlerFoundException {
         Predicate<RegistryEntry> predicate1 = re -> re.hasAttribute(Constants.ATT_EVENT_HANDLER_SERVICE);
         Predicate<RegistryEntry> predicate2 = re -> re.attribute(Constants.ATT_EVENT_HANDLER_SERVICE).equals(Constants.VAL_YES);
-        Predicate<RegistryEntry> predicate3 = re -> (EventType.valueOf((String) re.attribute(Constants.ATT_EVENT_TYPE)) == eventType);
+        Predicate<RegistryEntry> predicate3 = re -> re.attribute(Constants.ATT_EVENT_TYPE).equals(eventType);
 
         final List<Object> eventHandlers = this.registry.lookupAll(predicate1.and(predicate2).and(predicate3));
         logger.debug("Applicable eventHandlers {}", eventHandlers);
@@ -116,11 +116,11 @@ public class RegistryService {
      * @return Event Handler Object
      * @throws ProcessHandlerNotFoundException
      */
-    public MeasurementProcessor getMeasurementProcessHandler(ProcessType processType) throws ProcessHandlerNotFoundException {
+    public MeasurementProcessor getMeasurementProcessHandler(String processType) throws ProcessHandlerNotFoundException {
         final List<Object> handlers = this.registry
                 .lookupAll(registryEntry -> registryEntry.hasAttribute(com.aktimetrix.core.api.Constants.ATT_PROCESS_HANDLER_SERVICE) &&
                         registryEntry.attribute(com.aktimetrix.core.api.Constants.ATT_PROCESS_HANDLER_SERVICE).equals(com.aktimetrix.core.api.Constants.VAL_YES) &&
-                        (ProcessType.valueOf((String) registryEntry.attribute(com.aktimetrix.core.api.Constants.ATT_PROCESS_TYPE)) == processType)
+                        registryEntry.attribute(Constants.ATT_PROCESS_TYPE).equals(processType)
                 );
         logger.debug("applicable handlers {}", handlers);
         if (handlers == null || handlers.isEmpty()) {

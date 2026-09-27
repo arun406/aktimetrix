@@ -12,10 +12,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface EventHandler {
-    EventType eventType();
+    String eventType();
 
     String name() default "";
 
     String version() default Constants.DEFAULT_VERSION;
-
 }

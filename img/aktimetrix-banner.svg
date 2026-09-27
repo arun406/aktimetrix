@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B3441"/>
+      <stop offset="1" stop-color="#145B6E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="320" rx="24" fill="url(#bg)"/>
+  <!-- logo mark: a gauge ring with a pulse line -->
+  <g transform="translate(130 150)">
+    <circle r="66" fill="none" stroke="#1F7A8F" stroke-width="10"/>
+    <path d="M -46.7 46.7 A 66 66 0 1 1 46.7 46.7" fill="none" stroke="#F5A524" stroke-width="10" stroke-linecap="round"/>
+    <polyline points="-40,6 -18,6 -8,-24 6,30 18,-6 26,6 40,6" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="232" y="148" font-size="76" font-weight="700" fill="#FFFFFF" letter-spacing="1">Aktimetrix</text>
+  <text x="236" y="196" font-size="24" fill="#CDE7EE">Event-driven business process monitoring for the JVM</text>
+  <g font-size="16" font-weight="600" fill="#0B3441">
+    <rect x="236" y="226" width="92" height="32" rx="16" fill="#CDE7EE"/><text x="282" y="247" text-anchor="middle">Java 11+</text>
+    <rect x="340" y="226" width="118" height="32" rx="16" fill="#CDE7EE"/><text x="399" y="247" text-anchor="middle">Spring Boot</text>
+    <rect x="470" y="226" width="126" height="32" rx="16" fill="#CDE7EE"/><text x="533" y="247" text-anchor="middle">Apache Kafka</text>
+    <rect x="608" y="226" width="102" height="32" rx="16" fill="#CDE7EE"/><text x="659" y="247" text-anchor="middle">MongoDB</text>
+  </g>
+  <!-- decorative step track -->
+  <g transform="translate(950 150)">
+    <line x1="0" y1="0" x2="260" y2="0" stroke="#1F7A8F" stroke-width="6" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="130" y2="0" stroke="#3FB950" stroke-width="6" stroke-linecap="round"/>
+    <g>
+      <circle cx="0" cy="0" r="22" fill="#3FB950"/>
+      <polyline points="-9,0 -3,7 10,-7" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="0" y="-38" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">PLACE</text>
+      <text x="0" y="50" text-anchor="middle" font-size="13" fill="#CDE7EE">on time</text>
+    </g>
+    <g transform="translate(130 0)">
+      <circle cx="0" cy="0" r="22" fill="#3FB950"/>
+      <polyline points="-9,0 -3,7 10,-7" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="0" y="-38" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">SHIP</text>
+      <text x="0" y="50" text-anchor="middle" font-size="13" fill="#CDE7EE">on time</text>
+    </g>
+    <g transform="translate(260 0)">
+      <circle cx="0" cy="0" r="22" fill="#0B3441" stroke="#F5A524" stroke-width="5"/>
+      <line x1="0" y1="-9" x2="0" y2="2" stroke="#F5A524" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="0" cy="9" r="2.6" fill="#F5A524"/>
+      <text x="0" y="-38" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF">DELIVER</text>
+      <text x="0" y="50" text-anchor="middle" font-size="13" fill="#F5A524">at risk</text>
+    </g>
+  </g>
+</svg>
