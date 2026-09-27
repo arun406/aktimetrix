@@ -2,6 +2,9 @@
 
 [← Back to README](../README.md)
 
+> This guide describes the **reference implementation**, which binds the message broker to Apache Kafka and the
+> state store to MongoDB. The model itself is technology-neutral: see the [README](../README.md#42-infrastructure-contract).
+
 ## Configuration
 
 An Aktimetrix application needs only its MongoDB and Kafka connection and the topic its events arrive on:
