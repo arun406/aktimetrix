@@ -21,11 +21,6 @@ public class Constants {
     public static final String VAL_NO = "no";
     public static final String DEFAULT_VERSION = "1.0.0";
     public static final String ATT_METER_SERVICE = "meter-service";
-    public static final String SHIPMENT_GROUP_CODE = "S";
-    public static final String FLIGHT_GROUP_CODE = "F";
-    public static final String EXPORT_FUNCTION_CTX = "E";
-    public static final String IMPORT_FUNCTION_CTX = "I";
-    public static final String TRANSIT_FUNCTION_CTX = "T";
     public static final String PLAN_MEASUREMENT_TYPE = "P";
     public static final String ACTUAL_MEASUREMENT_TYPE = "A";
     public static final String CREATED = "C";
