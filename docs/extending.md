@@ -62,7 +62,7 @@ public class LateEveningDeliveryWarning implements com.aktimetrix.core.api.PostP
     @Override
     public void postProcess(Context context) {
         context.getProcessInstance().getSteps().stream()
-                .filter(step -> "DELIVER".equals(step.getStepCode()) && step.getPlannedAt() != null)
+                .filter(step -> "DELIVERED".equals(step.getStepCode()) && step.getPlannedAt() != null)
                 .filter(step -> step.getPlannedAt().toLocalTime().isAfter(CUT_OFF))
                 .forEach(step -> log.warn("Order {} is planned for delivery after {}",
                         context.getProperty(Constants.ENTITY_ID), CUT_OFF));
@@ -82,7 +82,7 @@ the inbound topic into an Aktimetrix event:
 @Bean
 EventMapper shopEvents(ObjectMapper json) {
     return (payload, headers) -> {
-        JsonNode order = json.readTree(payload);           // {"id":"1234","status":"SHIPPED","updatedAt":"…"}
+        JsonNode order = json.readTree(payload);           // {"id":"1234","status":"DELIVERED","updatedAt":"…"}
         if (!order.has("status")) {
             return null;                                   // not an order event: ignored
         }

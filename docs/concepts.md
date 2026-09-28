@@ -12,7 +12,7 @@ happening to one particular business entity** (instances, created at run time).
 | Concept | Kind | Description |
 |---|---|---|
 | **Process** | definition | A named business process, e.g. `ORDER_DELIVERY`. Lists its steps, the event codes that start it, and the entity type it tracks. |
-| **Step** | definition | One milestone in the process, e.g. `SHIP`. Lists the measurements to take at that milestone. |
+| **Step** | definition | One milestone in the process, e.g. `DELIVERED`. Lists the measurements to take at that milestone. |
 | **Measurement** | definition | A user-defined dimension to measure (`TIME`, `DISTANCE`, `FUEL`, `TEMPERATURE`, `RATING`, …), at the process or at a step, planned (`P`) and actual (`A`), with an optional tolerance. |
 | **Business entity** | external | The real-world object being tracked: an order, a loan application, an air waybill. Identified by `entityType` + `entityId`. |
 | **Process instance** | runtime | One run of a process for one business entity. *ProcessInstance = Process + identifying metadata.* |
@@ -74,13 +74,15 @@ are ignored, so a completed step is never recorded twice.
 
 ### Example: one order through the process
 
-When `ORDER_PLACED_EVENT` arrives for order `#1234` (placed at `2022-05-22 23:46`), the
+When `ORDER_CREATED_EVENT` arrives for order `#1234` (created at `2024-03-01 09:00`, for a priority customer), the
 [reference project](https://github.com/arun406/aktimetrix-reference-project-order-monitor) creates one
-`ORDER_DELIVERY` process instance with three step instances, and its meters compute the plan. The start event
-completes `PLACE`. `SHIP` completes at 01:30, 16 minutes ahead of plan, and `DELIVER` at 10:30, 44 minutes late:
+`ORDER_DELIVERY` process instance with seven step instances, and its definitions and rules compute the plan. The
+first two steps complete on time. The handover runs 40 minutes late, so the steps after it are forecast late and
+become `AT_RISK` before they happen; they then complete late. The order as a whole is still delivered within its
+one-day promise:
 
 <p align="center">
-  <img src="../img/order-timeline.svg" alt="Planned timeline for order #1234" width="100%">
+  <img src="../img/order-timeline.svg" alt="Planned, forecast and actual times of the steps of order #1234" width="100%">
 </p>
 
 ### Same model, any domain

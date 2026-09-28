@@ -238,12 +238,11 @@ need to adopt it: an **event mapper** translates each system's own messages into
 
 ## 4. Execution semantics
 
-Every business event passes through the same four stages. The figures in this section follow the order of the
-[reference project](#92-running-the-example), a shorter version of the example in §1.1: *placed → shipped →
-delivered*.
+Every business event passes through the same four stages. The figures in this section follow order 1234 of §1.1,
+which the [reference project](#92-running-the-example) implements.
 
 <p align="center">
-  <img src="./img/sequence.svg" alt="Sequence of an order being placed and then shipped" width="100%">
+  <img src="./img/sequence.svg" alt="Sequence of order 1234 being created and planned, then arriving at the customer" width="100%">
 </p>
 
 1. **Start.** If the event's code is one of a process's start events, a process instance and its step instances
@@ -336,7 +335,7 @@ shifted by the same delay. A step whose expected time falls after its deadline b
 such before its own deadline passes, which gives operators time to intervene.
 
 <p align="center">
-  <img src="./img/order-timeline.svg" alt="Planned and actual timeline of order 1234" width="100%">
+  <img src="./img/order-timeline.svg" alt="Planned, forecast and actual times of the steps of order 1234" width="100%">
 </p>
 
 ### 4.5 Published events
@@ -351,18 +350,19 @@ querying the state store.
 | `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
 | `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, the process and step it belongs to, and for an actual its `plannedValue`, `deviation` and `conformance` | measurement instance id |
 
-A step becoming overdue, for example, is published as:
+When the handover of order 1234 runs late, for example, its delivery step is published as at risk:
 
 ```json
 {
-  "eventId": "7f0c2a52-…", "eventType": "Step_Event", "eventCode": "OVERDUE",
-  "eventTime": "2022-05-23T10:47:00.000+0000", "tenantKey": "AA",
-  "entityType": "com.aktimetrix.step.instance", "entityId": "628b0f3c9d2a4e1f5c3b7a91",
+  "eventId": "7f0c2a52-…", "eventType": "Step_Event", "eventCode": "AT_RISK",
+  "eventTime": "2024-03-01T11:40:00.000+0000", "tenantKey": "AA",
+  "entityType": "com.aktimetrix.step.instance", "entityId": "65e1a8c09d2a4e1f5c3b7a91",
   "entity": {
-    "id": "628b0f3c9d2a4e1f5c3b7a91", "processInstanceId": "628b0f3c9d2a4e1f5c3b7a8e", "tenant": "AA",
-    "stepCode": "DELIVER", "sequence": 2, "status": "Created",
-    "plannedAt": "2022-05-23T09:46:00", "lateAfter": "2022-05-23T10:46:00", "actualAt": null,
-    "timeliness": "OVERDUE", "metadata": { "orderId": "1234", "orderedOn": "2022-05-22T23:46:00" }
+    "id": "65e1a8c09d2a4e1f5c3b7a91", "processInstanceId": "65e1a8c09d2a4e1f5c3b7a8a", "tenant": "AA",
+    "stepCode": "DELIVERED", "sequence": 5, "status": "Created",
+    "plannedAt": "2024-03-01T12:15:00", "lateAfter": "2024-03-01T12:15:00", "expectedAt": "2024-03-01T12:55:00",
+    "actualAt": null, "timeliness": "AT_RISK",
+    "metadata": { "orderId": "1234", "priority": true, "createdAt": "2024-03-01T09:00:00" }
   }
 }
 ```
@@ -492,9 +492,9 @@ bindings is part of the [roadmap](#11-status-and-roadmap).
 
 ### 9.2 Running the example
 
-The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) reference project monitors
-a shorter version of the order of §1.1, *placed → shipped → delivered*, against the rule *"an order ships within 2
-hours of being placed and is delivered within 10 hours"*. It needs **JDK 11+**
+The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) reference project implements
+the order of §1.1 end to end, with ten sample events from *order created* to *rated*; its test checks every figure of
+§1.1. It needs **JDK 11+**
 and **Docker**, which starts a local message broker and state store.
 
 ```bash
@@ -507,8 +507,8 @@ docker compose up -d                               # local message broker and st
 ./mvnw spring-boot:run
 ```
 
-The project's README shows how to send the sample events for order `1234` and follow the order through the query
-API:
+The project's README shows how to send the sample events for order `1234`, one at a time, and follow the order
+through the query API:
 
 ```bash
 curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'
@@ -529,35 +529,52 @@ reference project's.
 </dependency>
 ```
 
-**Process definition** in `src/main/resources/aktimetrix/process-definitions.json`:
+**Process definition** in `src/main/resources/aktimetrix/process-definitions.json`: the order, the events that start
+and cancel it, its own measurements and metric, and its steps (abridged):
 
 ```json
 [{
   "tenant": "AA", "processCode": "ORDER_DELIVERY", "entityType": "com.ecom.order", "status": "CONFIRMED",
-  "startEventCodes": ["ORDER_PLACED_EVENT"],
-  "steps": [{ "stepCode": "PLACE" }, { "stepCode": "SHIP" }, { "stepCode": "DELIVER" }]
+  "startEventCodes": ["ORDER_CREATED_EVENT"], "cancelEventCodes": ["ORDER_CANCELLED_EVENT"],
+  "measurements": [
+    { "measurementCode": "TIME", "type": "P" },
+    { "measurementCode": "COST", "type": "P", "value": "8", "unit": "EUR", "tolerance": "10%", "worseWhen": "HIGHER" },
+    { "measurementCode": "COST", "type": "A", "valueFrom": "deliveryCost", "unit": "EUR" }
+  ],
+  "metrics": [ { "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" } ],
+  "steps": [ { "stepCode": "CONFIRM" }, { "stepCode": "PAY" }, { "stepCode": "HANDOVER" }, { "stepCode": "ACCEPT" },
+             { "stepCode": "TRAVEL" }, { "stepCode": "DELIVERED" }, { "stepCode": "RATED" } ]
 }]
 ```
 
-**Step definitions** in `src/main/resources/aktimetrix/step-definitions.json`: the event that completes each step,
-and its plan. A fixed duration needs no code.
+**Step definitions** in `src/main/resources/aktimetrix/step-definitions.json`: the events that complete each step or
+report its progress, and its plans. Fixed values and durations need no code; two of the seven steps:
 
 ```json
 [
-  { "tenant": "AA", "stepCode": "PLACE",   "status": "CONFIRMED", "startEventCodes": ["ORDER_PLACED_EVENT"] },
-  { "tenant": "AA", "stepCode": "SHIP",    "status": "CONFIRMED", "startEventCodes": ["ORDER_SHIPPED_EVENT"],
-    "plannedWithin": "PT2H", "tolerance": "PT15M" },
-  { "tenant": "AA", "stepCode": "DELIVER", "status": "CONFIRMED", "startEventCodes": ["ORDER_DELIVERED_EVENT"],
-    "measurements": [{ "measurementCode": "TIME", "type": "P" }] }
+  { "tenant": "AA", "stepCode": "TRAVEL", "status": "CONFIRMED",
+    "startEventCodes": ["TRAVEL_STARTED_EVENT"], "endEventCodes": ["ARRIVED_EVENT"],
+    "progressEventCodes": ["LOCATION_UPDATED_EVENT"], "plannedWithin": "PT3H",
+    "measurements": [
+      { "measurementCode": "DISTANCE", "type": "P", "value": "5", "unit": "KM", "tolerance": "20%", "worseWhen": "HIGHER" },
+      { "measurementCode": "DISTANCE", "type": "A", "valueFrom": "route.distanceKm", "unit": "KM" },
+      { "measurementCode": "FUEL", "type": "P", "value": "0.4", "unit": "L", "tolerance": "25%", "worseWhen": "HIGHER" },
+      { "measurementCode": "FUEL", "type": "A", "valueFrom": "fuelLitres", "unit": "L" } ] },
+  { "tenant": "AA", "stepCode": "RATED", "status": "CONFIRMED", "startEventCodes": ["ORDER_RATED_EVENT"],
+    "optionalInd": "Y",
+    "measurements": [
+      { "measurementCode": "RATING", "type": "P", "value": "5", "unit": "STARS", "tolerance": "1", "worseWhen": "LOWER" },
+      { "measurementCode": "RATING", "type": "A", "valueFrom": "review.stars", "unit": "STARS" } ] }
 ]
 ```
 
-**Meter**, for a step's plan computed by a rule rather than fixed:
+**Meter**, for a step's plan that follows a rule rather than a fixed duration: the delivery step's planned time,
+declared as `{ "measurementCode": "TIME", "type": "P" }` on `DELIVERED`:
 
 ```java
 @Component
-@Measurement(code = "TIME", stepCode = "DELIVER")
-public class DeliveryPlanTimeMeter extends AbstractMeter {
+@Measurement(code = "TIME", stepCode = "DELIVERED")
+public class DeliveryPlanMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementUnit(String tenant, StepInstance step) {
@@ -566,8 +583,11 @@ public class DeliveryPlanTimeMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        // orders are delivered within 10 hours of being placed
-        return String.valueOf(metadataTime(step, "orderedOn").plusHours(10));
+        // priority customers within 3 h 15 min of the order, others within 2 days
+        boolean priority = Boolean.TRUE.equals(step.getMetadata().get("priority"));
+        return String.valueOf(priority
+                ? metadataTime(step, "createdAt").plusHours(3).plusMinutes(15)
+                : metadataTime(step, "createdAt").plusDays(2));
     }
 }
 ```

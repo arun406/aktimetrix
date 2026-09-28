@@ -1,92 +1,138 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="918" viewBox="0 0 1280 918" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="898" viewBox="0 0 1280 898" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
   <defs>
-    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4A5B63"/></marker>
-    <marker id="ak" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C77C02"/></marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4A5B63"/>
+    </marker>
+    <marker id="arrK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C77C02"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B3261E"/>
+    </marker>
+    <style>
+      .t  { font-size: 14px; fill: #1F2D33; }
+      .tb { font-size: 15px; font-weight: 700; fill: #1F2D33; }
+      .ts { font-size: 12px; fill: #5B6B72; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 11.5px; fill: #0F4C5C; }
+      .h  { font-size: 12.5px; font-weight: 700; letter-spacing: 1.5px; fill: #5B6B72; }
+      .box { fill: #FFFFFF; stroke: #B7C7CD; stroke-width: 1.5; }
+      .core { fill: #E8F4F7; stroke: #0F4C5C; stroke-width: 1.5; }
+      .you { fill: #FFF8EC; stroke: #C77C02; stroke-width: 1.5; stroke-dasharray: 5 3; }
+      .topic { fill: #FFF4DE; stroke: #C77C02; stroke-width: 1.5; }
+      .db { fill: #E9F5EC; stroke: #2E8B47; stroke-width: 1.5; }
+      .dead { fill: #FCEBEA; stroke: #B3261E; stroke-width: 1.5; }
+      .band { fill: #FFFFFF; stroke: #DCE5E8; stroke-width: 1.2; }
+      .edge { stroke: #4A5B63; stroke-width: 1.7; fill: none; }
+      .kedge { stroke: #C77C02; stroke-width: 1.7; fill: none; }
+      .redge { stroke: #B3261E; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+    </style>
   </defs>
-  <rect width="1280" height="918" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
-  <rect x="16" y="148" width="1248" height="350" rx="10" fill="#EEF6F8" stroke="#0F4C5C" stroke-dasharray="5 4"/>
-  <text x="1252" y="165" text-anchor="end" font-size="12" font-weight="700" letter-spacing="1.2" fill="#0F4C5C">① START AND PLAN</text>
-  <rect x="16" y="500" width="1248" height="130" rx="10" fill="#EEF5EF" stroke="#2E8B47" stroke-dasharray="5 4"/>
-  <text x="1252" y="517" text-anchor="end" font-size="12" font-weight="700" letter-spacing="1.2" fill="#2E8B47">② RECORD</text>
-  <rect x="16" y="632" width="1248" height="218" rx="10" fill="#F3F0FA" stroke="#6B4FA0" stroke-dasharray="5 4"/>
-  <text x="1252" y="649" text-anchor="end" font-size="12" font-weight="700" letter-spacing="1.2" fill="#6B4FA0">③ LATER: A MILESTONE</text>
-  <line x1="90" y1="90" x2="90" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
-  <rect x="10" y="30" width="160" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
-  <text x="90" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Shop</text>
-  <text x="90" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">source</text>
-  <line x1="268" y1="90" x2="268" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
-  <rect x="188" y="30" width="160" height="60" rx="10" fill="#FFF4DE" stroke="#C77C02" stroke-width="1.6"/>
-  <text x="268" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Message broker</text>
-  <text x="268" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">inbound channel</text>
-  <line x1="446" y1="90" x2="446" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
-  <rect x="366" y="30" width="160" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
-  <text x="446" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Event router</text>
-  <text x="446" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">DefaultEventHandler</text>
-  <line x1="624" y1="90" x2="624" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
-  <rect x="544" y="30" width="160" height="60" rx="10" fill="#FFF8EC" stroke="#C77C02" stroke-width="1.6"/>
-  <text x="624" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Process handler</text>
-  <text x="624" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">@ProcessHandler</text>
-  <line x1="802" y1="90" x2="802" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
-  <rect x="722" y="30" width="160" height="60" rx="10" fill="#FFF8EC" stroke="#C77C02" stroke-width="1.6"/>
-  <text x="802" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Meter</text>
-  <text x="802" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">@Measurement</text>
-  <line x1="980" y1="90" x2="980" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
-  <rect x="900" y="30" width="160" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
-  <text x="980" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Step progress</text>
-  <text x="980" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">built in</text>
-  <line x1="1170" y1="90" x2="1170" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
-  <rect x="1090" y="30" width="160" height="60" rx="10" fill="#E9F5EC" stroke="#2E8B47" stroke-width="1.6"/>
-  <text x="1170" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">State store</text>
-  <text x="1170" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">state</text>
-  <line x1="94" y1="130" x2="264" y2="130" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
-  <text x="120" y="121" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F7FAFB" stroke-width="6" stroke-linejoin="round" paint-order="stroke">ORDER_PLACED_EVENT · order #1234</text>
-  <circle cx="106" cy="130" r="10" fill="#C77C02"/><text x="106" y="134" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">1</text>
-  <line x1="272" y1="174" x2="442" y2="174" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
-  <text x="298" y="165" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">consume</text>
-  <circle cx="284" cy="174" r="10" fill="#C77C02"/><text x="284" y="178" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">2</text>
-  <line x1="450" y1="218" x2="1166" y2="218" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="476" y="209" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">find the tenant's processes started by this event</text>
-  <circle cx="462" cy="218" r="10" fill="#4A5B63"/><text x="462" y="222" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">3</text>
-  <line x1="450" y1="262" x2="620" y2="262" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="476" y="253" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">process(context)</text>
-  <circle cx="462" cy="262" r="10" fill="#4A5B63"/><text x="462" y="266" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">4</text>
-  <line x1="628" y1="306" x2="1166" y2="306" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="654" y="297" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">save process + steps PLACE · SHIP · DELIVER</text>
-  <circle cx="640" cy="306" r="10" fill="#4A5B63"/><text x="640" y="310" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">5</text>
-  <line x1="628" y1="350" x2="798" y2="350" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="654" y="341" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">measure(SHIP), measure(DELIVER)</text>
-  <circle cx="640" cy="350" r="10" fill="#4A5B63"/><text x="640" y="354" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">6</text>
-  <line x1="798" y1="394" x2="628" y2="394" stroke="#4A5B63" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#a)"/>
-  <text x="772" y="385" text-anchor="end" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">planned 01:46 · 09:46</text>
-  <circle cx="786" cy="394" r="10" fill="#4A5B63"/><text x="786" y="398" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">7</text>
-  <line x1="628" y1="438" x2="1166" y2="438" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="654" y="429" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">save planned TIME → plannedAt</text>
-  <circle cx="640" cy="438" r="10" fill="#4A5B63"/><text x="640" y="442" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">8</text>
-  <line x1="620" y1="482" x2="272" y2="482" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
-  <text x="594" y="473" text-anchor="end" font-size="13" fill="#1F2D33" stroke="#EEF6F8" stroke-width="6" stroke-linejoin="round" paint-order="stroke">publish process + step CREATED</text>
-  <circle cx="608" cy="482" r="10" fill="#C77C02"/><text x="608" y="486" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">9</text>
-  <line x1="450" y1="526" x2="976" y2="526" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="476" y="517" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF5EF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">record milestone ORDER_PLACED_EVENT</text>
-  <circle cx="462" cy="526" r="10" fill="#4A5B63"/><text x="462" y="530" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">10</text>
-  <line x1="984" y1="570" x2="1166" y2="570" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="1010" y="561" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#EEF5EF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">PLACE Completed · actual 23:46</text>
-  <circle cx="996" cy="570" r="10" fill="#4A5B63"/><text x="996" y="574" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">11</text>
-  <line x1="976" y1="614" x2="272" y2="614" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
-  <text x="950" y="605" text-anchor="end" font-size="13" fill="#1F2D33" stroke="#EEF5EF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">publish actual TIME + step COMPLETED</text>
-  <circle cx="964" cy="614" r="10" fill="#C77C02"/><text x="964" y="618" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">12</text>
-  <line x1="94" y1="658" x2="264" y2="658" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
-  <text x="120" y="649" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">ORDER_SHIPPED_EVENT · shipped 01:30</text>
-  <circle cx="106" cy="658" r="10" fill="#C77C02"/><text x="106" y="662" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">13</text>
-  <line x1="272" y1="702" x2="442" y2="702" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
-  <text x="298" y="693" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">consume</text>
-  <circle cx="284" cy="702" r="10" fill="#C77C02"/><text x="284" y="706" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">14</text>
-  <line x1="450" y1="746" x2="976" y2="746" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="476" y="737" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">record milestone ORDER_SHIPPED_EVENT</text>
-  <circle cx="462" cy="746" r="10" fill="#4A5B63"/><text x="462" y="750" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">15</text>
-  <line x1="984" y1="790" x2="1166" y2="790" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#a)"/>
-  <text x="1010" y="781" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">SHIP: 01:30 ≤ plan 01:46 → ON_TIME</text>
-  <circle cx="996" cy="790" r="10" fill="#4A5B63"/><text x="996" y="794" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">16</text>
-  <line x1="976" y1="834" x2="272" y2="834" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
-  <text x="950" y="825" text-anchor="end" font-size="13" fill="#1F2D33" stroke="#F3F0FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">publish actual TIME + step COMPLETED</text>
-  <circle cx="964" cy="834" r="10" fill="#C77C02"/><text x="964" y="838" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">17</text>
+  <rect width="1280" height="898" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <line x1="96" y1="92" x2="96" y2="874" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="16" y="30" width="160" height="60" rx="10" class="box"/>
+  <text x="96.0" y="56.0" text-anchor="middle" class="tb">Shop / delivery app</text>
+  <text x="96.0" y="74.0" text-anchor="middle" class="mono">sources</text>
+  <line x1="274" y1="92" x2="274" y2="874" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="194" y="30" width="160" height="60" rx="10" class="topic"/>
+  <text x="274.0" y="56.0" text-anchor="middle" class="tb">Message broker</text>
+  <text x="274.0" y="74.0" text-anchor="middle" class="mono">inbound channel</text>
+  <line x1="452" y1="92" x2="452" y2="874" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="372" y="30" width="160" height="60" rx="10" class="core"/>
+  <text x="452.0" y="56.0" text-anchor="middle" class="tb">Event router</text>
+  <text x="452.0" y="74.0" text-anchor="middle" class="mono">DefaultEventHandler</text>
+  <line x1="630" y1="92" x2="630" y2="874" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="550" y="30" width="160" height="60" rx="10" class="you"/>
+  <text x="630.0" y="56.0" text-anchor="middle" class="tb">Process handler</text>
+  <text x="630.0" y="74.0" text-anchor="middle" class="mono">@ProcessHandler</text>
+  <line x1="808" y1="92" x2="808" y2="874" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="728" y="30" width="160" height="60" rx="10" class="you"/>
+  <text x="808.0" y="56.0" text-anchor="middle" class="tb">Meters</text>
+  <text x="808.0" y="74.0" text-anchor="middle" class="mono">@Measurement</text>
+  <line x1="986" y1="92" x2="986" y2="874" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="906" y="30" width="160" height="60" rx="10" class="core"/>
+  <text x="986.0" y="56.0" text-anchor="middle" class="tb">Progress</text>
+  <text x="986.0" y="74.0" text-anchor="middle" class="mono">built in</text>
+  <line x1="1164" y1="92" x2="1164" y2="874" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <rect x="1084" y="30" width="160" height="60" rx="10" class="db"/>
+  <text x="1164.0" y="56.0" text-anchor="middle" class="tb">State store</text>
+  <text x="1164.0" y="74.0" text-anchor="middle" class="mono">state · outbox</text>
+  <rect x="16" y="112" width="1248" height="432" rx="8" fill="#E8F4F7" fill-opacity="0.5" stroke="#0F4C5C" stroke-opacity="0.5" stroke-dasharray="4 3"/>
+  <text x="1250" y="132" text-anchor="end" class="h">① START AND PLAN: the order is created, 09:00</text>
+  <line x1="106" y1="180" x2="270" y2="180" stroke="#C77C02" stroke-width="1.8" marker-end="url(#arrK)"/>
+  <circle cx="106" cy="180" r="10" fill="#C77C02"/>
+  <text x="106" y="184" text-anchor="middle" class="ts">1</text>
+  <text x="106" y="184" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">1</text>
+  <text x="122" y="171" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">ORDER_CREATED · order 1234, priority customer</text>
+  <line x1="284" y1="224" x2="448" y2="224" stroke="#C77C02" stroke-width="1.8" marker-end="url(#arrK)"/>
+  <circle cx="284" cy="224" r="10" fill="#C77C02"/>
+  <text x="284" y="228" text-anchor="middle" class="ts">2</text>
+  <text x="284" y="228" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">2</text>
+  <text x="300" y="215" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">consume, in one transaction</text>
+  <line x1="462" y1="268" x2="1160" y2="268" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)"/>
+  <circle cx="462" cy="268" r="10" fill="#4A5B63"/>
+  <text x="462" y="272" text-anchor="middle" class="ts">3</text>
+  <text x="462" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">3</text>
+  <text x="478" y="259" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">find the tenant's processes started by this event</text>
+  <line x1="462" y1="312" x2="626" y2="312" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)"/>
+  <circle cx="462" cy="312" r="10" fill="#4A5B63"/>
+  <text x="462" y="316" text-anchor="middle" class="ts">4</text>
+  <text x="462" y="316" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">4</text>
+  <text x="478" y="303" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">process(context)</text>
+  <line x1="640" y1="356" x2="1160" y2="356" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)"/>
+  <circle cx="640" cy="356" r="10" fill="#4A5B63"/>
+  <text x="640" y="360" text-anchor="middle" class="ts">5</text>
+  <text x="640" y="360" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">5</text>
+  <text x="656" y="347" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">save the order and its 7 steps</text>
+  <line x1="640" y1="400" x2="804" y2="400" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)"/>
+  <circle cx="640" cy="400" r="10" fill="#4A5B63"/>
+  <text x="640" y="404" text-anchor="middle" class="ts">6</text>
+  <text x="640" y="404" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">6</text>
+  <text x="656" y="391" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">plan by rule: order within 1 day · DELIVERED 12:15</text>
+  <line x1="798" y1="444" x2="634" y2="444" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+  <circle cx="798" cy="444" r="10" fill="#4A5B63"/>
+  <text x="798" y="448" text-anchor="middle" class="ts">7</text>
+  <text x="798" y="448" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">7</text>
+  <text x="656" y="435" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">planned TIME values</text>
+  <line x1="640" y1="488" x2="1160" y2="488" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)"/>
+  <circle cx="640" cy="488" r="10" fill="#4A5B63"/>
+  <text x="640" y="492" text-anchor="middle" class="ts">8</text>
+  <text x="640" y="492" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">8</text>
+  <text x="656" y="479" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">save plans: times, 5 km, 0.4 L, 30 °C, 5 ★, € 8</text>
+  <line x1="640" y1="532" x2="1160" y2="532" stroke="#C77C02" stroke-width="1.8" marker-end="url(#arrK)"/>
+  <circle cx="640" cy="532" r="10" fill="#C77C02"/>
+  <text x="640" y="536" text-anchor="middle" class="ts">9</text>
+  <text x="640" y="536" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">9</text>
+  <text x="656" y="523" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">queue CREATED events in the outbox</text>
+  <rect x="16" y="548" width="1248" height="310" rx="8" fill="#FFF8EC" fill-opacity="0.5" stroke="#C77C02" stroke-opacity="0.5" stroke-dasharray="4 3"/>
+  <text x="1250" y="568" text-anchor="end" class="h">② RECORD: the parcel arrives, 12:45</text>
+  <line x1="106" y1="616" x2="270" y2="616" stroke="#C77C02" stroke-width="1.8" marker-end="url(#arrK)"/>
+  <circle cx="106" cy="616" r="10" fill="#C77C02"/>
+  <text x="106" y="620" text-anchor="middle" class="ts">10</text>
+  <text x="106" y="620" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">10</text>
+  <text x="122" y="607" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">ARRIVED · distance 12 km · fuel 1.0 L</text>
+  <line x1="284" y1="660" x2="448" y2="660" stroke="#C77C02" stroke-width="1.8" marker-end="url(#arrK)"/>
+  <circle cx="284" cy="660" r="10" fill="#C77C02"/>
+  <text x="284" y="664" text-anchor="middle" class="ts">11</text>
+  <text x="284" y="664" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">11</text>
+  <text x="300" y="651" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">consume, in one transaction</text>
+  <line x1="462" y1="704" x2="982" y2="704" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)"/>
+  <circle cx="462" cy="704" r="10" fill="#4A5B63"/>
+  <text x="462" y="708" text-anchor="middle" class="ts">12</text>
+  <text x="462" y="708" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">12</text>
+  <text x="478" y="695" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">record milestone ARRIVED</text>
+  <line x1="996" y1="748" x2="1160" y2="748" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)"/>
+  <circle cx="996" cy="748" r="10" fill="#4A5B63"/>
+  <text x="996" y="752" text-anchor="middle" class="ts">13</text>
+  <text x="996" y="752" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">13</text>
+  <text x="1012" y="739" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">TRAVEL completed 12:45: LATE</text>
+  <line x1="996" y1="792" x2="1160" y2="792" stroke="#4A5B63" stroke-width="1.8" marker-end="url(#arr)"/>
+  <circle cx="996" cy="792" r="10" fill="#4A5B63"/>
+  <text x="996" y="796" text-anchor="middle" class="ts">14</text>
+  <text x="996" y="796" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">14</text>
+  <text x="1012" y="783" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">12 km vs plan 5 km: outside</text>
+  <line x1="996" y1="836" x2="1160" y2="836" stroke="#C77C02" stroke-width="1.8" marker-end="url(#arrK)"/>
+  <circle cx="996" cy="836" r="10" fill="#C77C02"/>
+  <text x="996" y="840" text-anchor="middle" class="ts">15</text>
+  <text x="996" y="840" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">15</text>
+  <text x="1012" y="827" font-size="12.5" fill="#1F2D33" stroke="#F7FAFB" stroke-width="5" stroke-linejoin="round" paint-order="stroke">queue results in the outbox</text>
 </svg>

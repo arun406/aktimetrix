@@ -203,17 +203,18 @@ Steps are defined in `step-definitions.json`, shared by every process of the ten
 a single process needs no shared definition at all.
 
 ```json
-{ "tenant": "AA", "processCode": "EXPRESS_DELIVERY", "startEventCodes": ["EXPRESS_ORDER_PLACED_EVENT"],
+{ "tenant": "AA", "processCode": "EXPRESS_DELIVERY", "startEventCodes": ["EXPRESS_ORDER_CREATED_EVENT"],
   "status": "CONFIRMED",
   "steps": [
-    { "stepCode": "PLACE" },
-    { "stepCode": "SHIP", "plannedWithin": "PT2H" },
-    { "stepCode": "DELIVER", "startEventCodes": ["ORDER_DELIVERED_EVENT"], "plannedAfter": "SHIP", "plannedWithin": "PT6H" }
+    { "stepCode": "CONFIRM" },
+    { "stepCode": "HANDOVER", "plannedWithin": "PT30M" },
+    { "stepCode": "DROP_AT_LOCKER", "startEventCodes": ["PARCEL_IN_LOCKER_EVENT"], "plannedAfter": "HANDOVER", "plannedWithin": "PT1H" }
   ] }
 ```
 
-Here `SHIP` keeps its shared definition, such as the event that completes it, but must happen within 2 hours
-instead of the shared plan. Lists such as `startEventCodes` or `measurements` are replaced as a whole.
+Here `HANDOVER` keeps its shared definition, such as the event that completes it, but must happen within 30 minutes
+instead of the shared plan, and `DROP_AT_LOCKER` exists only in this process. Lists such as `startEventCodes` or `measurements` are replaced as a
+whole.
 
 
 | Field | Purpose |
@@ -269,7 +270,7 @@ curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'
 
 curl -X POST http://localhost:8080/reference-data/step-definitions \
   -H 'Content-Type: application/json' \
-  -d '{"tenant":"AA","stepCode":"SHIP","status":"CONFIRMED","startEventCodes":["ORDER_SHIPPED_EVENT"],
+  -d '{"tenant":"AA","stepCode":"CONFIRM","status":"CONFIRMED","startEventCodes":["ORDER_CONFIRMED_EVENT"],
        "measurements":[{"measurementCode":"TIME","type":"P"}]}'
 ```
 
