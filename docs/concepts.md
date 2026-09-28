@@ -17,7 +17,7 @@ happening to one particular business entity** (instances, created at run time).
 | **Business entity** | external | The real-world object being tracked: an order, a loan application, an air waybill. Identified by `entityType` + `entityId`. |
 | **Process instance** | runtime | One run of a process for one business entity. *ProcessInstance = Process + identifying metadata.* |
 | **Step instance** | runtime | One step of one process instance, carrying its own metadata. |
-| **Measurement instance** | runtime | A concrete value for one process or step instance, e.g. *SHIP planned TIME = 2022-05-23T01:46*. In the reference implementation, meters currently compute step-level measurements. |
+| **Measurement instance** | runtime | A concrete value for one process or step instance, e.g. *SHIP planned TIME = 2022-05-23T01:46*. |
 | **Metadata** | runtime | Key/value pairs you attach to process and step instances (order details, customer, location, …) for use by meters and consumers. |
 
 ### Step lifecycle: plan and actual
