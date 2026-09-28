@@ -54,6 +54,7 @@ public class StepProgressService {
     private final Clock clock;
     private final ProcessDefinitionService processDefinitionService;
     private final ProcessInstancePublisherService processInstancePublisherService;
+    private final ActualMeasurementService actualMeasurementService;
 
     /**
      * Applies the event to every active process instance of the business entity.
@@ -62,6 +63,17 @@ public class StepProgressService {
      */
     public List<MeasurementInstance> recordMilestones(String tenant, String entityType, String entityId,
                                                       String eventCode, LocalDateTime occurredAt) {
+        return recordMilestones(tenant, entityType, entityId, eventCode, occurredAt, null);
+    }
+
+    /**
+     * Applies the event to every active process instance of the business entity.
+     *
+     * @param event the event itself, from which actual measurements are read; may be {@code null}
+     * @return actual measurements recorded for the steps and processes this event completed
+     */
+    public List<MeasurementInstance> recordMilestones(String tenant, String entityType, String entityId,
+                                                      String eventCode, LocalDateTime occurredAt, Event<?, ?> event) {
         final List<MeasurementInstance> actuals = new ArrayList<>();
         final List<ProcessInstance> processInstances =
                 processInstanceService.getActiveProcessInstances(tenant, entityType, entityId);
@@ -74,7 +86,7 @@ public class StepProgressService {
             if (definition != null && contains(definition.getCancelEventCodes(), eventCode)) {
                 cancel(processInstance, occurredAt);
             } else {
-                actuals.addAll(recordMilestone(eventCode, processInstance, occurredAt));
+                actuals.addAll(recordMilestone(eventCode, processInstance, occurredAt, event));
             }
         }
         return actuals;
@@ -90,6 +102,16 @@ public class StepProgressService {
      */
     public List<MeasurementInstance> recordMilestone(String eventCode, ProcessInstance processInstance,
                                                      LocalDateTime occurredAt) {
+        return recordMilestone(eventCode, processInstance, occurredAt, null);
+    }
+
+    /**
+     * Applies the event to the steps of the process instance, then saves and publishes the actual measurements.
+     *
+     * @param event the event itself, from which actual measurements are read; may be {@code null}
+     */
+    public List<MeasurementInstance> recordMilestone(String eventCode, ProcessInstance processInstance,
+                                                     LocalDateTime occurredAt, Event<?, ?> event) {
         final String tenant = processInstance.getTenant();
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(tenant, processInstance.getId());
         final Map<String, StepDefinition> definitions = definitions(tenant, processInstance.getProcessCode(), steps);
@@ -113,6 +135,7 @@ public class StepProgressService {
                 step.setActualAt(occurredAt);
                 step.setTimeliness(stepPlanner.judge(step, occurredAt));
                 actuals.add(actualTime(step, occurredAt));
+                actuals.addAll(actualMeasurementService.forStep(step, definition.getMeasurements(), event));
                 completed.add(step);
                 metrics.stepCompleted(step);
             }
@@ -130,12 +153,12 @@ public class StepProgressService {
         }
 
         if (!actuals.isEmpty()) {
+            actuals.addAll(completeProcessIfDone(processInstance, steps, definitions, occurredAt, event));
             measurementInstanceService.saveMeasurementInstances(actuals);
             DefaultContext context = new DefaultContext();
             context.setTenant(tenant);
             context.setMeasurementInstances(actuals);
             measurementInstancePublisherService.postProcess(context);
-            completeProcessIfDone(processInstance, steps, definitions, occurredAt);
         }
         return actuals;
     }
@@ -257,8 +280,12 @@ public class StepProgressService {
         metrics.processOverdue(processInstance);
     }
 
-    private void completeProcessIfDone(ProcessInstance processInstance, List<StepInstance> steps,
-                                       Map<String, StepDefinition> definitions, LocalDateTime occurredAt) {
+    /**
+     * @return the actual measurements of the process, if this completed it
+     */
+    private List<MeasurementInstance> completeProcessIfDone(ProcessInstance processInstance, List<StepInstance> steps,
+                                                            Map<String, StepDefinition> definitions,
+                                                            LocalDateTime occurredAt, Event<?, ?> event) {
         final boolean done = steps.stream()
                 .filter(step -> !isOptional(definitions.get(step.getStepCode())))
                 .allMatch(step -> Constants.STATUS_COMPLETED.equals(step.getStatus()));
@@ -274,7 +301,13 @@ public class StepProgressService {
             processInstanceService.saveProcessInstance(processInstance);
             processInstancePublisherService.publish(processInstance, "COMPLETED");
             metrics.processCompleted(processInstance);
+            final ProcessDefinition definition = processDefinitionService.findByCode(processInstance.getTenant(),
+                    processInstance.getProcessCode());
+            if (definition != null) {
+                return actualMeasurementService.forProcess(processInstance, definition.getMeasurements(), event);
+            }
         }
+        return List.of();
     }
 
     private static boolean isOptional(StepDefinition definition) {

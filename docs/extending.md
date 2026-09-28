@@ -10,8 +10,8 @@ carries a stereotype annotation; Aktimetrix discovers it at startup.
 | Annotation | Extend / implement | Selected by | Default when absent | Purpose |
 |---|---|---|---|---|
 | a bean of type `EventMapper` | `api.EventMapper` | n/a: one per application | `EnvelopeEventMapper`: messages are in the Aktimetrix event envelope | Reads your own event format; see [Accepting your own event format](#accepting-your-own-event-format). |
-| `@Measurement(code, stepCode)` | `AbstractMeter` or `meter.api.Meter` | step code + measurement code | none: the planned value is skipped | Computes a planned measurement of a step. |
-| `@Measurement(code, processCode)` | `AbstractProcessMeter` or `meter.api.ProcessMeter` | process code + measurement code | none: the planned value is skipped, with a warning | Computes a planned measurement of the process as a whole, once when the process instance is created. |
+| `@Measurement(code, stepCode)` | `AbstractMeter` or `meter.api.Meter` | step code + measurement code | none: the value is skipped | Computes a planned measurement of a step when it is created, and, by overriding `getActualValue`, an actual one when it completes. |
+| `@Measurement(code, processCode)` | `AbstractProcessMeter` or `meter.api.ProcessMeter` | process code + measurement code | none: the value is skipped, with a warning | Computes a planned measurement of the process as a whole when it is created, and, by overriding `getActualValue`, an actual one when it completes. |
 | `@ProcessHandler(processType)` | `AbstractProcessor` | the process code | `DefaultProcessor`: the event's entity becomes the metadata | Chooses the metadata of the process and its steps. |
 | `@EventHandler(eventType)` | `AbstractEventHandler` | the event code | `DefaultEventHandler` | Starts processes and records milestones; override to read the entity id or event time differently. |
 | `@EventHandler(eventType)` | `AbstractMilestoneEventHandler` | the event code | `DefaultEventHandler` | Records milestones only, for events that never start a process. |

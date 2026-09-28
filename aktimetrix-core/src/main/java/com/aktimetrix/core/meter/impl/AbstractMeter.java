@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.meter.api.Meter;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.transferobjects.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,26 @@ public abstract class AbstractMeter implements Meter {
                 getMeasurementValue(tenant, step), getMeasurementUnit(tenant, step), step.getProcessInstanceId(),
                 step.getId(), stepCode(), Constants.PLAN_MEASUREMENT_TYPE,
                 step.getLocationCode(), ZonedDateTime.now());
+    }
+
+    @Override
+    public MeasurementInstance measureActual(String tenant, StepInstance step, Event<?, ?> event) {
+        final String value = getActualValue(tenant, step, event);
+        if (value == null) {
+            return null;
+        }
+        return new MeasurementInstance(tenant, code(), value, getMeasurementUnit(tenant, step), step.getProcessInstanceId(),
+                step.getId(), stepCode(), Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(), ZonedDateTime.now());
+    }
+
+    /**
+     * The actual value when the step completes, e.g. read from the event's entity. Override it for an actual
+     * ({@code A}) measurement; by default there is none.
+     *
+     * @param event the event that completed the step
+     */
+    protected String getActualValue(String tenant, StepInstance step, Event<?, ?> event) {
+        return null;
     }
 
     protected abstract String getMeasurementUnit(String tenant, StepInstance step);

@@ -144,7 +144,7 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
 | `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. |
 | `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
-| `measurements` | Planned (`P`) measurements of the process as a whole, computed by process-level meters, e.g. `{ "measurementCode": "DISTANCE", "type": "P" }`. |
+| `measurements` | Measurements of the process as a whole. Planned (`P`) ones are computed by process-level meters when the process starts, e.g. `{ "measurementCode": "DISTANCE", "type": "P" }`; actual (`A`) ones are recorded when it completes: see the step's `measurements` below. |
 
 ## Step definition fields
 
@@ -171,7 +171,7 @@ instead of the shared plan. Lists such as `startEventCodes` or `measurements` ar
 | `tenant`, `stepCode`, `stepName`, `status` | Identity; only `CONFIRMED` definitions are used. |
 | `startEventCodes`, `endEventCodes` | The events that start and complete the step; see [the step lifecycle](concepts.md#step-lifecycle-plan-and-actual). |
 | `optionalInd` | `Y` if the process can complete without the step. |
-| `measurements` | Planned (`P`) measurements computed by meters, e.g. `{ "measurementCode": "TIME", "type": "P" }`. |
+| `measurements` | Planned (`P`) measurements, computed by meters when the step is created, e.g. `{ "measurementCode": "TIME", "type": "P" }`. Actual (`A`) measurements, recorded when the step completes: read from the completing event's entity with `valueFrom`, e.g. `{ "measurementCode": "WEIGHT", "type": "A", "valueFrom": "scale.weightKg", "unit": "KG" }`, or computed by the meter's `getActualValue`. The actual `TIME` is always recorded. |
 | `plannedWithin`, `plannedAfter` | Plan the step by an ISO-8601 duration from the process start, or from the completion of `plannedAfter`. |
 | `tolerance` | ISO-8601 duration past the planned time before the step counts as late. |
 

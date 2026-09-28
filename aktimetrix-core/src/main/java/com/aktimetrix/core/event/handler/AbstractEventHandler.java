@@ -45,7 +45,7 @@ public abstract class AbstractEventHandler implements EventHandler {
         log.info("Event {} for {} {}", event.getEventCode(), entityType(event), entityId(event));
         startProcesses(event);
         stepProgressService.recordMilestones(event.getTenantKey(), entityType(event), entityId(event),
-                event.getEventCode(), occurredAt(event));
+                event.getEventCode(), occurredAt(event), event);
     }
 
     private void startProcesses(Event<?, ?> event) {

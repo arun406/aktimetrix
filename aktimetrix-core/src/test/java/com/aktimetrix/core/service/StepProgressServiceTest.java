@@ -60,6 +60,8 @@ class StepProgressServiceTest {
     private ProcessDefinitionService processDefinitionService;
     @Mock
     private ProcessInstancePublisherService processInstancePublisherService;
+    @Mock
+    private ActualMeasurementService actualMeasurementService;
     private StepProgressService service;
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
     private int nextSequence;
@@ -71,7 +73,7 @@ class StepProgressServiceTest {
         service = new StepProgressService(stepInstanceService, stepDefinitionService, processInstanceService,
                 measurementInstanceService, measurementInstancePublisherService, stepInstancePublisherService,
                 new StepPlanner(), metrics(registry), Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC),
-                processDefinitionService, processInstancePublisherService);
+                processDefinitionService, processInstancePublisherService, actualMeasurementService);
         process = new ProcessInstance();
         process.setId(new ObjectId());
         process.setTenant(TENANT);
@@ -252,7 +254,7 @@ class StepProgressServiceTest {
                 processInstanceService, measurementInstanceService, measurementInstancePublisherService,
                 stepInstancePublisherService, new StepPlanner(), metrics(registry),
                 Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneId.of("Asia/Kolkata")),
-                processDefinitionService, processInstancePublisherService);
+                processDefinitionService, processInstancePublisherService, actualMeasurementService);
         Event<Object, Object> event = new Event<>();
         assertThat(inKolkata.occurredAt(event)).isEqualTo(LocalDateTime.of(2022, 5, 23, 17, 30));
 

@@ -3,5 +3,6 @@
   { "tenant": "T1", "stepCode": "PICKUP", "status": "CONFIRMED", "startEventCodes": ["PARCEL_PICKED_UP"],
     "measurements": [ { "measurementCode": "TIME", "type": "P" } ], "tolerance": "PT10M" },
   { "tenant": "T1", "stepCode": "SORT", "status": "CONFIRMED", "startEventCodes": ["PARCEL_SORTED"],
-    "plannedWithin": "PT3H" }
+    "plannedWithin": "PT3H",
+    "measurements": [ { "measurementCode": "WEIGHT", "type": "A", "valueFrom": "scale.weightKg", "unit": "KG" } ] }
 ]

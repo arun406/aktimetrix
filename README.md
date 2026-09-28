@@ -117,9 +117,10 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `W
 - **Level.** A measurement is attached either to a **process**, when it describes the entity as a whole (the total
   distance of a delivery, the customer's rating of an order), or to a **step**, when it describes one milestone (the
   weight accepted at `ACCEPT`, the time of `SHIP`).
-- **Kind.** Each measurement is **planned** (`P`), computed by a process-level or step-level meter when the
-  instance is created, or **actual**
-  (`A`), recorded when the milestone happens. Comparing the two, for any dimension, is the core of the model.
+- **Kind.** Each measurement is **planned** (`P`), computed by a meter when the process or step instance is
+  created, or **actual** (`A`), recorded when the step or process completes. An actual value is read from the event
+  that completed it (the weight on a scale reading, the distance on a delivery confirmation) or computed by a meter.
+  Comparing the two, for any dimension, is the core of the model.
 - **Time is special.** `TIME` is the one dimension the runtime interprets itself: a step's planned `TIME` becomes
   its planned time, from which its deadline and its timeliness follow ([§5.3](#53-timeliness)). Other dimensions are
   computed, stored and published as measurement instances, so that consumers can compare plan and actual in the

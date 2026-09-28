@@ -145,11 +145,19 @@ class MinimalMonitorTest {
         assertThat(sort.getExpectedAt()).isEqualTo(BOOKED.plusHours(4).plusMinutes(30));
 
         // sorted at 12:10: late, and DELIVER is planned 5 hours later
-        send("PARCEL_SORTED", "2024-01-10 12:10:00", null);
+        send("PARCEL_SORTED", "2024-01-10 12:10:00", "{\"scale\":{\"weightKg\":2.5}}");
         sort = await("SORT", step -> "Completed".equals(step.getStatus()));
         assertThat(sort.getTimeliness()).isEqualTo(Timeliness.LATE);
         assertThat(await("DELIVER", step -> step.getPlannedAt() != null).getPlannedAt())
                 .isEqualTo(LocalDateTime.of(2024, 1, 10, 17, 10));
+
+        // the sorting event carried the parcel's weight: recorded as SORT's actual WEIGHT
+        MeasurementInstance weight = measurements.findAll().stream()
+                .filter(m -> "WEIGHT".equals(m.getCode())).findFirst().orElseThrow();
+        assertThat(weight.getValue()).isEqualTo("2.5");
+        assertThat(weight.getUnit()).isEqualTo("KG");
+        assertThat(weight.getType()).isEqualTo("A");
+        assertThat(weight.getStepCode()).isEqualTo("SORT");
 
         // the process has its own deadline: 12 hours after booking
         ProcessInstance parcel = mongoTemplate.findAll(ProcessInstance.class).stream()
