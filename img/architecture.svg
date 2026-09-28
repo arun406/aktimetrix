@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
   <defs>
     <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#4A5B63"/>
@@ -6,124 +6,127 @@
     <marker id="arrK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#C77C02"/>
     </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B3261E"/>
+    </marker>
     <style>
-      .t  { font-size: 15px; fill: #1F2D33; }
-      .tb { font-size: 16px; font-weight: 700; fill: #1F2D33; }
-      .ts { font-size: 12.5px; fill: #5B6B72; }
-      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 12.5px; fill: #0F4C5C; }
-      .h  { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; fill: #5B6B72; }
+      .t  { font-size: 14px; fill: #1F2D33; }
+      .tb { font-size: 15px; font-weight: 700; fill: #1F2D33; }
+      .ts { font-size: 12px; fill: #5B6B72; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 11.5px; fill: #0F4C5C; }
+      .h  { font-size: 12.5px; font-weight: 700; letter-spacing: 1.5px; fill: #5B6B72; }
       .box { fill: #FFFFFF; stroke: #B7C7CD; stroke-width: 1.5; }
       .core { fill: #E8F4F7; stroke: #0F4C5C; stroke-width: 1.5; }
       .you { fill: #FFF8EC; stroke: #C77C02; stroke-width: 1.5; stroke-dasharray: 5 3; }
       .topic { fill: #FFF4DE; stroke: #C77C02; stroke-width: 1.5; }
       .db { fill: #E9F5EC; stroke: #2E8B47; stroke-width: 1.5; }
-      .edge { stroke: #4A5B63; stroke-width: 1.8; fill: none; }
-      .kedge { stroke: #C77C02; stroke-width: 1.8; fill: none; }
+      .dead { fill: #FCEBEA; stroke: #B3261E; stroke-width: 1.5; }
+      .band { fill: #FFFFFF; stroke: #DCE5E8; stroke-width: 1.2; }
+      .edge { stroke: #4A5B63; stroke-width: 1.7; fill: none; }
+      .kedge { stroke: #C77C02; stroke-width: 1.7; fill: none; }
+      .redge { stroke: #B3261E; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
     </style>
   </defs>
-  <rect width="1280" height="720" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
-
-  <text x="40" y="52" class="h">SOURCES</text>
-  <text x="262" y="52" class="h">INBOUND CHANNEL</text>
-  <text x="484" y="52" class="h">AKTIMETRIX APPLICATION</text>
-  <text x="1040" y="52" class="h">OUTBOUND CHANNELS</text>
-
-  <!-- sources -->
+  <rect width="1280" height="800" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="40" y="52" text-anchor="start" class="h">SOURCES</text>
+  <text x="262" y="52" text-anchor="start" class="h">INBOUND CHANNEL</text>
+  <text x="484" y="52" text-anchor="start" class="h">AKTIMETRIX RUNTIME</text>
+  <text x="1040" y="52" text-anchor="start" class="h">OUTBOUND CHANNELS</text>
   <rect x="40" y="120" width="180" height="60" rx="10" class="box"/>
-  <text x="130" y="148" text-anchor="middle" class="tb">Shop</text>
-  <text x="130" y="168" text-anchor="middle" class="ts">ORDER_PLACED_EVENT</text>
+  <text x="130.0" y="146.0" text-anchor="middle" class="tb">Shop</text>
+  <text x="130.0" y="164.0" text-anchor="middle" class="ts">order placed, own format</text>
   <rect x="40" y="200" width="180" height="60" rx="10" class="box"/>
-  <text x="130" y="228" text-anchor="middle" class="tb">Warehouse</text>
-  <text x="130" y="248" text-anchor="middle" class="ts">ORDER_SHIPPED_EVENT</text>
+  <text x="130.0" y="226.0" text-anchor="middle" class="tb">Warehouse</text>
+  <text x="130.0" y="244.0" text-anchor="middle" class="ts">order shipped, own format</text>
   <rect x="40" y="280" width="180" height="60" rx="10" class="box"/>
-  <text x="130" y="308" text-anchor="middle" class="tb">Carrier</text>
-  <text x="130" y="328" text-anchor="middle" class="ts">ORDER_DELIVERED_EVENT</text>
+  <text x="130.0" y="306.0" text-anchor="middle" class="tb">Carrier</text>
+  <text x="130.0" y="324.0" text-anchor="middle" class="ts">order delivered, own format</text>
   <path d="M220,150 C245,150 240,215 262,222" class="kedge" marker-end="url(#arrK)"/>
   <path d="M220,230 L262,230" class="kedge" marker-end="url(#arrK)"/>
   <path d="M220,310 C245,310 240,245 262,238" class="kedge" marker-end="url(#arrK)"/>
-
-  <rect x="264" y="198" width="190" height="64" rx="32" class="topic"/>
-  <text x="359" y="226" text-anchor="middle" class="tb">Message broker</text>
-  <text x="359" y="246" text-anchor="middle" class="mono">business events</text>
-
-  <!-- application -->
-  <rect x="484" y="72" width="526" height="620" rx="16" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
-
-  <text x="506" y="102" class="h">① START</text>
-  <rect x="506" y="116" width="220" height="84" rx="10" class="core"/>
-  <text x="616" y="146" text-anchor="middle" class="tb">Event router</text>
-  <text x="616" y="166" text-anchor="middle" class="mono">DefaultEventHandler</text>
-  <text x="616" y="186" text-anchor="middle" class="ts">or your @EventHandler</text>
-  <rect x="768" y="116" width="220" height="84" rx="10" class="you"/>
-  <text x="878" y="146" text-anchor="middle" class="tb">Process handler</text>
-  <text x="878" y="166" text-anchor="middle" class="mono">@ProcessHandler</text>
-  <text x="878" y="186" text-anchor="middle" class="ts">creates process + steps</text>
-  <path d="M726,158 L766,158" class="edge" marker-end="url(#arr)"/>
-  <path d="M454,230 C480,230 480,158 504,158" class="kedge" marker-end="url(#arrK)"/>
-
-  <text x="768" y="232" class="h">② PLAN</text>
-  <rect x="768" y="246" width="220" height="84" rx="10" class="you"/>
-  <text x="878" y="276" text-anchor="middle" class="tb">Meters</text>
-  <text x="878" y="296" text-anchor="middle" class="mono">@Measurement</text>
-  <text x="878" y="316" text-anchor="middle" class="ts">planned time of each step</text>
-  <path d="M878,200 L878,244" class="edge" marker-end="url(#arr)"/>
-
-  <text x="506" y="232" class="h">③ RECORD</text>
-  <rect x="506" y="246" width="220" height="84" rx="10" class="core"/>
-  <text x="616" y="276" text-anchor="middle" class="tb">Step progress</text>
-  <text x="616" y="296" text-anchor="middle" class="ts">actual time on completion</text>
-  <text x="616" y="316" text-anchor="middle" class="ts">ON_TIME or LATE vs. plan</text>
-  <path d="M616,200 L616,244" class="edge" marker-end="url(#arr)"/>
-
-  <text x="506" y="362" class="h">④ WATCH</text>
-  <rect x="506" y="376" width="482" height="60" rx="10" class="core"/>
-  <text x="747" y="402" text-anchor="middle" class="tb">Overdue monitor</text>
-  <text x="747" y="422" text-anchor="middle" class="ts">every minute: planned time passed, no event yet → OVERDUE</text>
-
-  <text x="506" y="468" class="h">STATE &amp; API</text>
-  <rect x="506" y="482" width="220" height="84" rx="10" class="you"/>
-  <text x="616" y="510" text-anchor="middle" class="tb">Definitions</text>
-  <text x="616" y="530" text-anchor="middle" class="mono">aktimetrix/*.json</text>
-  <text x="616" y="550" text-anchor="middle" class="ts">loaded at startup</text>
-  <rect x="506" y="582" width="220" height="92" rx="10" class="box"/>
-  <text x="616" y="608" text-anchor="middle" class="tb">REST API</text>
-  <text x="616" y="630" text-anchor="middle" class="mono">/process-instances</text>
-  <text x="616" y="648" text-anchor="middle" class="ts">"where is order 1234?"</text>
-  <text x="616" y="664" text-anchor="middle" class="mono">/reference-data/**</text>
-  <g>
-    <path d="M768,500 L768,650 A110,16 0 0 0 988,650 L988,500" class="db"/>
-    <ellipse cx="878" cy="500" rx="110" ry="16" class="db"/>
-    <text x="878" y="552" text-anchor="middle" class="tb">State store</text>
-    <text x="878" y="576" text-anchor="middle" class="ts">definitions · process, step</text>
-    <text x="878" y="594" text-anchor="middle" class="ts">and measurement instances</text>
-  </g>
-  <path d="M726,524 L766,540" class="edge" marker-end="url(#arr)"/>
-  <path d="M726,628 L766,610" class="edge" marker-end="url(#arr)"/>
-  <path d="M747,436 L747,470 C747,478 800,478 830,484" class="edge" stroke-dasharray="5 4" marker-end="url(#arr)"/>
-
-  <!-- outbound -->
-  <rect x="1040" y="130" width="210" height="56" rx="28" class="topic"/>
-  <text x="1145" y="163" text-anchor="middle" class="mono">process-instance-out-0</text>
-  <rect x="1040" y="262" width="210" height="56" rx="28" class="topic"/>
-  <text x="1145" y="295" text-anchor="middle" class="mono">measurement-instance-out-0</text>
-  <rect x="1040" y="378" width="210" height="56" rx="28" class="topic"/>
-  <text x="1145" y="411" text-anchor="middle" class="mono">step-instance-out-0</text>
-  <path d="M988,150 L1038,155" class="kedge" marker-end="url(#arrK)"/>
-  <path d="M988,288 L1038,290" class="kedge" marker-end="url(#arrK)"/>
-  <path d="M726,310 C744,346 752,346 790,346 L1004,346 C1022,346 1020,306 1038,304" class="kedge" marker-end="url(#arrK)"/>
-  <path d="M1004,346 C1022,346 1020,388 1038,392" class="kedge" marker-end="url(#arrK)"/>
-  <path d="M988,406 L1038,406" class="kedge" marker-end="url(#arrK)"/>
-
-  <rect x="1040" y="500" width="210" height="120" rx="10" class="box"/>
-  <text x="1145" y="530" text-anchor="middle" class="tb">Your consumers</text>
-  <text x="1145" y="556" text-anchor="middle" class="t">Dashboards</text>
-  <text x="1145" y="580" text-anchor="middle" class="t">Late / overdue alerts</text>
-  <text x="1145" y="604" text-anchor="middle" class="t">Analytics</text>
-  <path d="M1145,434 L1145,498" class="kedge" marker-end="url(#arrK)"/>
-
-  <!-- legend -->
-  <rect x="40" y="600" width="18" height="14" rx="3" class="you"/>
-  <text x="66" y="612" class="ts">what you write</text>
-  <rect x="40" y="628" width="18" height="14" rx="3" class="core"/>
-  <text x="66" y="640" class="ts">provided by Aktimetrix</text>
+  <rect x="264" y="198" width="190" height="64" rx="32.0" class="topic"/>
+  <text x="359.0" y="227.0" text-anchor="middle" class="tb">Message broker</text>
+  <text x="359.0" y="245.0" text-anchor="middle" class="ts">business events</text>
+  <rect x="484" y="72" width="526" height="708" rx="16" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="506" y="102" text-anchor="start" class="h">① RECEIVE</text>
+  <rect x="506" y="116" width="220" height="76" rx="10" class="core"/>
+  <text x="616.0" y="141.0" text-anchor="middle" class="tb">Event consumer</text>
+  <text x="616.0" y="159.0" text-anchor="middle" class="ts">one unit of work per event</text>
+  <text x="616.0" y="177.0" text-anchor="middle" class="ts">invalid → dead letters</text>
+  <rect x="768" y="116" width="220" height="76" rx="10" class="you"/>
+  <text x="878.0" y="141.0" text-anchor="middle" class="tb">Event mapper</text>
+  <text x="878.0" y="159.0" text-anchor="middle" class="ts">your format → business event</text>
+  <text x="878.0" y="177.0" text-anchor="middle" class="ts">optional</text>
+  <path d="M454,230 C470,230 470,154 504,154" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M726,148 L766,148" class="edge" marker-end="url(#arr)"/>
+  <path d="M768,164 L728,164" class="edge" marker-end="url(#arr)"/>
+  <text x="506" y="224" text-anchor="start" class="h">② START AND PLAN</text>
+  <rect x="506" y="238" width="220" height="76" rx="10" class="core"/>
+  <text x="616.0" y="263.0" text-anchor="middle" class="tb">Event router</text>
+  <text x="616.0" y="281.0" text-anchor="middle" class="ts">starts the processes it starts,</text>
+  <text x="616.0" y="299.0" text-anchor="middle" class="ts">then records its milestones</text>
+  <rect x="768" y="238" width="220" height="76" rx="10" class="you"/>
+  <text x="878.0" y="263.0" text-anchor="middle" class="tb">Process handler · meters</text>
+  <text x="878.0" y="281.0" text-anchor="middle" class="ts">metadata and planned values</text>
+  <text x="878.0" y="299.0" text-anchor="middle" class="ts">of processes and steps</text>
+  <path d="M706,192 L706,236" class="edge" marker-end="url(#arr)"/>
+  <path d="M726,276 L766,276" class="edge" marker-end="url(#arr)"/>
+  <text x="506" y="346" text-anchor="start" class="h">③ RECORD</text>
+  <rect x="506" y="360" width="482" height="76" rx="10" class="core"/>
+  <text x="747.0" y="385.0" text-anchor="middle" class="tb">Progress</text>
+  <text x="747.0" y="403.0" text-anchor="middle" class="ts">steps: started, completed · actual values · ON_TIME / LATE · AT_RISK forecasts</text>
+  <text x="747.0" y="421.0" text-anchor="middle" class="ts">processes: completed and judged against their deadline, or cancelled</text>
+  <path d="M706,314 L706,358" class="edge" marker-end="url(#arr)"/>
+  <text x="506" y="468" text-anchor="start" class="h">④ WATCH</text>
+  <rect x="506" y="482" width="482" height="56" rx="10" class="core"/>
+  <text x="747.0" y="506.0" text-anchor="middle" class="tb">Deadline monitors</text>
+  <text x="747.0" y="524.0" text-anchor="middle" class="ts">steps and processes past their deadline, with no event yet → OVERDUE</text>
+  <text x="506" y="570" text-anchor="start" class="h">STATE AND API</text>
+  <rect x="506" y="584" width="220" height="64" rx="10" class="you"/>
+  <text x="616.0" y="612.0" text-anchor="middle" class="tb">Definitions</text>
+  <text x="616.0" y="630.0" text-anchor="middle" class="ts">processes, steps, measurements</text>
+  <rect x="506" y="660" width="220" height="56" rx="10" class="box"/>
+  <text x="616.0" y="684.0" text-anchor="middle" class="tb">Query API</text>
+  <text x="616.0" y="702.0" text-anchor="middle" class="ts">"where is order 1234?"</text>
+  <path d="M768,598 L768,702 A110.0,14 0 0 0 988,702 L988,598" class="db"/>
+  <ellipse cx="878.0" cy="598" rx="110.0" ry="14" class="db"/>
+  <text x="878.0" y="644.0" text-anchor="middle" class="tb">State store</text>
+  <text x="878.0" y="662.0" text-anchor="middle" class="ts">definitions · instances</text>
+  <text x="878.0" y="680.0" text-anchor="middle" class="ts">outbox</text>
+  <path d="M726,616 L766,626" class="edge" marker-end="url(#arr)"/>
+  <path d="M726,688 L766,676" class="edge" marker-end="url(#arr)"/>
+  <path d="M878.0,538 L878.0,582" class="edge" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+  <rect x="661.4" y="549" width="225.2" height="20" rx="10" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="774.0" y="563" text-anchor="middle" class="ts">state + results, one transaction</text>
+  <rect x="506" y="728" width="482" height="40" rx="10" class="core"/>
+  <text x="747.0" y="753.0" text-anchor="middle" class="tb">Outbox relay</text>
+  <path d="M878.0,716 L878.0,726" class="edge" marker-end="url(#arr)"/>
+  <rect x="1040" y="340" width="210" height="62" rx="31.0" class="topic"/>
+  <text x="1145.0" y="368.0" text-anchor="middle" class="tb">Process events</text>
+  <text x="1145.0" y="386.0" text-anchor="middle" class="ts">created · completed · cancelled</text>
+  <path d="M988,736 C1016,736 1012,371 1038,371" class="kedge" marker-end="url(#arrK)"/>
+  <rect x="1040" y="430" width="210" height="62" rx="31.0" class="topic"/>
+  <text x="1145.0" y="458.0" text-anchor="middle" class="tb">Step events</text>
+  <text x="1145.0" y="476.0" text-anchor="middle" class="ts">completed · at risk · overdue</text>
+  <path d="M988,744 C1016,744 1012,461 1038,461" class="kedge" marker-end="url(#arrK)"/>
+  <rect x="1040" y="520" width="210" height="62" rx="31.0" class="topic"/>
+  <text x="1145.0" y="548.0" text-anchor="middle" class="tb">Measurement events</text>
+  <text x="1145.0" y="566.0" text-anchor="middle" class="ts">planned and actual values</text>
+  <path d="M988,752 C1016,752 1012,551 1038,551" class="kedge" marker-end="url(#arrK)"/>
+  <rect x="1040" y="610" width="210" height="62" rx="31.0" class="dead"/>
+  <text x="1145.0" y="638.0" text-anchor="middle" class="tb">Dead letters</text>
+  <text x="1145.0" y="656.0" text-anchor="middle" class="ts">events that could not be processed</text>
+  <path d="M988,760 C1016,760 1012,641 1038,641" class="redge" marker-end="url(#arrR)"/>
+  <rect x="1040" y="120" width="210" height="150" rx="10" class="box"/>
+  <text x="1145.0" y="173.0" text-anchor="middle" class="tb">Your consumers</text>
+  <text x="1145.0" y="191.0" text-anchor="middle" class="t">Dashboards</text>
+  <text x="1145.0" y="209.0" text-anchor="middle" class="t">Late and overdue alerts</text>
+  <text x="1145.0" y="227.0" text-anchor="middle" class="t">Analytics</text>
+  <path d="M1145,338 L1145,272" class="kedge" marker-end="url(#arrK)"/>
+  <rect x="40" y="664" width="18" height="14" rx="3" class="you"/>
+  <text x="66" y="676" text-anchor="start" class="ts">what you write</text>
+  <rect x="40" y="692" width="18" height="14" rx="3" class="core"/>
+  <text x="66" y="704" text-anchor="start" class="ts">provided by Aktimetrix</text>
+  <rect x="40" y="720" width="18" height="14" rx="3" class="dead"/>
+  <text x="66" y="732" text-anchor="start" class="ts">dead-letter channel</text>
 </svg>
