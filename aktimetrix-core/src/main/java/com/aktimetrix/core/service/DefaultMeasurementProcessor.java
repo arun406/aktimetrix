@@ -6,7 +6,7 @@ import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
-import com.aktimetrix.core.referencedata.model.StepMeasurement;
+import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
 import com.aktimetrix.core.stereotypes.ProcessHandler;
 import com.aktimetrix.core.util.CollectionUtil;
@@ -85,8 +85,8 @@ public class DefaultMeasurementProcessor implements Processor {
 
         if (stepDefinition != null && !CollectionUtil.isEmptyOrNull(stepDefinition.getMeasurements())) {
             List<MeasurementInstance> measurementInstances = new ArrayList<>();
-            for (StepMeasurement stepMeasurement : stepDefinition.getMeasurements()) {
-                MeasurementInstance measurement = measure(context, stepInstance, stepDefinition, stepMeasurement);
+            for (MeasurementDefinition measurementDefinition : stepDefinition.getMeasurements()) {
+                MeasurementInstance measurement = measure(context, stepInstance, stepDefinition, measurementDefinition);
                 if (measurement != null) {
                     measurementInstances.add(measurement);
                 }
@@ -115,17 +115,17 @@ public class DefaultMeasurementProcessor implements Processor {
     }
 
     private MeasurementInstance measure(Context context, StepInstance stepInstance, StepDefinition stepDefinition,
-                                        StepMeasurement stepMeasurement) {
-        if (MeasurementType.P == stepMeasurement.getType()) {
-            logger.info("Step Code: {}, Measurement Code: {} ", stepDefinition.getStepCode(), stepMeasurement.getMeasurementCode());
-            Meter meter = registryService.getMeter(context.getTenant(), stepDefinition.getStepCode(), stepMeasurement.getMeasurementCode());
+                                        MeasurementDefinition measurementDefinition) {
+        if (MeasurementType.P == measurementDefinition.getType()) {
+            logger.info("Step Code: {}, Measurement Code: {} ", stepDefinition.getStepCode(), measurementDefinition.getMeasurementCode());
+            Meter meter = registryService.getMeter(context.getTenant(), stepDefinition.getStepCode(), measurementDefinition.getMeasurementCode());
             if (meter != null) {
                 final MeasurementInstance measurement = meter.measure(context.getTenant(), stepInstance);
                 logger.debug("measurement instance found for " + meter.getClass().getName());
                 return measurement;
             }
             logger.warn("No meter registered for planned {} measurement of the {} step",
-                    stepMeasurement.getMeasurementCode(), stepDefinition.getStepCode());
+                    measurementDefinition.getMeasurementCode(), stepDefinition.getStepCode());
         }
         return null;
     }

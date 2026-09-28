@@ -1,5 +1,10 @@
 package com.aktimetrix.core.api;
 
+/**
+ * Names and values shared by the framework. For applications, the relevant ones are the context properties (at the
+ * end), the step and process statuses ({@code STATUS_*}) and {@link #MEASUREMENT_CODE_TIME}; the {@code ATT_*} and
+ * {@code VAL_*} constants are registry internals.
+ */
 public class Constants {
     public static final String FUNCTION_MAP = "function.map";
     public static final String ATTRIBUTE_MAP = "attribute.map";
@@ -60,7 +65,6 @@ public class Constants {
     public static final String ATT_PRE_PROCESSOR_PROCESS_TYPE = "process-type";
     public static final String ATT_PRE_PROCESSOR_NAME = "pre-processor-name";
     public static final String ATT_PRE_PROCESSOR_VERSION = "pre-processor-version";
-    public static final String ATT_PRE_PROCESSOR_DEFAULT = "pre-processor-default";
 
     public static final String ATT_POST_PROCESSOR_SERVICE = "post-process-service";
     public static final String ATT_POST_PROCESSOR_CODE = "code";
@@ -68,11 +72,32 @@ public class Constants {
     public static final String ATT_POST_PROCESSOR_PROCESS_TYPE = "process-type";
     public static final String ATT_POST_PROCESSOR_NAME = "post-processor-name";
     public static final String ATT_POST_PROCESSOR_VERSION = "post-processor-version";
-    public static final String ATT_POST_PROCESSOR_DEFAULT = "post-processor-default";
 
+    // ---- Context properties, set for process handlers, meters and pre- and post-processors ----
+
+    /**
+     * Context property: the {@code ProcessDefinition} being instantiated, with its steps resolved.
+     */
     public final static String PROCESS_DEFINITION = "processDefinition";
+    /**
+     * Context property: the business entity's id, a {@code String}.
+     */
     public final static String ENTITY_ID = "entityId";
+    /**
+     * Context property: the business entity's type, a {@code String}.
+     */
+    public final static String ENTITY_TYPE = "entityType";
+    /**
+     * Context property: the event being processed, an {@code Event}.
+     */
+    public final static String EVENT = "event";
+    /**
+     * Context property: the event's {@code eventDetails}.
+     */
     public final static String EVENT_DATA = "eventData";
+    /**
+     * Context property: the event's {@code entity}, the domain object it carries.
+     */
     public final static String ENTITY = "entity";
     /**
      * Context property: when the event being processed happened in the business, a {@code LocalDateTime}.

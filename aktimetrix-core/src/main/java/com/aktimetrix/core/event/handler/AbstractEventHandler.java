@@ -69,13 +69,13 @@ public abstract class AbstractEventHandler implements EventHandler {
     public DefaultContext prepareContext(ProcessDefinition definition, Event<?, ?> event) {
         DefaultContext processContext = new DefaultContext();
 
-        processContext.setProperty("entityId", entityId(event));
-        processContext.setProperty("entityType", entityType(event));
-        processContext.setProperty("event", event);
-        processContext.setProperty("entity", event.getEntity());
-        processContext.setProperty("eventData", event.getEventDetails());
+        processContext.setProperty(Constants.ENTITY_ID, entityId(event));
+        processContext.setProperty(Constants.ENTITY_TYPE, entityType(event));
+        processContext.setProperty(Constants.EVENT, event);
+        processContext.setProperty(Constants.ENTITY, event.getEntity());
+        processContext.setProperty(Constants.EVENT_DATA, event.getEventDetails());
         processContext.setTenant(event.getTenantKey());
-        processContext.setProperty("processDefinition", definition);
+        processContext.setProperty(Constants.PROCESS_DEFINITION, definition);
         processContext.setProperty(Constants.OCCURRED_AT, occurredAt(event));
         // pre- and post-processors are selected by the process type, which defaults to the process code
         processContext.setProcessType(definition.getProcessType() != null ? definition.getProcessType()

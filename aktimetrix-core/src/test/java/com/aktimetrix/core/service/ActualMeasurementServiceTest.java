@@ -5,7 +5,7 @@ import com.aktimetrix.core.meter.api.ProcessMeter;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
-import com.aktimetrix.core.referencedata.model.StepMeasurement;
+import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.transferobjects.Event;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
@@ -90,8 +90,8 @@ class ActualMeasurementServiceTest {
                 Event.of("AA", "X", "t", "1", ZonedDateTime.now()))).isEmpty();
     }
 
-    private static StepMeasurement measurement(String code, MeasurementType type, String valueFrom, String unit) {
-        StepMeasurement measurement = new StepMeasurement();
+    private static MeasurementDefinition measurement(String code, MeasurementType type, String valueFrom, String unit) {
+        MeasurementDefinition measurement = new MeasurementDefinition();
         measurement.setMeasurementCode(code);
         measurement.setType(type);
         measurement.setValueFrom(valueFrom);

@@ -100,6 +100,24 @@ EventMapper shopEvents(ObjectMapper json) {
 | returns `null` | ignores the message, counted with outcome `ignored` |
 | throws | sends the message unchanged to the dead-letter topic, counted with outcome `invalid` |
 
+## Public API
+
+These are the types an application uses. Everything else is internal and may change between releases; each
+package's `package-info.java` says which it is.
+
+| Package | Types | Use |
+|---|---|---|
+| `core.stereotypes` | `@Measurement`, `@ProcessHandler`, `@EventHandler`, `@PreProcessor`, `@PostProcessor` | Register your components. |
+| `core.meter.impl`, `core.meter.api` | `AbstractMeter`, `AbstractProcessMeter`, `Meter`, `ProcessMeter` | Compute planned and actual measurements. |
+| `core.api` | `EventMapper`, `PreProcessor`, `PostProcessor`, `Context`, `Timeliness`, `Constants` | Read your own event format; hook into process creation; read the processing context. |
+| `core.impl` | `AbstractProcessor`, `DefaultProcessor` | Choose the metadata of a process and its steps. |
+| `core.event.handler` | `AbstractEventHandler`, `AbstractMilestoneEventHandler` | Change how an event code is interpreted. |
+| `core.transferobjects` | `Event` | The event envelope, inbound and outbound. |
+| `core.model`, `core.referencedata.model` | `ProcessInstance`, `StepInstance`, `MeasurementInstance`, `ProcessDefinition`, `StepDefinition`, `MeasurementDefinition` | Read instances and definitions in your components. |
+
+In a `Context`, read the event's data with the `Constants` context properties: `ENTITY`, `ENTITY_ID`,
+`ENTITY_TYPE`, `EVENT`, `EVENT_DATA`, `PROCESS_DEFINITION` and `OCCURRED_AT`.
+
 ## Built-in components
 
 | Component | Role |

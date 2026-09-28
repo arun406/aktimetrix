@@ -28,7 +28,7 @@ public class StepDefinition {
     private List<String> startEventCodes;
     private List<String> endEventCodes;
     private String groupCode;
-    private List<StepMeasurement> measurements;
+    private List<MeasurementDefinition> measurements;
     /**
      * Plans the step without a meter: its planned time is {@code plannedWithin} after the step
      * {@code plannedAfter} completes, or after the process starts when {@code plannedAfter} is absent.
