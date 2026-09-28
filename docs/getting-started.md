@@ -135,7 +135,17 @@ and optionally a tolerance:
 
 `DELIVER` is then planned 8 hours after the order actually ships, and counts as late 30 minutes after that.
 
-For plans you compute, write a meter instead, as below.
+Time is only one measurement. A fixed plan for any other one needs no code either, for example a planned rating
+with a tolerance, compared with the actual rating read from the event that completes the step:
+
+```json
+"measurements": [
+  { "measurementCode": "RATING", "type": "P", "value": "5", "tolerance": "1" },
+  { "measurementCode": "RATING", "type": "A", "valueFrom": "review.stars" }
+]
+```
+
+For plans computed by rules, such as a shorter delivery for priority customers, write a meter instead, as below.
 
 #### Meters
 

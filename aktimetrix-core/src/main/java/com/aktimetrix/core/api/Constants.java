@@ -34,6 +34,10 @@ public class Constants {
     public static final String STATUS_STARTED = "Started";
     public static final String STATUS_CANCELLED = "Cancelled";
     /**
+     * A mandatory step still open when its process was ended by an explicit end event: no longer awaited.
+     */
+    public static final String STATUS_SKIPPED = "Skipped";
+    /**
      * Process type of pre- and post-processors that apply to every process.
      */
     public static final String ALL_PROCESS_TYPES = "*";

@@ -71,7 +71,7 @@ The overdue monitor is a `@Scheduled` task, so Aktimetrix enables Spring's sched
 |---|---|---|
 | `aktimetrix.events.topic` | in | Your business events; see [the event format](getting-started.md#the-event-format). |
 | `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps, `plannedAt`, `lateAfter`, `endedAt` and `timeliness`, keyed by process instance id. |
-| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE` or `CANCELLED`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
+| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `CREATED`: a planned (`P`) or actual (`A`) measurement, keyed by measurement instance id. |
 | `aktimetrix.events.dead-letter.topic` | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
@@ -130,7 +130,7 @@ that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventTy
 | Field | Meaning |
 |---|---|
 | `id`, `processInstanceId`, `tenant`, `stepCode`, `sequence` | The step instance, its process, and its position from 0. |
-| `status` | `Created`, `Started`, `Completed` or `Cancelled`. |
+| `status` | `Created`, `Started`, `Completed`, `Skipped` or `Cancelled`. |
 | `plannedAt`, `lateAfter` | When it should happen, and its deadline (planned plus tolerance). |
 | `expectedAt` | Forecast, when an earlier step ran late. |
 | `actualAt` | Business time of the event that completed it. |
@@ -143,8 +143,9 @@ that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventTy
 |---|---|
 | `id`, `tenant`, `processInstanceId` | The measurement, and the process it belongs to. |
 | `stepInstanceId`, `stepCode` | The step it belongs to; empty for a process-level measurement. |
-| `code`, `value`, `unit` | What was measured, e.g. `WEIGHT`, `2.5`, `KG`. Values are strings; times are ISO-8601 local date-times. |
+| `code`, `value`, `unit` | What was measured, e.g. `DISTANCE`, `12`, `KM`. Values are strings; times are ISO-8601 local date-times. |
 | `type` | `P` planned or `A` actual. |
+| `plannedValue`, `deviation`, `conformance` | For an actual: the plan it is compared with, actual minus planned (a number, or an ISO-8601 duration for `TIME`), and `WITHIN_TOLERANCE` / `OUT_OF_TOLERANCE` when a tolerance is declared. |
 
 Times inside `entity` are local date-times in `aktimetrix.time-zone`.
 
@@ -174,6 +175,8 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `aktimetrix.steps.completed` | counter | `tenant`, `step`, `timeliness` |
 | `aktimetrix.steps.lateness` | timer | `tenant`, `step`: how long after its planned time a step completed |
 | `aktimetrix.steps.at.risk` / `.overdue` | counter | `tenant`, `step` |
+| `aktimetrix.measurements.actual` | counter | `tenant`, `measurement`, `conformance`: actual measurements recorded |
+| `aktimetrix.measurements.deviation` | distribution summary | `tenant`, `measurement`: actual minus planned, in the measurement's unit (not `TIME`) |
 | `aktimetrix.outbox.pending` | gauge | events not yet published to Kafka |
 
 ## Process definition fields
@@ -183,11 +186,12 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `tenant`, `processCode`, `processName`, `status` | Identity; only `CONFIRMED` definitions are used. |
 | `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
-| `startEventCodes` | The events that create a process instance. |
+| `startEventCodes` | The events that create a process instance: a business event that is also the first milestone (*order booked*), or a dedicated start event. |
+| `endEventCodes` | Optional. Events that explicitly end a running instance (*order closed*): it completes on them, not when its last mandatory step completes; mandatory steps still open become `Skipped`, optional ones stay open. Without them, the process ends implicitly with its last mandatory step. |
 | `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
-| `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. |
+| `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. For a deadline set by a rule, such as 1 day for priority customers and 3 otherwise, declare a planned `TIME` measurement on the process and a process-level meter for it instead. |
 | `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
-| `measurements` | Measurements of the process as a whole. Planned (`P`) ones are computed by process-level meters when the process starts, e.g. `{ "measurementCode": "DISTANCE", "type": "P" }`; actual (`A`) ones are recorded when it completes: see the step's `measurements` below. |
+| `measurements` | Measurements of the process as a whole, e.g. the total distance or the customer's rating; see [Measurement fields](#measurement-fields). Planned ones are set when the process starts, actual ones recorded when it completes. |
 
 ## Step definition fields
 
@@ -214,9 +218,38 @@ instead of the shared plan. Lists such as `startEventCodes` or `measurements` ar
 | `tenant`, `stepCode`, `stepName`, `status` | Identity; only `CONFIRMED` definitions are used. |
 | `startEventCodes`, `endEventCodes` | The events that start and complete the step; see [the step lifecycle](concepts.md#step-lifecycle-plan-and-actual). |
 | `optionalInd` | `Y` if the process can complete without the step. |
-| `measurements` | Planned (`P`) measurements, computed by meters when the step is created, e.g. `{ "measurementCode": "TIME", "type": "P" }`. Actual (`A`) measurements, recorded when the step completes: read from the completing event's entity with `valueFrom`, e.g. `{ "measurementCode": "WEIGHT", "type": "A", "valueFrom": "scale.weightKg", "unit": "KG" }`, or computed by the meter's `getActualValue`. The actual `TIME` is always recorded. |
+| `measurements` | The step's measurements; see [Measurement fields](#measurement-fields). The actual `TIME` is always recorded. |
 | `plannedWithin`, `plannedAfter` | Plan the step by an ISO-8601 duration from the process start, or from the completion of `plannedAfter`. |
 | `tolerance` | ISO-8601 duration past the planned time before the step counts as late. |
+
+## Measurement fields
+
+A measurement is declared in the `measurements` of a step or process definition, once for its plan (`P`) and once
+for its actual value (`A`):
+
+```json
+"measurements": [
+  { "measurementCode": "DISTANCE", "type": "P", "unit": "KM", "tolerance": "20%", "worseWhen": "HIGHER" },
+  { "measurementCode": "DISTANCE", "type": "A", "unit": "KM", "valueFrom": "route.distanceKm" },
+  { "measurementCode": "RATING",   "type": "P", "value": "5", "unit": "STARS", "tolerance": "1", "worseWhen": "LOWER" },
+  { "measurementCode": "RATING",   "type": "A", "valueFrom": "review.stars" }
+]
+```
+
+| Field | For | Purpose |
+|---|---|---|
+| `measurementCode` | both | The dimension, e.g. `TIME`, `DISTANCE`, `FUEL`, `TEMPERATURE`, `RATING`. |
+| `type` | both | `P` planned, set when the instance is created; `A` actual, recorded when it completes. |
+| `value` | `P` | A fixed planned value, used when no meter is registered for the measurement. |
+| `valueFrom` | `A` | Where to read the actual value in the completing event's entity, as a dot path. Without it, the meter's `getActualValue` computes it. |
+| `unit` | both | The unit of a `value` or of a value read with `valueFrom`. |
+| `tolerance` | either | How far the actual may deviate from the plan: absolute (`2`) or relative (`20%`). Without it, the deviation is recorded but not judged. |
+| `worseWhen` | either | `HIGHER` (distance, fuel, temperature) or `LOWER` (rating): only a deviation that way counts; the other way is always within tolerance. Without a tolerance, the plan itself is the limit: at most, or at least, the planned value. |
+
+A planned value may also come from a meter: `@Measurement(code = "DISTANCE", stepCode = "TRAVEL")`, e.g. the route
+length to the customer's address. When the actual value is recorded, it is compared with the plan: its
+`plannedValue`, `deviation` (actual minus planned) and `conformance` (`WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`) are
+stored and published with it.
 
 ## REST API
 

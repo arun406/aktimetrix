@@ -1,8 +1,11 @@
 package com.aktimetrix.core.service;
 
+import com.aktimetrix.core.api.Constants;
+import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
@@ -88,6 +91,26 @@ public class AktimetrixMetrics {
     /**
      * Registers the gauge of outbox messages not yet sent to Kafka.
      */
+    /**
+     * An actual measurement was recorded; counted by conformance, and its numeric deviation from plan recorded.
+     */
+    public void measurementRecorded(MeasurementInstance measurement) {
+        Counter.builder("aktimetrix.measurements.actual").description("Actual measurements recorded, by conformance")
+                .tag("tenant", value(measurement.getTenant())).tag("measurement", value(measurement.getCode()))
+                .tag("conformance", measurement.getConformance() == null ? "none" : measurement.getConformance().name())
+                .register(registry).increment();
+        if (measurement.getDeviation() != null && !Constants.MEASUREMENT_CODE_TIME.equals(measurement.getCode())) {
+            try {
+                DistributionSummary.builder("aktimetrix.measurements.deviation")
+                        .description("Actual minus planned value, in the measurement's unit")
+                        .tag("tenant", value(measurement.getTenant())).tag("measurement", value(measurement.getCode()))
+                        .register(registry).record(Double.parseDouble(measurement.getDeviation()));
+            } catch (NumberFormatException e) {
+                // not a number: nothing to record
+            }
+        }
+    }
+
     public void outboxPending(Supplier<Number> pending) {
         Gauge.builder("aktimetrix.outbox.pending", pending)
                 .description("Outbox messages not yet sent to Kafka").register(registry);
