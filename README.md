@@ -85,10 +85,16 @@ publication of results, is provided by the runtime.
 ### 1.1 A worked example: order delivery
 
 An order is created: that is a business event, and it starts an **order delivery** process for the order. From the
-order, rules derive the **plan**: this customer is a priority customer, so the order is to be delivered within one
-day, and each step has an expected time; the route is expected to be 5 km, to use 0.4 litres of fuel, to keep the
-parcel at 30 °C, and to earn a five-star rating. The process then runs through its steps, each reported by an event
-from the system that performs it, and each event records the **actual** measurements:
+order, rules derive the **plan**, at two levels:
+
+- for the **order as a whole**, the process instance: this customer is a priority customer, so the order is to be
+  delivered within one day, at a cost of €8;
+- for **each step**, a step instance: each step has an expected time; the journey to the customer is expected to be
+  5 km and to use 0.4 litres of fuel; the parcel is to be delivered at 30 °C at most; the customer is expected to give
+  five stars.
+
+The process then runs through its steps, each reported by an event from the system that performs it. Each event
+records the **actual** measurements of its step; the event that completes the order also records the order's own:
 
 | Step | Reported by | Measurements |
 |---|---|---|
@@ -99,14 +105,16 @@ from the system that performs it, and each event records the **actual** measurem
 | 5. Travelled to the customer | delivery app | time, distance, fuel |
 | 6. Delivered | delivery app | time, temperature of the parcel |
 | 7. Rated by the customer | shop | rating |
+| *the order as a whole* | *completed by step 6* | *delivery time against the one-day promise, cost* |
 
 <p align="center">
   <img src="./img/plan-vs-actual.svg" alt="Plan versus actual for order 1234, per step and measurement, and the metrics computed from them" width="100%">
 </p>
 
-Every actual value is compared with its plan. The route was 12 km instead of 5, used 1.0 litre instead of 0.4 and
-kept the parcel at 40 °C instead of 30, all outside their tolerances; the customer gave four stars instead of five,
-within tolerance; four steps ran late, but the order was still delivered well within its one-day promise. From these
+Every actual value is compared with its plan. At step level, the route was 12 km instead of 5, used 1.0 litre
+instead of 0.4 and kept the parcel at 40 °C instead of 30, all outside their tolerances; the customer gave four stars
+instead of five, within tolerance; four steps ran late. At process level, the order was still delivered well within
+its one-day promise, but cost €9.50 instead of €8: the two levels answer different questions. From these
 measurements follow the **metrics** a business steers by: the share of steps on time, distance over plan, fuel per
 kilometre, the average rating, per order and across all orders. Time is one measurement among these, with one extra
 role: because a plan says *when* a step should happen, the runtime can also raise an alarm while a step is **at risk**
@@ -153,9 +161,10 @@ A **measurement** is anything about a process that the business plans and observ
 the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `FUEL` (litres), `TEMPERATURE` (°C),
 `RATING` (stars), `WEIGHT` (kg), or any other quantity.
 
-- **Level.** A measurement belongs either to a **process**, when it describes the entity as a whole (the total
-  distance of a delivery, the customer's rating of an order), or to a **step**, when it describes one milestone (the
-  fuel used while travelling, the temperature on delivery, the time of each step).
+- **Level.** A measurement belongs either to a **process instance**, when it describes the entity as a whole (the
+  order's delivery deadline, its cost), or to a **step instance**, when it describes one milestone (the time of each
+  step, the distance and fuel of the journey, the temperature on delivery, the rating). The two levels are described
+  side by side in [§3.3](#33-plans-at-two-levels-process-and-step).
 - **Plan.** A **planned** (`P`) value is set when the process or step instance is created: a fixed value from the
   definition (a rating of 5), a duration (delivered within one day), or the result of a rule written as a **meter**
   (priority customers within one day, others within three; the route length from the address).
@@ -173,13 +182,36 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `F
 within tolerance, the distribution of deviations, the lateness of steps, [§8](#8-observability)), and by consumers of
 the published measurement events for anything domain-specific, such as fuel per kilometre.
 
-### 3.3 Metadata
+### 3.3 Plans at two levels: process and step
+
+Every process instance and every step instance has its own plan and its own actuals. They describe different things
+and are measured at different moments:
+
+| | Process instance (the order) | Step instance (e.g. *Travel to customer*) |
+|---|---|---|
+| **Describes** | the entity as a whole, end to end | one milestone of it |
+| **Declared in** | the process definition's `measurements`; for time, its `plannedWithin`, or a planned `TIME` computed by a rule | the step definition's `measurements`; for time, its `plannedWithin` / `plannedAfter`, or a planned `TIME` computed by a rule |
+| **Plan set** | once, when the process instance is created | when the process instance is created; a step planned after another step, when that step completes |
+| **Actual recorded** | when the process completes, from the event that completes it: its last mandatory step (*delivered*), or an explicit end event | when the step completes, from the event that completes it |
+| **Time** | the process's own deadline, e.g. *within 1 day*: judged `ON_TIME` or `LATE` at completion, `OVERDUE` if it passes first | the step's planned time: `ON_TIME` or `LATE`, and `AT_RISK` or `OVERDUE` before it happens |
+| **Example** | delivered within 1 day; cost €8 | journey of 5 km using 0.4 litres; parcel at 30 °C at most; five-star rating |
+
+The two levels are **independent**. A process-level measurement is not computed from its steps: the order's total
+distance is not the sum of its steps' distances, and a late step does not make the order late (in the example, four
+steps ran late but the order was on time). When a value at process level should follow from the steps, it is
+reported on the event that completes the process, or computed by a meter from the metadata.
+
+Choosing the level follows from *when the value is known*. The order's cost is reported with the delivery, which
+completes the order, so it belongs to the process. The customer's rating arrives after the order has completed, so it
+belongs to an optional step: a completed process still records its optional steps, but no longer its own actuals.
+
+### 3.4 Metadata
 
 Instances carry **metadata**: key/value pairs taken from the domain, such as an order's id, customer and order time.
 Metadata is the input to planning (a meter reads the order time to compute the delivery deadline) and travels with
 every published result, so consumers do not need to query the source systems.
 
-### 3.4 Business events
+### 3.5 Business events
 
 Every inbound event uses one envelope, whatever its source. The fields the model depends on are:
 
@@ -604,6 +636,9 @@ published events feed dashboards, process-mining datasets or stream jobs.
   attempts of a step are not modelled.
 - **One run per entity.** There is one instance of a process per tenant, process and entity. A second run for the
   same entity, for example a re-delivery, needs a different entity id or process.
+- **No roll-up between levels.** Process-level values are not computed from step-level values, such as a total
+  distance from the distances of each step; they are reported by the event that completes the process, or computed
+  by a meter.
 - **Definitions are not versioned.** Changing a definition affects instances that are already running.
 - **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
 - **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
