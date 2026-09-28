@@ -173,6 +173,9 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `F
 - **Actual.** An **actual** (`A`) value is recorded when the step or process completes: read from the event that
   completed it (the distance on the delivery confirmation, the rating on the review) or computed by a meter. The
   actual time of a step is always recorded: it is when its event happened.
+- **Readings in progress.** A step that takes time, such as the journey to the customer, can also report
+  **interim readings** while it is open, on progress events (*location updated: 8 km so far*). Each is compared with
+  the plan at once, so a deviation shows before the step ends; the final actual is recorded when it completes.
 - **Comparison.** Each actual value is compared with the planned value of the same measurement: the **deviation**
   is actual minus planned (+7 km), and, when the measurement declares a **tolerance** (2 km, or 20 %), the actual is
   **within** or **outside** tolerance. Plan, actual and comparison are stored and published together.
@@ -181,9 +184,12 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `F
   `OVERDUE` when the deadline passes without its event. A process with a deadline of its own is watched the same way
   ([§4.3](#43-comparing-plan-and-actual)).
 
-**Metrics** are computed from the measurements: by the runtime for the whole population (how many actuals were
-within tolerance, the distribution of deviations, the lateness of steps, [§8](#8-observability)), and by consumers of
-the published measurement events for anything domain-specific, such as fuel per kilometre.
+**Metrics** are computed from the measurements. A process declares its own, as arithmetic over measurement codes,
+such as *fuel per kilometre = FUEL / DISTANCE*: when the process completes, each code stands for the sum of that
+measurement's final values across the process and its steps, and the metric is computed from the plan and from the
+actuals and compared like any measurement. The runtime also reports metrics for the whole population, such as how
+many actuals were within tolerance and the distribution of deviations ([§8](#8-observability)); anything else can
+be computed by consumers of the published measurement events.
 
 ### 3.3 Plans at two levels: process and step
 
@@ -199,10 +205,10 @@ and are measured at different moments:
 | **Time** | the process's own deadline, e.g. *within 1 day*: judged `ON_TIME` or `LATE` at completion, `OVERDUE` if it passes first | the step's planned time: `ON_TIME` or `LATE`, and `AT_RISK` or `OVERDUE` before it happens |
 | **Example** | delivered within 1 day; cost €8 | journey of 5 km using 0.4 litres; parcel at 30 °C at most; five-star rating |
 
-The two levels are **independent**. A process-level measurement is not computed from its steps: the order's total
-distance is not the sum of its steps' distances, and a late step does not make the order late (in the example, four
-steps ran late but the order was on time). When a value at process level should follow from the steps, it is
-reported on the event that completes the process, or computed by a meter from the metadata.
+The two levels are **independent**. A process-level measurement is not derived from its steps: a late step does not
+make the order late (in the example, four steps ran late but the order was on time), and the order's cost is its own
+figure. When a value at process level should follow from the steps, declare it as a **metric** of the process: the
+order's total distance is `DISTANCE`, the sum over its steps; its fuel per kilometre is `FUEL / DISTANCE`.
 
 Choosing the level follows from *when the value is known*. The order's cost is reported with the delivery, which
 completes the order, so it belongs to the process. The customer's rating arrives after the order has completed, so it
@@ -246,7 +252,8 @@ delivered*.
    **deadline**: the planned time plus its tolerance.
 3. **Record.** The event is applied to every process instance of the entity that is not cancelled. Steps that list it
    are started or completed; a completed step records its actual measurements, starting with its time, and each is
-   compared with its plan. When the process completes, implicitly or by an end event, it records its own.
+   compared with its plan; an event that reports progress records interim readings of the step it concerns. When the
+   process completes, implicitly or by an end event, it records its own measurements and computes its metrics.
 4. **Watch.** Independently of events, monitors look for steps and processes whose deadline has passed without the
    event that completes them.
 
@@ -459,8 +466,9 @@ The runtime reports its own behaviour and the health of the monitored processes 
 
 Together they answer operational questions directly, without a separate analytics pipeline: *what share of
 deliveries were late this week? How often was the route longer than planned, and by how much?* Metrics specific to a
-domain, such as fuel per kilometre or the average rating per region, are computed by consumers of the published
-measurement events, which carry the plan, the actual and the deviation together.
+domain, such as fuel per kilometre, are declared on the process and published with each order; aggregations beyond
+these, such as the average rating per region, are computed by consumers of the published measurement events, which
+carry the plan, the actual and the deviation together.
 
 ## 9. Reference implementation
 
@@ -641,9 +649,9 @@ published events feed dashboards, process-mining datasets or stream jobs.
   attempts of a step are not modelled.
 - **One run per entity.** There is one instance of a process per tenant, process and entity. A second run for the
   same entity, for example a re-delivery, needs a different entity id or process.
-- **No roll-up between levels.** Process-level values are not computed from step-level values, such as a total
-  distance from the distances of each step; they are reported by the event that completes the process, or computed
-  by a meter.
+- **Metrics at completion.** A process's metrics are computed once, when it completes, from sums of its
+  measurements; values recorded afterwards, such as a later rating, are not included, and the expressions are plain
+  arithmetic.
 - **Definitions are not versioned.** Changing a definition affects instances that are already running.
 - **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
 - **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
@@ -666,6 +674,7 @@ still change.
 - [x] Process cancellation, implicit or explicit end, and a deadline for the whole process, set by duration or rule
 - [x] Planned and actual values in any user-defined dimension, at process and step level, compared with deviation and tolerance
 - [x] Source systems keep their own event format, through an event mapper
+- [x] Interim readings while a step is in progress, and metrics declared from several measurements
 - [x] Query API for the state of an entity
 - [x] Reliable publication through a transactional outbox, with atomic writes on transactional stores
 - [x] Safe concurrency across instances, a dead-letter channel, and indexes created at startup
@@ -701,7 +710,8 @@ still change.
 | **Planned** / **actual** (`P` / `A`) | What a measurement should be, set when the instance is created; and what it was, recorded when it completes. |
 | **Deviation** | Actual minus planned value of a measurement. |
 | **Tolerance** / **conformance** | How far an actual may deviate from its plan; and whether it did (`WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`). |
-| **Metric** | A figure computed from measurements, for one entity or across all of them, such as the share of steps on time or fuel per kilometre. |
+| **Metric** | A figure computed from measurements: declared on a process as arithmetic over its measurements, such as fuel per kilometre, and compared with the same figure computed from the plan; or reported by the runtime across all entities, such as the share within tolerance. |
+| **Interim reading** | A value of a step's measurement reported while the step is still in progress, compared with the plan at once. |
 | **Meter** | Application code that computes a planned or actual measurement, typically a planning rule. |
 | **Metadata** | Domain data kept on an instance, such as an order's customer, used by meters and passed to consumers. |
 | **Deadline** | The planned time plus the tolerance: the moment after which a step or process is late. |

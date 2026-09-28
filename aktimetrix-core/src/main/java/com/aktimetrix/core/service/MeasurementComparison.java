@@ -32,7 +32,9 @@ public class MeasurementComparison {
                         actual.getStepInstanceId(), actual.getCode(), Constants.PLAN_MEASUREMENT_TYPE).stream()
                 .findFirst()
                 .ifPresent(planned -> apply(actual, planned.getValue(), tolerance, worseWhen));
-        metrics.measurementRecorded(actual);
+        if (!actual.isInterim()) {
+            metrics.measurementRecorded(actual);
+        }
     }
 
     /**

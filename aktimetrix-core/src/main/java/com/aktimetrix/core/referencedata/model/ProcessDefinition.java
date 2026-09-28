@@ -48,6 +48,10 @@ public class ProcessDefinition {
      */
     private List<MeasurementDefinition> measurements;
     /**
+     * Metrics computed from the process's measurements when it completes, e.g. fuel per kilometre.
+     */
+    private List<MetricDefinition> metrics;
+    /**
      * ISO-8601 duration within which the whole process should complete, from its start, e.g. {@code P1D}.
      * Optional; gives the process its own deadline and timeliness.
      */

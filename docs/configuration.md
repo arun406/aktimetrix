@@ -145,6 +145,8 @@ that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventTy
 | `stepInstanceId`, `stepCode` | The step it belongs to; empty for a process-level measurement. |
 | `code`, `value`, `unit` | What was measured, e.g. `DISTANCE`, `12`, `KM`. Values are strings; times are ISO-8601 local date-times. |
 | `type` | `P` planned or `A` actual. |
+| `interim` | `true` for a reading reported while its step was in progress; the final actual has `false`. |
+| `derivedFrom` | For a process metric, its expression, e.g. `FUEL / DISTANCE`. |
 | `plannedValue`, `deviation`, `conformance` | For an actual: the plan it is compared with, actual minus planned (a number, or an ISO-8601 duration for `TIME`), and `WITHIN_TOLERANCE` / `OUT_OF_TOLERANCE` when a tolerance is declared. |
 
 Times inside `entity` are local date-times in `aktimetrix.time-zone`.
@@ -187,6 +189,7 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
 | `startEventCodes` | The events that create a process instance: a business event that is also the first milestone (*order booked*), or a dedicated start event. |
+| `metrics` | Optional. Metrics computed when the process completes, e.g. `{ "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" }`. In the expression, arithmetic over measurement codes (`+ - * /`, parentheses), each code is the sum of that measurement's final values across the process and its steps. It is computed from the actuals and from the plans, and published as a process-level actual measurement with `derivedFrom`. |
 | `endEventCodes` | Optional. Events that explicitly end a running instance (*order closed*): it completes on them, not when its last mandatory step completes; mandatory steps still open become `Skipped`, optional ones stay open. Without them, the process ends implicitly with its last mandatory step. |
 | `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
 | `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. For a deadline set by a rule, such as 1 day for priority customers and 3 otherwise, declare a planned `TIME` measurement on the process and a process-level meter for it instead. |
@@ -219,6 +222,7 @@ instead of the shared plan. Lists such as `startEventCodes` or `measurements` ar
 | `startEventCodes`, `endEventCodes` | The events that start and complete the step; see [the step lifecycle](concepts.md#step-lifecycle-plan-and-actual). |
 | `optionalInd` | `Y` if the process can complete without the step. |
 | `measurements` | The step's measurements; see [Measurement fields](#measurement-fields). The actual `TIME` is always recorded. |
+| `progressEventCodes` | Events that report progress while the step is open, e.g. `LOCATION_UPDATED`: each records interim readings (`interim: true`) of the step's actual measurements it carries (`valueFrom`), compared with the plan, without completing the step. |
 | `plannedWithin`, `plannedAfter` | Plan the step by an ISO-8601 duration from the process start, or from the completion of `plannedAfter`. |
 | `tolerance` | ISO-8601 duration past the planned time before the step counts as late. |
 
