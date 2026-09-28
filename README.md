@@ -235,7 +235,7 @@ Every business event passes through the same four stages.
 </p>
 
 1. **Start.** If the event's code is one of a process's start events, a process instance and its step instances
-   are created for the entity, unless one already exists.
+   are created for the entity, unless one already exists. The same event may also complete the first step.
 2. **Plan.** The new process and its steps receive their planned measurements; a planned time also sets a
    **deadline**: the planned time plus its tolerance.
 3. **Record.** The event is applied to every running process of the entity. Steps that list it are started or
@@ -246,11 +246,23 @@ Every business event passes through the same four stages.
 
 ### 5.1 Lifecycle
 
+**Start and end of a process.** Both can be implicit or explicit, as the business case requires:
+
+| | Implicit | Explicit |
+|---|---|---|
+| **Start** | a business event that is also the first milestone, e.g. *order booked*: it starts the process and completes its first step | a dedicated event, e.g. *order fulfilment started*, raised by whichever system decides that monitoring begins |
+| **End** | the last mandatory step completes, e.g. *order delivered* | a dedicated event, e.g. *order closed* after the returns window: the process completes on it, whatever its steps |
+
+A process definition lists its start events and, optionally, its end and cancel events. Without end events, a process
+ends implicitly. With them, it ends only on one of them; its mandatory steps still open become `Skipped`, and its
+optional ones stay open.
+
 | Status | A step enters it when | A process enters it when |
 |---|---|---|
-| `Created` | the process instance is created | it is created |
+| `Created` | the process instance is created | it is created, by one of its start events |
 | `Started` | an event in its start events arrives, and it also defines end events | n/a |
-| `Completed` | an event in its end events arrives; a step with no end events is a single milestone and completes on its start event | all of its mandatory steps have completed |
+| `Completed` | an event in its end events arrives; a step with no end events is a single milestone and completes on its start event | implicitly, its last mandatory step completes; or explicitly, one of its end events arrives |
+| `Skipped` | it is mandatory and still open when its process ends explicitly | n/a |
 | `Cancelled` | its process is cancelled before it completed | an event in the process's cancel events arrives, e.g. *order cancelled* |
 
 A cancelled process is no longer monitored: a cancelled order does not leave steps to go overdue. A completed
@@ -323,7 +335,7 @@ querying the state store.
 | Event type | Event codes | Entity | Keyed by |
 |---|---|---|---|
 | `Process_Event` | `CREATED`, `COMPLETED`, `CANCELLED`, `OVERDUE` | the process instance: status, `startedAt`, `plannedAt`, `lateAfter`, `endedAt`, `timeliness`, metadata, and its steps | process instance id |
-| `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
+| `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
 | `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, the process and step it belongs to, and for an actual its `plannedValue`, `deviation` and `conformance` | measurement instance id |
 
 A step becoming overdue, for example, is published as:

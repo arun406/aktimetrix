@@ -92,6 +92,10 @@ public class StepProgressService {
                 cancel(processInstance, occurredAt);
             } else {
                 actuals.addAll(recordMilestone(eventCode, processInstance, occurredAt, event));
+                if (definition != null && contains(definition.getEndEventCodes(), eventCode)
+                        && !processInstance.isComplete()) {
+                    actuals.addAll(end(processInstance, definition, occurredAt, event));
+                }
             }
         }
         return actuals;
@@ -299,33 +303,78 @@ public class StepProgressService {
     }
 
     /**
+     * Implicit end: completes the process when its last mandatory step has completed, unless its definition declares
+     * explicit end events.
+     *
      * @return the actual measurements of the process, if this completed it
      */
     private List<MeasurementInstance> completeProcessIfDone(ProcessInstance processInstance, List<StepInstance> steps,
                                                             Map<String, StepDefinition> definitions,
                                                             LocalDateTime occurredAt, Event<?, ?> event) {
+        if (processInstance.isComplete()) {
+            return List.of();
+        }
+        final ProcessDefinition definition = processDefinitionService.findByCode(processInstance.getTenant(),
+                processInstance.getProcessCode());
+        if (definition != null && !isEmpty(definition.getEndEventCodes())) {
+            return List.of();
+        }
         final boolean done = steps.stream()
                 .filter(step -> !isOptional(definitions.get(step.getStepCode())))
                 .allMatch(step -> Constants.STATUS_COMPLETED.equals(step.getStatus()));
-        if (done && !processInstance.isComplete()) {
-            logger.info("Process instance {} is complete", processInstance.getId());
-            processInstance.setComplete(true);
-            processInstance.setStatus(Constants.STATUS_COMPLETED);
-            processInstance.setEndedAt(occurredAt);
-            if (processInstance.getLateAfter() != null) {
-                processInstance.setTimeliness(occurredAt.isAfter(processInstance.getLateAfter())
-                        ? Timeliness.LATE : Timeliness.ON_TIME);
-            }
-            processInstanceService.saveProcessInstance(processInstance);
-            processInstancePublisherService.publish(processInstance, "COMPLETED");
-            metrics.processCompleted(processInstance);
-            final ProcessDefinition definition = processDefinitionService.findByCode(processInstance.getTenant(),
-                    processInstance.getProcessCode());
-            if (definition != null) {
-                return actualMeasurementService.forProcess(processInstance, definition.getMeasurements(), event);
+        return done ? complete(processInstance, definition, occurredAt, event) : List.of();
+    }
+
+    /**
+     * Explicit end: an end event of the process arrived. Its mandatory steps still open become {@code Skipped};
+     * optional ones stay open, as they may still happen.
+     *
+     * @return the actual measurements of the process
+     */
+    private List<MeasurementInstance> end(ProcessInstance processInstance, ProcessDefinition definition,
+                                          LocalDateTime occurredAt, Event<?, ?> event) {
+        final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(
+                processInstance.getTenant(), processInstance.getId());
+        final Map<String, StepDefinition> definitions = definitions(processInstance.getTenant(),
+                processInstance.getProcessCode(), steps);
+        for (StepInstance step : steps) {
+            final boolean open = Constants.STATUS_CREATED.equals(step.getStatus())
+                    || Constants.STATUS_STARTED.equals(step.getStatus());
+            if (open && !isOptional(definitions.get(step.getStepCode()))) {
+                step.setStatus(Constants.STATUS_SKIPPED);
+                stepInstanceService.save(step);
+                stepInstancePublisherService.publish(step, "SKIPPED");
             }
         }
-        return List.of();
+        final List<MeasurementInstance> actuals = complete(processInstance, definition, occurredAt, event);
+        if (!actuals.isEmpty()) {
+            measurementInstanceService.saveMeasurementInstances(actuals);
+            final DefaultContext context = new DefaultContext();
+            context.setTenant(processInstance.getTenant());
+            context.setMeasurementInstances(actuals);
+            measurementInstancePublisherService.postProcess(context);
+        }
+        return actuals;
+    }
+
+    /**
+     * Completes the process, judges it against its deadline, and records its actual measurements.
+     */
+    private List<MeasurementInstance> complete(ProcessInstance processInstance, ProcessDefinition definition,
+                                               LocalDateTime occurredAt, Event<?, ?> event) {
+        logger.info("Process instance {} is complete", processInstance.getId());
+        processInstance.setComplete(true);
+        processInstance.setStatus(Constants.STATUS_COMPLETED);
+        processInstance.setEndedAt(occurredAt);
+        if (processInstance.getLateAfter() != null) {
+            processInstance.setTimeliness(occurredAt.isAfter(processInstance.getLateAfter())
+                    ? Timeliness.LATE : Timeliness.ON_TIME);
+        }
+        processInstanceService.saveProcessInstance(processInstance);
+        processInstancePublisherService.publish(processInstance, "COMPLETED");
+        metrics.processCompleted(processInstance);
+        return definition == null ? List.of()
+                : actualMeasurementService.forProcess(processInstance, definition.getMeasurements(), event);
     }
 
     private static boolean isOptional(StepDefinition definition) {

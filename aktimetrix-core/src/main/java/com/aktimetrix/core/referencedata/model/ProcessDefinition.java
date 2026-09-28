@@ -31,6 +31,13 @@ public class ProcessDefinition {
      * open steps become {@code Cancelled}, and are no longer monitored.
      */
     private List<String> cancelEventCodes;
+    /**
+     * Events that explicitly end a running instance of the process, e.g. {@code ORDER_CLOSED}. When declared, the
+     * process completes on one of them, and not when its last mandatory step completes; mandatory steps still open
+     * become {@code Skipped}, optional ones stay open. When absent, the process completes implicitly, with its last
+     * mandatory step.
+     */
+    private List<String> endEventCodes;
     private String status;
     private String responsiblePartyCode;
     private String groupCode;

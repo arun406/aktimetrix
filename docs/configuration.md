@@ -71,7 +71,7 @@ The overdue monitor is a `@Scheduled` task, so Aktimetrix enables Spring's sched
 |---|---|---|
 | `aktimetrix.events.topic` | in | Your business events; see [the event format](getting-started.md#the-event-format). |
 | `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps, `plannedAt`, `lateAfter`, `endedAt` and `timeliness`, keyed by process instance id. |
-| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE` or `CANCELLED`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
+| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `CREATED`: a planned (`P`) or actual (`A`) measurement, keyed by measurement instance id. |
 | `aktimetrix.events.dead-letter.topic` | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
@@ -130,7 +130,7 @@ that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventTy
 | Field | Meaning |
 |---|---|
 | `id`, `processInstanceId`, `tenant`, `stepCode`, `sequence` | The step instance, its process, and its position from 0. |
-| `status` | `Created`, `Started`, `Completed` or `Cancelled`. |
+| `status` | `Created`, `Started`, `Completed`, `Skipped` or `Cancelled`. |
 | `plannedAt`, `lateAfter` | When it should happen, and its deadline (planned plus tolerance). |
 | `expectedAt` | Forecast, when an earlier step ran late. |
 | `actualAt` | Business time of the event that completed it. |
@@ -186,7 +186,8 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `tenant`, `processCode`, `processName`, `status` | Identity; only `CONFIRMED` definitions are used. |
 | `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
-| `startEventCodes` | The events that create a process instance. |
+| `startEventCodes` | The events that create a process instance: a business event that is also the first milestone (*order booked*), or a dedicated start event. |
+| `endEventCodes` | Optional. Events that explicitly end a running instance (*order closed*): it completes on them, not when its last mandatory step completes; mandatory steps still open become `Skipped`, optional ones stay open. Without them, the process ends implicitly with its last mandatory step. |
 | `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
 | `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. For a deadline set by a rule, such as 1 day for priority customers and 3 otherwise, declare a planned `TIME` measurement on the process and a process-level meter for it instead. |
 | `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
