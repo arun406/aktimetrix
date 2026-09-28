@@ -33,7 +33,7 @@ class AbstractMilestoneEventHandlerTest {
 
         handler.handle(event);
 
-        verify(stepProgressService).recordMilestones("AA", "com.ecom.order", "1234", "ORDER_SHIPPED_EVENT", shippedAt);
+        verify(stepProgressService).recordMilestones("AA", "com.ecom.order", "1234", "ORDER_SHIPPED_EVENT", shippedAt, event);
     }
 
     static class OrderShippedEventHandler extends AbstractMilestoneEventHandler {
