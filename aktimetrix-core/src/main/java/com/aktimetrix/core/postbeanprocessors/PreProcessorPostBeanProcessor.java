@@ -45,7 +45,6 @@ public class PreProcessorPostBeanProcessor implements BeanPostProcessor {
         attributes.put(Constants.ATT_PRE_PROCESSOR_NAME, annotation.name());
         attributes.put(Constants.ATT_PRE_PROCESSOR_PRIORITY, String.valueOf(annotation.priority()));
         attributes.put(Constants.ATT_PRE_PROCESSOR_VERSION, annotation.version());
-        attributes.put(Constants.ATT_PRE_PROCESSOR_DEFAULT, annotation.isDefault());
 
         logger.debug("registering the {} bean with attributes {}", beanName, attributes);
         this.registry.register(beanName, attributes, bean);

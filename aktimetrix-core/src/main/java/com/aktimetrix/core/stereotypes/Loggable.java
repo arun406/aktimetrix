@@ -11,6 +11,9 @@ import java.time.temporal.ChronoUnit;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 
+/**
+ * Logs entry, exit and execution time of the methods of a bean that implements an interface; a debugging aid.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value = {METHOD, TYPE})
 public @interface Loggable {

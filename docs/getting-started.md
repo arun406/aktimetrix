@@ -118,6 +118,10 @@ A step with only `startEventCodes` completes on that event. Give it `endEventCod
 is then `Started` by the start event and `Completed` by the end event. Mark a step `"optionalInd": "Y"` if the
 process can complete without it.
 
+A step can also be written directly in the process's `steps`, with the same fields. That suits a step only one
+process uses, or a shared step one process treats differently, such as a shorter deadline for express orders: see
+[step definition fields](configuration.md#step-definition-fields).
+
 ### 4. Plan the steps
 
 The simplest plans need no code. Give a step a duration, from the process start or from another step's completion,
@@ -217,7 +221,9 @@ Extend `AbstractEventHandler` instead for an event that can also start a process
 
 ## The event format
 
-Every business event uses the same envelope. Your domain object goes in `entity`:
+By default, business events use the envelope below, with your domain object in `entity`. If your systems already
+publish events in another format, keep it and declare an `EventMapper` instead: see
+[Accepting your own event format](extending.md#accepting-your-own-event-format).
 
 ```json
 {

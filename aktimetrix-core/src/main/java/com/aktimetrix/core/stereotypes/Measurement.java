@@ -20,8 +20,15 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface Measurement {
 
+    /**
+     * Informational name.
+     */
     String name() default "";
 
+    /**
+     * The measurement computed, e.g. {@code TIME} or {@code DISTANCE}; must match a measurement declared on the step or
+     * process definition.
+     */
     String code();
 
     /**
@@ -34,5 +41,8 @@ public @interface Measurement {
      */
     String processCode() default "";
 
+    /**
+     * Informational version.
+     */
     String version() default Constants.DEFAULT_VERSION;
 }

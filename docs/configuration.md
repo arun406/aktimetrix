@@ -70,8 +70,8 @@ The overdue monitor is a `@Scheduled` task, so Aktimetrix enables Spring's sched
 | Topic | Direction | Messages |
 |---|---|---|
 | `aktimetrix.events.topic` | in | Your business events; see [the event format](getting-started.md#the-event-format). |
-| `process-instance-out-0` | out | `Process_Event` / `CREATED`: a process instance with its steps, keyed by process instance id. |
-| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK` or `OVERDUE`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
+| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps, `plannedAt`, `lateAfter`, `endedAt` and `timeliness`, keyed by process instance id. |
+| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE` or `CANCELLED`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `CREATED`: a planned (`P`) or actual (`A`) measurement, keyed by measurement instance id. |
 | `aktimetrix.events.dead-letter.topic` | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
@@ -105,6 +105,49 @@ Step instances carry a `revision` and are saved with a version check, so when tw
 the second change fails instead of overwriting the first: the monitor skips such a step until its next check, and an
 event is retried.
 
+## Published event payloads
+
+Every outbound message is an [event envelope](getting-started.md#the-event-format) whose `entity` is the instance
+that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventType`, `eventCode`, `eventTime`,
+`tenantKey`, `entityType` and `entityId` (the instance id, also the message key).
+
+**`Process_Event`** (`entityType` `com.aktimetrix.process.instance`)
+
+| Field | Meaning |
+|---|---|
+| `id`, `tenant`, `processCode`, `entityType`, `entityId` | The process instance, and the business entity it follows. |
+| `status` | `Created`, `Completed` or `Cancelled`. |
+| `complete` | `true` once completed or cancelled. |
+| `startedAt` | Business time of the event that started it. |
+| `plannedAt`, `lateAfter` | Its own deadline, if the definition has `plannedWithin`: planned completion, and that plus the tolerance. |
+| `endedAt` | Business time of the event that completed or cancelled it. |
+| `timeliness` | `ON_TIME` or `LATE` at completion, or `OVERDUE`; empty without a deadline. |
+| `metadata` | The process metadata. |
+| `steps` | Its steps, as in `Step_Event` (on `CREATED`). |
+
+**`Step_Event`** (`entityType` `com.aktimetrix.step.instance`)
+
+| Field | Meaning |
+|---|---|
+| `id`, `processInstanceId`, `tenant`, `stepCode`, `sequence` | The step instance, its process, and its position from 0. |
+| `status` | `Created`, `Started`, `Completed` or `Cancelled`. |
+| `plannedAt`, `lateAfter` | When it should happen, and its deadline (planned plus tolerance). |
+| `expectedAt` | Forecast, when an earlier step ran late. |
+| `actualAt` | Business time of the event that completed it. |
+| `timeliness` | `ON_TIME`, `LATE`, `AT_RISK` or `OVERDUE`; empty until it can be judged. |
+| `metadata` | The step metadata. |
+
+**`Measurement_Event`** (`entityType` `com.aktimetrix.measurement.instance`)
+
+| Field | Meaning |
+|---|---|
+| `id`, `tenant`, `processInstanceId` | The measurement, and the process it belongs to. |
+| `stepInstanceId`, `stepCode` | The step it belongs to; empty for a process-level measurement. |
+| `code`, `value`, `unit` | What was measured, e.g. `WEIGHT`, `2.5`, `KG`. Values are strings; times are ISO-8601 local date-times. |
+| `type` | `P` planned or `A` actual. |
+
+Times inside `entity` are local date-times in `aktimetrix.time-zone`.
+
 ## MongoDB collections
 
 | Collection | Contents |
@@ -126,8 +169,8 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 
 | Metric | Type | Tags |
 |---|---|---|
-| `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `invalid`, `failed`) |
-| `aktimetrix.processes.started` / `.completed` | counter | `tenant`, `process` |
+| `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `ignored`, `invalid`, `failed`) |
+| `aktimetrix.processes.started` / `.completed` / `.cancelled` / `.overdue` | counter | `tenant`, `process` |
 | `aktimetrix.steps.completed` | counter | `tenant`, `step`, `timeliness` |
 | `aktimetrix.steps.lateness` | timer | `tenant`, `step`: how long after its planned time a step completed |
 | `aktimetrix.steps.at.risk` / `.overdue` | counter | `tenant`, `step` |
@@ -141,17 +184,37 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
 | `startEventCodes` | The events that create a process instance. |
-| `steps` | The step codes, in order. |
-| `measurements` | Planned (`P`) measurements of the process as a whole, computed by process-level meters, e.g. `{ "measurementCode": "DISTANCE", "type": "P" }`. |
+| `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
+| `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. |
+| `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
+| `measurements` | Measurements of the process as a whole. Planned (`P`) ones are computed by process-level meters when the process starts, e.g. `{ "measurementCode": "DISTANCE", "type": "P" }`; actual (`A`) ones are recorded when it completes: see the step's `measurements` below. |
 
 ## Step definition fields
+
+Steps are defined in `step-definitions.json`, shared by every process of the tenant, or directly in a process's
+`steps`, or both: a field set in the process overrides the shared definition for that process only. A step used by
+a single process needs no shared definition at all.
+
+```json
+{ "tenant": "AA", "processCode": "EXPRESS_DELIVERY", "startEventCodes": ["EXPRESS_ORDER_PLACED_EVENT"],
+  "status": "CONFIRMED",
+  "steps": [
+    { "stepCode": "PLACE" },
+    { "stepCode": "SHIP", "plannedWithin": "PT2H" },
+    { "stepCode": "DELIVER", "startEventCodes": ["ORDER_DELIVERED_EVENT"], "plannedAfter": "SHIP", "plannedWithin": "PT6H" }
+  ] }
+```
+
+Here `SHIP` keeps its shared definition, such as the event that completes it, but must happen within 2 hours
+instead of the shared plan. Lists such as `startEventCodes` or `measurements` are replaced as a whole.
+
 
 | Field | Purpose |
 |---|---|
 | `tenant`, `stepCode`, `stepName`, `status` | Identity; only `CONFIRMED` definitions are used. |
 | `startEventCodes`, `endEventCodes` | The events that start and complete the step; see [the step lifecycle](concepts.md#step-lifecycle-plan-and-actual). |
 | `optionalInd` | `Y` if the process can complete without the step. |
-| `measurements` | Planned (`P`) measurements computed by meters, e.g. `{ "measurementCode": "TIME", "type": "P" }`. |
+| `measurements` | Planned (`P`) measurements, computed by meters when the step is created, e.g. `{ "measurementCode": "TIME", "type": "P" }`. Actual (`A`) measurements, recorded when the step completes: read from the completing event's entity with `valueFrom`, e.g. `{ "measurementCode": "WEIGHT", "type": "A", "valueFrom": "scale.weightKg", "unit": "KG" }`, or computed by the meter's `getActualValue`. The actual `TIME` is always recorded. |
 | `plannedWithin`, `plannedAfter` | Plan the step by an ISO-8601 duration from the process start, or from the completion of `plannedAfter`. |
 | `tolerance` | ISO-8601 duration past the planned time before the step counts as late. |
 

@@ -22,8 +22,8 @@ import org.springframework.stereotype.Component;
 /**
  * Prepares the database before events are consumed.
  * <ul>
- *     <li>Upgrades step instances saved by earlier versions, which have no {@code revision} yet: without one, a save
- *     would be taken for an insert.</li>
+ *     <li>Upgrades process and step instances saved by earlier versions, which have no {@code revision} yet: without
+ *     one, a save would be taken for an insert.</li>
  *     <li>Creates the indexes Aktimetrix's queries rely on. Creating an index that already exists does nothing.
  *     Disable with {@code aktimetrix.storage.create-indexes=false} to manage them yourself.</li>
  * </ul>
@@ -46,7 +46,7 @@ public class AktimetrixStorageInitializer implements SmartInitializingSingleton 
     @Override
     public void afterSingletonsInstantiated() {
         try {
-            upgradeStepRevisions();
+            upgradeRevisions();
             if (properties.getStorage().isCreateIndexes()) {
                 createIndexes();
             }
@@ -56,17 +56,21 @@ public class AktimetrixStorageInitializer implements SmartInitializingSingleton 
         }
     }
 
-    public void upgradeStepRevisions() {
-        final long upgraded = mongoTemplate.updateMulti(Query.query(Criteria.where("revision").exists(false)),
-                new Update().set("revision", 0L), StepInstance.class).getModifiedCount();
-        if (upgraded > 0) {
-            logger.info("Added a revision to {} step instances saved by an earlier version", upgraded);
+    public void upgradeRevisions() {
+        for (Class<?> type : new Class<?>[]{ProcessInstance.class, StepInstance.class}) {
+            final long upgraded = mongoTemplate.updateMulti(Query.query(Criteria.where("revision").exists(false)),
+                    new Update().set("revision", 0L), type).getModifiedCount();
+            if (upgraded > 0) {
+                logger.info("Added a revision to {} {} saved by an earlier version", upgraded,
+                        mongoTemplate.getCollectionName(type));
+            }
         }
     }
 
     public void createIndexes() {
         ensure(ProcessInstance.class, index("aktimetrix_process_entity", "tenant", "processCode", "entityType", "entityId").unique());
         ensure(ProcessInstance.class, index("aktimetrix_entity", "tenant", "entityId"));
+        ensure(ProcessInstance.class, index("aktimetrix_process_deadlines", "lateAfter", "complete"));
         ensure(StepInstance.class, index("aktimetrix_process_steps", "tenant", "processInstanceId"));
         ensure(StepInstance.class, index("aktimetrix_deadlines", "lateAfter", "status"));
         ensure(MeasurementInstance.class, index("aktimetrix_process_measurements", "tenant", "processInstanceId"));
