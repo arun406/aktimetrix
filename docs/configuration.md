@@ -108,6 +108,17 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `aktimetrix.steps.at.risk` / `.overdue` | counter | `tenant`, `step` |
 | `aktimetrix.outbox.pending` | gauge | events not yet published to Kafka |
 
+## Process definition fields
+
+| Field | Purpose |
+|---|---|
+| `tenant`, `processCode`, `processName`, `status` | Identity; only `CONFIRMED` definitions are used. |
+| `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
+| `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
+| `startEventCodes` | The events that create a process instance. |
+| `steps` | The step codes, in order. |
+| `measurements` | Planned (`P`) measurements of the process as a whole, computed by process-level meters, e.g. `{ "measurementCode": "DISTANCE", "type": "P" }`. |
+
 ## Step definition fields
 
 | Field | Purpose |
