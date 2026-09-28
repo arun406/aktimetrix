@@ -23,6 +23,7 @@ public class AktimetrixProperties {
     private final Definitions definitions = new Definitions();
     private final Monitor monitor = new Monitor();
     private final Outbox outbox = new Outbox();
+    private final Storage storage = new Storage();
 
     @Data
     public static class Events {
@@ -34,6 +35,21 @@ public class AktimetrixProperties {
          * Consumer group of the inbound business events.
          */
         private String group = "aktimetrix";
+
+        private final DeadLetter deadLetter = new DeadLetter();
+
+        @Data
+        public static class DeadLetter {
+            /**
+             * Whether events that cannot be processed, after retries, are sent to a dead-letter topic instead of
+             * being dropped. Invalid events are sent there without retries.
+             */
+            private boolean enabled = true;
+            /**
+             * Dead-letter topic; defaults to the inbound topic followed by {@code .dlq}.
+             */
+            private String topic;
+        }
     }
 
     @Data
@@ -83,5 +99,21 @@ public class AktimetrixProperties {
          * How long sent events are kept before being purged.
          */
         private Duration retention = Duration.ofDays(7);
+    }
+
+    @Data
+    public static class Storage {
+        /**
+         * Whether each business event, and each overdue step, is processed in a MongoDB transaction, so that state and
+         * outbound events are written together: {@code auto} uses transactions when MongoDB supports them (replica sets
+         * and sharded clusters), {@code always} requires them, {@code never} disables them.
+         */
+        private TransactionMode transactions = TransactionMode.AUTO;
+        /**
+         * Whether to create the indexes Aktimetrix relies on at startup.
+         */
+        private boolean createIndexes = true;
+
+        public enum TransactionMode {AUTO, ALWAYS, NEVER}
     }
 }

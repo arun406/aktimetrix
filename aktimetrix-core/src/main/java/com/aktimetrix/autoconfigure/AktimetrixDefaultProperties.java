@@ -16,6 +16,12 @@ import java.util.Map;
 public class AktimetrixDefaultProperties implements EnvironmentPostProcessor {
 
     static final String SOURCE_NAME = "aktimetrixDefaults";
+    /**
+     * Binding of the dead-letter topic, for events Aktimetrix rejects itself.
+     */
+    public static final String DEAD_LETTER_BINDING = "dead-letter-out-0";
+    private static final String DEAD_LETTER_TOPIC =
+            "${aktimetrix.events.dead-letter.topic:${aktimetrix.events.topic:business-events}.dlq}";
     private static final String STRING_SERIALIZER = "org.apache.kafka.common.serialization.StringSerializer";
 
     @Override
@@ -25,8 +31,15 @@ public class AktimetrixDefaultProperties implements EnvironmentPostProcessor {
         defaults.put("spring.cloud.stream.function.definition", "processor");
         defaults.put("spring.cloud.stream.bindings.processor-in-0.destination", "${aktimetrix.events.topic:business-events}");
         defaults.put("spring.cloud.stream.bindings.processor-in-0.group", "${aktimetrix.events.group:aktimetrix}");
+        // events that still fail after retries go to the dead-letter topic, and so do invalid events, through the
+        // outbox and the dead-letter-out-0 binding
+        defaults.put("spring.cloud.stream.kafka.bindings.processor-in-0.consumer.enableDlq",
+                "${aktimetrix.events.dead-letter.enabled:true}");
+        defaults.put("spring.cloud.stream.kafka.bindings.processor-in-0.consumer.dlqName", DEAD_LETTER_TOPIC);
+        defaults.put("spring.cloud.stream.bindings." + DEAD_LETTER_BINDING + ".destination", DEAD_LETTER_TOPIC);
         // outbound instance events are keyed by instance id
-        for (String binding : new String[]{"process-instance-out-0", "step-instance-out-0", "measurement-instance-out-0"}) {
+        for (String binding : new String[]{"process-instance-out-0", "step-instance-out-0", "measurement-instance-out-0",
+                DEAD_LETTER_BINDING}) {
             defaults.put("spring.cloud.stream.kafka.bindings." + binding + ".producer.configuration[key.serializer]",
                     STRING_SERIALIZER);
         }

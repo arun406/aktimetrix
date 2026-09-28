@@ -34,6 +34,13 @@ public class Outbox {
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Event cannot be serialized to JSON: " + event, e);
         }
+        enqueueRaw(destination, messageKey, payload);
+    }
+
+    /**
+     * Queues a payload that is already serialized, as is, for the binding.
+     */
+    public void enqueueRaw(String destination, String messageKey, String payload) {
         repository.save(new OutboxMessage(destination, messageKey, payload, clock.instant()));
     }
 }
