@@ -36,12 +36,12 @@ aktimetrix:
 | `aktimetrix.definitions.processes` | `classpath*:aktimetrix/process-definitions.json` | Location of the process definitions: a JSON array. |
 | `aktimetrix.definitions.steps` | `classpath*:aktimetrix/step-definitions.json` | Location of the step definitions: a JSON array. |
 | `aktimetrix.monitor.enabled` | `true` | Run the overdue monitor. |
-| `aktimetrix.monitor.overdue-check-interval` | `PT1M` | How often to look for overdue steps, as an ISO-8601 duration. |
+| `aktimetrix.monitor.overdue-check-interval` | `PT1M` | How often to look for overdue steps and processes, as an ISO-8601 duration. |
 | `aktimetrix.outbox.relay-interval` | `PT1S` | How often the outbox relay publishes pending events to Kafka. |
 | `aktimetrix.outbox.batch-size` | `100` | Most events published per relay run. |
 | `aktimetrix.outbox.lease` | `PT30S` | How long a relay holds a claimed event before another instance may retry it. |
 | `aktimetrix.outbox.retention` | `P7D` | How long sent events stay in the outbox before being purged. |
-| `aktimetrix.storage.transactions` | `auto` | Process each event, and each overdue step, in a MongoDB transaction: `auto` when MongoDB supports it (replica set or sharded cluster), `always`, or `never`. |
+| `aktimetrix.storage.transactions` | `auto` | Process each event, and each overdue step or process, in a MongoDB transaction: `auto` when MongoDB supports it (replica set or sharded cluster), `always`, or `never`. |
 | `aktimetrix.storage.create-indexes` | `true` | Create the indexes Aktimetrix relies on at startup. |
 
 ### Defaults Aktimetrix provides
@@ -82,13 +82,13 @@ A dashboard or alerting service subscribes to `step-instance-out-0` and acts on 
 
 Outbound events are first written to the `outbox` collection, next to the state they describe, and a relay publishes
 them to Kafka in order. When MongoDB runs as a replica set or sharded cluster, each business event is processed in a
-transaction, so its state and its outbound events are saved together or not at all. A standalone MongoDB server has
-no transactions: Aktimetrix then logs a warning at startup, and a crash in the middle of an event can keep its state
-without its outbound events. A single-node replica set is enough for transactions. When Kafka is unavailable, events wait in the outbox and are sent once it is back, instead of
-being lost. Delivery is **at least once**: after a crash between sending and recording an event, it is sent again, so
-consumers should de-duplicate on the event's `eventId`. Relays in several application instances share the work
-safely. With more than one instance, events of different entities may be published in a slightly different order
-than they happened.
+transaction, so its state and its outbound events are saved together or not at all. A standalone MongoDB server has no
+transactions: Aktimetrix then logs a warning at startup, and a crash in the middle of an event can keep its state
+without its outbound events. A single-node replica set is enough for transactions. When Kafka is unavailable, events
+wait in the outbox and are sent once it is back, instead of being lost. Delivery is **at least once**: after a crash
+between sending and recording an event, it is sent again, so consumers should de-duplicate on the event's `eventId`.
+Relays in several application instances share the work safely. With more than one instance, events of different
+entities may be published in a slightly different order than they happened.
 
 ### Failed events
 
@@ -101,8 +101,8 @@ then replay the dead-letter topic into the events topic: processing is idempoten
 ### Running several instances
 
 Every instance consumes a share of the events topic's partitions, runs the outbox relay and runs the overdue monitor.
-Step instances carry a `revision` and are saved with a version check, so when two instances change the same step,
-the second change fails instead of overwriting the first: the monitor skips such a step until its next check, and an
+Step and process instances carry a `revision` and are saved with a version check, so when two instances change the
+same step or process, the second change fails instead of overwriting the first: the monitor skips such a step until its next check, and an
 event is retried.
 
 ## Published event payloads
@@ -119,7 +119,7 @@ that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventTy
 | `status` | `Created`, `Completed` or `Cancelled`. |
 | `complete` | `true` once completed or cancelled. |
 | `startedAt` | Business time of the event that started it. |
-| `plannedAt`, `lateAfter` | Its own deadline, if the definition has `plannedWithin`: planned completion, and that plus the tolerance. |
+| `plannedAt`, `lateAfter` | Its own deadline, if the definition has `plannedWithin` or a planned `TIME` set by a meter: planned completion, and that plus the tolerance. |
 | `endedAt` | Business time of the event that completed or cancelled it. |
 | `timeliness` | `ON_TIME` or `LATE` at completion, or `OVERDUE`; empty without a deadline. |
 | `metadata` | The process metadata. |
@@ -162,7 +162,7 @@ Times inside `entity` are local date-times in `aktimetrix.time-zone`.
 Aktimetrix creates the indexes its queries need at startup, including a unique index on process instances by
 tenant, process, entity type and entity id. If existing data violates a unique index, the index is not created and
 the error is logged. Set `aktimetrix.storage.create-indexes=false` to manage indexes yourself. At startup it also adds
-a `revision` to step instances saved by earlier builds, which had none.
+a `revision` to step and process instances saved by earlier builds, which had none.
 
 ## Metrics
 
@@ -188,13 +188,13 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `tenant`, `processCode`, `processName`, `status` | Identity; only `CONFIRMED` definitions are used. |
 | `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
-| `startEventCodes` | The events that create a process instance: a business event that is also the first milestone (*order booked*), or a dedicated start event. |
-| `metrics` | Optional. Metrics computed when the process completes, e.g. `{ "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" }`. In the expression, arithmetic over measurement codes (`+ - * /`, parentheses), each code is the sum of that measurement's final values across the process and its steps. It is computed from the actuals and from the plans, and published as a process-level actual measurement with `derivedFrom`. |
+| `startEventCodes` | The events that create a process instance: a business event such as *order created*, which can also complete the first step, or a dedicated start event. |
 | `endEventCodes` | Optional. Events that explicitly end a running instance (*order closed*): it completes on them, not when its last mandatory step completes; mandatory steps still open become `Skipped`, optional ones stay open. Without them, the process ends implicitly with its last mandatory step. |
 | `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
 | `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. For a deadline set by a rule, such as 1 day for priority customers and 3 otherwise, declare a planned `TIME` measurement on the process and a process-level meter for it instead. |
 | `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
-| `measurements` | Measurements of the process as a whole, e.g. the total distance or the customer's rating; see [Measurement fields](#measurement-fields). Planned ones are set when the process starts, actual ones recorded when it completes. |
+| `measurements` | Measurements of the process as a whole, e.g. its planned `TIME` (its deadline, set by a meter) or the order's cost; see [Measurement fields](#measurement-fields). Planned ones are set when the process starts, actual ones recorded when it completes. |
+| `metrics` | Optional. Metrics computed when the process completes, e.g. `{ "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" }`. In the expression, arithmetic over measurement codes (`+ - * /`, parentheses), each code is the sum of that measurement's final values across the process and its steps. It is computed from the actuals and from the plans, and published as a process-level actual measurement with `derivedFrom`. |
 
 ## Step definition fields
 
@@ -213,9 +213,8 @@ a single process needs no shared definition at all.
 ```
 
 Here `HANDOVER` keeps its shared definition, such as the event that completes it, but must happen within 30 minutes
-instead of the shared plan, and `DROP_AT_LOCKER` exists only in this process. Lists such as `startEventCodes` or `measurements` are replaced as a
-whole.
-
+instead of the shared plan, and `DROP_AT_LOCKER` exists only in this process. Lists such as `startEventCodes` or
+`measurements` are replaced as a whole.
 
 | Field | Purpose |
 |---|---|
