@@ -303,7 +303,7 @@ class StepProgressServiceTest {
         definition.setStartEventCodes(startEvents);
         definition.setEndEventCodes(endEvents);
         definition.setOptionalInd("N");
-        when(stepDefinitionService.findByStepCode(eq(TENANT), eq(code))).thenReturn(definition);
+        when(stepDefinitionService.findStepDefinition(eq(TENANT), any(), eq(code))).thenReturn(definition);
         return definition;
     }
 }

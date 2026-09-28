@@ -79,7 +79,7 @@ public class StepProgressService {
                                                      LocalDateTime occurredAt) {
         final String tenant = processInstance.getTenant();
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(tenant, processInstance.getId());
-        final Map<String, StepDefinition> definitions = definitions(tenant, steps);
+        final Map<String, StepDefinition> definitions = definitions(tenant, processInstance.getProcessCode(), steps);
         final List<MeasurementInstance> actuals = new ArrayList<>();
         final List<StepInstance> completed = new ArrayList<>();
 
@@ -141,7 +141,10 @@ public class StepProgressService {
 
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(step.getTenant(),
                 step.getProcessInstanceId());
-        forecast(step, Duration.between(step.getPlannedAt(), now), steps, definitions(step.getTenant(), steps));
+        final ProcessInstance processInstance = processInstanceService.getProcessInstance(step.getTenant(),
+                step.getProcessInstanceId());
+        final String processCode = processInstance == null ? null : processInstance.getProcessCode();
+        forecast(step, Duration.between(step.getPlannedAt(), now), steps, definitions(step.getTenant(), processCode, steps));
     }
 
     private void forecast(StepInstance source, Duration delay, List<StepInstance> steps,
@@ -155,10 +158,14 @@ public class StepProgressService {
         });
     }
 
-    private Map<String, StepDefinition> definitions(String tenant, List<StepInstance> steps) {
+    /**
+     * The definitions of the steps as their process uses them, by step code.
+     */
+    private Map<String, StepDefinition> definitions(String tenant, String processCode, List<StepInstance> steps) {
         final Map<String, StepDefinition> definitions = new HashMap<>();
         for (StepInstance step : steps) {
-            definitions.computeIfAbsent(step.getStepCode(), code -> stepDefinitionService.findByStepCode(tenant, code));
+            definitions.computeIfAbsent(step.getStepCode(),
+                    code -> stepDefinitionService.findStepDefinition(tenant, processCode, code));
         }
         definitions.values().removeIf(Objects::isNull);
         return definitions;

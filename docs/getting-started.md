@@ -118,6 +118,10 @@ A step with only `startEventCodes` completes on that event. Give it `endEventCod
 is then `Started` by the start event and `Completed` by the end event. Mark a step `"optionalInd": "Y"` if the
 process can complete without it.
 
+A step can also be written directly in the process's `steps`, with the same fields. That suits a step only one
+process uses, or a shared step one process treats differently, such as a shorter deadline for express orders: see
+[step definition fields](configuration.md#step-definition-fields).
+
 ### 4. Plan the steps
 
 The simplest plans need no code. Give a step a duration, from the process start or from another step's completion,
