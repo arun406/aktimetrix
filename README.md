@@ -117,7 +117,8 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `W
 - **Level.** A measurement is attached either to a **process**, when it describes the entity as a whole (the total
   distance of a delivery, the customer's rating of an order), or to a **step**, when it describes one milestone (the
   weight accepted at `ACCEPT`, the time of `SHIP`).
-- **Kind.** Each measurement is **planned** (`P`), computed by a meter when the instance is created, or **actual**
+- **Kind.** Each measurement is **planned** (`P`), computed by a process-level or step-level meter when the
+  instance is created, or **actual**
   (`A`), recorded when the milestone happens. Comparing the two, for any dimension, is the core of the model.
 - **Time is special.** `TIME` is the one dimension the runtime interprets itself: a step's planned `TIME` becomes
   its planned time, from which its deadline and its timeliness follow ([§5.3](#53-timeliness)). Other dimensions are
@@ -258,7 +259,7 @@ discovered at startup.
 
 | Extension point | Purpose | Default when absent |
 |---|---|---|
-| **Meter** | Computes the planned value of a measurement, in any dimension. | None; durations in the step definition still apply. |
+| **Meter** | Computes the planned value of a measurement, in any dimension, for a process or for a step. | None; durations in the step definition still apply. |
 | **Process handler** | Chooses the metadata of a process and its steps. | The event's entity becomes the metadata. |
 | **Event handler** | Changes how an event is interpreted, such as where its business time is read from. | Generic handling of the envelope. |
 | **Pre-processor** | Validates or enriches an entity before a process instance is created. | None. |
@@ -382,6 +383,33 @@ public class DeliveryPlanTimeMeter extends AbstractMeter {
 }
 ```
 
+A **process-level meter** measures the process as a whole. Declare the measurement on the process definition,
+`"measurements": [{ "measurementCode": "DISTANCE", "type": "P" }]`, and name the process instead of a step:
+
+```java
+@Component
+@Measurement(code = "DISTANCE", processCode = "ORDER_DELIVERY")
+public class DeliveryDistanceMeter extends AbstractProcessMeter {
+
+    private final RouteService routes;   // your own service
+
+    public DeliveryDistanceMeter(RouteService routes) {
+        this.routes = routes;
+    }
+
+    @Override
+    protected String getMeasurementUnit(String tenant, ProcessInstance process) {
+        return "KM";
+    }
+
+    @Override
+    protected String getMeasurementValue(String tenant, ProcessInstance process) {
+        Map<String, Object> order = process.getMetadata();
+        return String.valueOf(routes.distanceKm(order.get("warehouse"), order.get("postcode")));
+    }
+}
+```
+
 **Configuration.** The application names its inbound channel and supplies the connection settings of its broker and
 state store; with the reference bindings, these are the standard Spring Boot properties for Kafka and MongoDB.
 
@@ -419,6 +447,7 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
 - [x] Overdue detection for events that never arrive
 - [x] At-risk forecasting from the delays of earlier steps
 - [x] Planned durations and tolerances in step definitions
+- [x] Meters at process and step level, for any user-defined dimension
 - [x] Query API for the state of an entity
 - [x] Reliable publication through a transactional outbox
 - [x] Metrics
@@ -427,8 +456,6 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
   the namespace and signing key
 - [ ] Verified bindings for further message brokers
 - [ ] A state-store abstraction, with implementations beyond MongoDB
-- [ ] Evaluation of process-level measurements at run time: they can be declared on a process definition today, but
-  only step-level measurements are computed by meters
 
 ## 12. Further reading
 

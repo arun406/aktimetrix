@@ -1,8 +1,10 @@
 package com.aktimetrix.it;
 
 import com.aktimetrix.core.api.Timeliness;
+import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.outbox.OutboxRepository;
+import com.aktimetrix.core.repository.MeasurementInstanceRepository;
 import com.aktimetrix.core.repository.StepInstanceRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,11 +47,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The smallest possible monitor, {@link ParcelMonitor}: JSON definitions ({@code src/test/resources/aktimetrix}) and
- * one meter, with no {@code @ComponentScan}, process handler or event handler. Runs against an embedded Kafka and an
+ * two meters, one per step and one per process, with no {@code @ComponentScan}, process handler or event handler. Runs against an embedded Kafka and an
  * in-memory MongoDB.
  * <p>
  * A parcel is booked at 09:00. PICKUP is planned by a meter (+1 h, 10 minutes' tolerance), SORT by a duration from the
- * start (+3 h), and DELIVER 5 h after SORT completes.
+ * start (+3 h), and DELIVER 5 h after SORT completes. The process as a whole has a planned DISTANCE.
  */
 @SpringBootTest(classes = {ParcelMonitor.class, MinimalMonitorTest.Metrics.class}, properties = {
         "aktimetrix.events.topic=parcel-events",
@@ -89,6 +91,8 @@ class MinimalMonitorTest {
     @Autowired
     private OutboxRepository outbox;
     @Autowired
+    private MeasurementInstanceRepository measurements;
+    @Autowired
     private MeterRegistry meterRegistry;
     @Autowired
     private ObjectMapper objectMapper;
@@ -96,7 +100,8 @@ class MinimalMonitorTest {
     @Test
     void plansByMeterAndByDurationForecastsRiskAndPublishesThroughTheOutbox() throws Exception {
         // booked at 09:00: PICKUP planned 10:00 by the meter, SORT 12:00 by duration, DELIVER not yet
-        send("PARCEL_BOOKED", "2024-01-10 09:00:00", "{\"bookedAt\":\"2024-01-10 09:00:00\"}");
+        send("PARCEL_BOOKED", "2024-01-10 09:00:00",
+                "{\"bookedAt\":\"2024-01-10 09:00:00\",\"from\":\"AMS\",\"to\":\"RTM\"}");
         StepInstance pickup = await("PICKUP", step -> step.getLateAfter() != null);
         assertThat(pickup.getPlannedAt()).isEqualTo(BOOKED.plusHours(1));
         assertThat(pickup.getLateAfter()).isEqualTo(BOOKED.plusHours(1).plusMinutes(10));
@@ -104,6 +109,15 @@ class MinimalMonitorTest {
         assertThat(sort.getPlannedAt()).isEqualTo(BOOKED.plusHours(3));
         assertThat(step("DELIVER").getPlannedAt()).isNull();
         assertThat(await("BOOK", step -> "Completed".equals(step.getStatus())).getActualAt()).isEqualTo(BOOKED);
+
+        // the process-level meter planned the parcel's distance, on the process rather than on a step
+        MeasurementInstance distance = measurements.findAll().stream()
+                .filter(m -> "DISTANCE".equals(m.getCode())).findFirst().orElseThrow();
+        assertThat(distance.getValue()).isEqualTo("78");
+        assertThat(distance.getUnit()).isEqualTo("KM");
+        assertThat(distance.getType()).isEqualTo("P");
+        assertThat(distance.getProcessInstanceId()).isEqualTo(pickup.getProcessInstanceId());
+        assertThat(distance.getStepInstanceId()).isNull();
 
         // picked up at 11:30, 90 minutes late: SORT is forecast for 13:30, past its 12:00 deadline
         send("PARCEL_PICKED_UP", "2024-01-10 11:30:00", null);

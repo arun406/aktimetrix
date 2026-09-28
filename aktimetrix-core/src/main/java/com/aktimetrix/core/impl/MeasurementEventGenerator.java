@@ -49,7 +49,7 @@ public class MeasurementEventGenerator implements EventGenerator {
                 .id(instance.getId().toString())
                 .tenant(instance.getTenant())
                 .stepCode(instance.getStepCode())
-                .stepInstanceId(instance.getStepInstanceId().toString())
+                .stepInstanceId(instance.getStepInstanceId() == null ? null : instance.getStepInstanceId().toString())
                 .measuredAt(instance.getMeasuredAt())
                 .code(instance.getCode())
                 .unit(instance.getUnit())

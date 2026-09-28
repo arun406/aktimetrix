@@ -30,7 +30,11 @@ public class ProcessDefinition {
     private String responsiblePartyCode;
     private String groupCode;
     private List<StepDefinition> steps;
-    private List<String> measurements;
+    /**
+     * Measurements of the process as a whole, e.g. its total distance; planned ones are computed by
+     * process-level meters when the process instance is created.
+     */
+    private List<StepMeasurement> measurements;
 
     /**
      * @param tenant

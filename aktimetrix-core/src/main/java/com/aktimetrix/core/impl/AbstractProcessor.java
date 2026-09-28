@@ -7,11 +7,17 @@ import com.aktimetrix.core.api.PreProcessor;
 import com.aktimetrix.core.api.Processor;
 import com.aktimetrix.core.exception.DefinitionNotFoundException;
 import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
+import com.aktimetrix.core.api.MeasurementType;
+import com.aktimetrix.core.meter.api.ProcessMeter;
+import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.core.referencedata.model.StepMeasurement;
 import com.aktimetrix.core.service.AktimetrixMetrics;
+import com.aktimetrix.core.service.MeasurementInstancePublisherService;
+import com.aktimetrix.core.service.MeasurementInstanceService;
 import com.aktimetrix.core.service.ProcessInstanceService;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.service.StepInstanceService;
@@ -30,8 +36,8 @@ import java.util.Objects;
 
 /**
  * Base class for process handlers. Creates the process instance and its step instances for a business entity,
- * computes each step's planned measurements with the registered meters, and runs the pre- and post-processors of
- * the process type.
+ * computes the planned measurements of the process and of each step with the registered meters, and runs the pre-
+ * and post-processors of the process type.
  * <p>
  * Subclasses decide which metadata to keep on the process instance and on its step instances.
  *
@@ -50,6 +56,10 @@ public abstract class AbstractProcessor implements Processor {
     private StepPlanner stepPlanner;
     @Autowired
     private AktimetrixMetrics metrics;
+    @Autowired
+    private MeasurementInstanceService measurementInstanceService;
+    @Autowired
+    private MeasurementInstancePublisherService measurementInstancePublisher;
 
     /**
      * @param context process context
@@ -58,6 +68,7 @@ public abstract class AbstractProcessor implements Processor {
     public void process(Context context) {
         executePreProcessors(context);
         doProcess(context);
+        measureProcess(context);
         planSteps(context);
         executePostProcessors(context);
     }
@@ -94,6 +105,40 @@ public abstract class AbstractProcessor implements Processor {
         } catch (DefinitionNotFoundException e) {
             logger.error("step definitions are not available for this process", e);
         }
+    }
+
+    /**
+     * Computes the planned measurements of a newly created process instance with its process-level meters.
+     */
+    private void measureProcess(Context context) {
+        final ProcessDefinition definition = (ProcessDefinition) context.getProperty(Constants.PROCESS_DEFINITION);
+        // a replayed start event leaves no new steps, and its process was measured when it was created
+        if (context.getStepInstances().isEmpty() || definition == null || definition.getMeasurements() == null) {
+            return;
+        }
+        final ProcessInstance processInstance = context.getProcessInstance();
+        final List<MeasurementInstance> measurements = new ArrayList<>();
+        for (StepMeasurement measurement : definition.getMeasurements()) {
+            if (MeasurementType.P != measurement.getType()) {
+                continue;
+            }
+            final ProcessMeter meter = registryService.getProcessMeter(context.getTenant(),
+                    definition.getProcessCode(), measurement.getMeasurementCode());
+            if (meter == null) {
+                logger.warn("No process-level meter for {} of the {} process", measurement.getMeasurementCode(),
+                        definition.getProcessCode());
+                continue;
+            }
+            measurements.add(meter.measure(context.getTenant(), processInstance));
+        }
+        if (measurements.isEmpty()) {
+            return;
+        }
+        measurementInstanceService.saveMeasurementInstances(measurements);
+        final DefaultContext measurementContext = new DefaultContext();
+        measurementContext.setTenant(context.getTenant());
+        measurementContext.setMeasurementInstances(measurements);
+        measurementInstancePublisher.postProcess(measurementContext);
     }
 
     /**
