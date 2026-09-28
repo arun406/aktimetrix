@@ -329,7 +329,7 @@ git clone https://github.com/arun406/aktimetrix.git
 
 git clone https://github.com/arun406/aktimetrix-reference-project-order-monitor.git
 cd aktimetrix-reference-project-order-monitor
-docker compose up -d --wait                        # local message broker and state store
+docker compose up -d                               # local message broker and state store
 ./mvnw spring-boot:run
 ```
 
