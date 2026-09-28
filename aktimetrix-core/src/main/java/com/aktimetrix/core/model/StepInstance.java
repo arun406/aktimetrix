@@ -1,11 +1,13 @@
 package com.aktimetrix.core.model;
 
 import com.aktimetrix.core.api.Timeliness;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -52,6 +54,12 @@ public class StepInstance {
      * How the step compares with its plan; {@code null} until it can be judged.
      */
     private Timeliness timeliness;
+    /**
+     * Incremented on every save; a save based on a stale copy fails instead of overwriting a newer state.
+     */
+    @Version
+    @JsonIgnore
+    private Long revision;
 
     public StepInstance() {
         super();

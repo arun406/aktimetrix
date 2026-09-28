@@ -1,11 +1,14 @@
 package com.aktimetrix.core.configurations;
 
+import com.aktimetrix.autoconfigure.AktimetrixDefaultProperties;
 import com.aktimetrix.core.api.EventHandler;
 import com.aktimetrix.core.event.handler.DefaultEventHandler;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
+import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.RegistryService;
+import com.aktimetrix.core.storage.AktimetrixTransactions;
 import com.aktimetrix.core.transferobjects.Event;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -35,6 +38,12 @@ public class ProcessConfig {
     private DefaultEventHandler defaultEventHandler;
     @Autowired
     private AktimetrixMetrics metrics;
+    @Autowired
+    private AktimetrixTransactions transactions;
+    @Autowired
+    private Outbox outbox;
+    @Autowired
+    private AktimetrixProperties properties;
 
     @Bean
     public Consumer<Message<String>> processor() {
@@ -46,17 +55,15 @@ public class ProcessConfig {
                 event = objectMapper.readValue(payload, new TypeReference<Event<Object, Object>>() {
                 });
             } catch (JsonProcessingException e) {
-                logger.error("Ignoring an event that is not valid JSON: {}", e.getOriginalMessage());
-                metrics.eventReceived(null, null, "invalid");
+                reject(null, payload, "is not valid JSON: " + e.getOriginalMessage());
                 return;
             }
             if (event.getEventCode() == null || event.getTenantKey() == null || event.getEntityId() == null) {
-                logger.error("Ignoring an event without eventCode, tenantKey or entityId: {}", payload);
-                metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "invalid");
+                reject(event, payload, "has no eventCode, tenantKey or entityId");
                 return;
             }
             try {
-                eventHandler(event.getEventCode()).handle(event);
+                transactions.run(() -> eventHandler(event.getEventCode()).handle(event));
                 metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "handled");
             } catch (RuntimeException e) {
                 metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "failed");
@@ -72,6 +79,21 @@ public class ProcessConfig {
             return defaultEventHandler;
         } catch (MultipleEventHandlerFoundException e) {
             throw new IllegalStateException("More than one @EventHandler is registered for " + eventCode, e);
+        }
+    }
+
+    /**
+     * An event that can never be processed: retrying cannot help, so it goes straight to the dead-letter topic.
+     */
+    private void reject(Event<?, ?> event, String payload, String reason) {
+        metrics.eventReceived(event == null ? null : event.getTenantKey(), event == null ? null : event.getEventCode(),
+                "invalid");
+        if (properties.getEvents().getDeadLetter().isEnabled()) {
+            logger.error("Event {}; sent to the dead-letter topic: {}", reason, payload);
+            outbox.enqueueRaw(AktimetrixDefaultProperties.DEAD_LETTER_BINDING,
+                    event == null ? null : event.getEntityId(), payload);
+        } else {
+            logger.error("Event {}; ignored: {}", reason, payload);
         }
     }
 }
