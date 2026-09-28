@@ -14,7 +14,7 @@ import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
-import com.aktimetrix.core.referencedata.model.StepMeasurement;
+import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.MeasurementInstancePublisherService;
 import com.aktimetrix.core.service.MeasurementInstanceService;
@@ -118,7 +118,7 @@ public abstract class AbstractProcessor implements Processor {
         }
         final ProcessInstance processInstance = context.getProcessInstance();
         final List<MeasurementInstance> measurements = new ArrayList<>();
-        for (StepMeasurement measurement : definition.getMeasurements()) {
+        for (MeasurementDefinition measurement : definition.getMeasurements()) {
             if (MeasurementType.P != measurement.getType()) {
                 continue;
             }
@@ -173,6 +173,7 @@ public abstract class AbstractProcessor implements Processor {
             DefaultContext stepContext = new DefaultContext();
             stepContext.setTenant(context.getTenant());
             stepContext.setProcessType(Constants.METER_PROCESSOR);
+            stepContext.setProperty(Constants.PROCESS_DEFINITION, context.getProperty(Constants.PROCESS_DEFINITION));
             stepContext.setStepInstances(new ArrayList<>(List.of(step)));
             meterProcessor.process(stepContext);
         }
@@ -219,6 +220,10 @@ public abstract class AbstractProcessor implements Processor {
             processInstance.setMetadata(getProcessMetadata(context));
             processInstance.setEntityId(entityId);
             processInstance.setStartedAt((LocalDateTime) context.getProperty(Constants.OCCURRED_AT));
+            if (definition.plannedWithinDuration() != null && processInstance.getStartedAt() != null) {
+                processInstance.setPlannedAt(processInstance.getStartedAt().plus(definition.plannedWithinDuration()));
+                processInstance.setLateAfter(processInstance.getPlannedAt().plus(definition.toleranceDuration()));
+            }
         }
         return processInstance;
     }

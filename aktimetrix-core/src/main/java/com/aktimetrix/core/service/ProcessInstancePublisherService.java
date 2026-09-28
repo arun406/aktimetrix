@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;
 import com.aktimetrix.core.impl.ProcessEventGenerator;
+import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.ProcessInstanceDTO;
@@ -22,8 +23,14 @@ public class ProcessInstancePublisherService implements PostProcessor {
     @Override
     public void postProcess(Context context) {
         log.debug("executing process instance publisher service");
-        ProcessEventGenerator eventGenerator = new ProcessEventGenerator(context.getProcessInstance());
-        final Event<ProcessInstanceDTO, Void> event = eventGenerator.generate();
+        publish(context.getProcessInstance(), "CREATED");
+    }
+
+    /**
+     * Queues a process event, e.g. {@code COMPLETED}, for {@code process-instance-out-0}.
+     */
+    public void publish(ProcessInstance processInstance, String eventCode) {
+        final Event<ProcessInstanceDTO, Void> event = new ProcessEventGenerator(processInstance, eventCode).generate();
         log.debug("process instance event : {}", event);
         outbox.enqueue("process-instance-out-0", event.getEntityId(), event);
     }

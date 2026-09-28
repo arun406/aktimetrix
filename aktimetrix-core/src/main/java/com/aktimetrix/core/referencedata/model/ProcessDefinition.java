@@ -6,6 +6,7 @@ import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Duration;
 import java.util.List;
 
 @Data
@@ -25,7 +26,11 @@ public class ProcessDefinition {
     private List<String> tags;
     private String entityType;
     private List<String> startEventCodes;
-    private List<String> endEventCodes;
+    /**
+     * Events that cancel a running instance of the process, e.g. {@code ORDER_CANCELLED_EVENT}: the process and its
+     * open steps become {@code Cancelled}, and are no longer monitored.
+     */
+    private List<String> cancelEventCodes;
     private String status;
     private String responsiblePartyCode;
     private String groupCode;
@@ -34,7 +39,16 @@ public class ProcessDefinition {
      * Measurements of the process as a whole, e.g. its total distance; planned ones are computed by
      * process-level meters when the process instance is created.
      */
-    private List<StepMeasurement> measurements;
+    private List<MeasurementDefinition> measurements;
+    /**
+     * ISO-8601 duration within which the whole process should complete, from its start, e.g. {@code P1D}.
+     * Optional; gives the process its own deadline and timeliness.
+     */
+    private String plannedWithin;
+    /**
+     * ISO-8601 duration the process may run past its planned completion before it counts as late or overdue.
+     */
+    private String tolerance;
 
     /**
      * @param tenant
@@ -43,5 +57,13 @@ public class ProcessDefinition {
     public ProcessDefinition(String tenant, String processCode) {
         this.tenant = tenant;
         this.processCode = processCode;
+    }
+
+    public Duration plannedWithinDuration() {
+        return plannedWithin == null ? null : Duration.parse(plannedWithin);
+    }
+
+    public Duration toleranceDuration() {
+        return tolerance == null ? Duration.ZERO : Duration.parse(tolerance);
     }
 }

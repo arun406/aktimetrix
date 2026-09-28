@@ -31,7 +31,7 @@ public abstract class AbstractMilestoneEventHandler implements EventHandler {
     @Override
     public void handle(Event<?, ?> event) {
         stepProgressService.recordMilestones(event.getTenantKey(), entityType(event), entityId(event),
-                event.getEventCode(), occurredAt(event));
+                event.getEventCode(), occurredAt(event), event);
     }
 
     /**

@@ -40,7 +40,7 @@ public class AktimetrixMetrics {
     }
 
     /**
-     * @param outcome {@code handled}, {@code invalid} or {@code failed}
+     * @param outcome {@code handled}, {@code ignored}, {@code invalid} or {@code failed}
      */
     public void eventReceived(String tenant, String eventCode, String outcome) {
         Counter.builder("aktimetrix.events").description("Business events received")
@@ -54,6 +54,14 @@ public class AktimetrixMetrics {
 
     public void processCompleted(ProcessInstance process) {
         processCounter("aktimetrix.processes.completed", "Process instances completed", process).increment();
+    }
+
+    public void processCancelled(ProcessInstance process) {
+        processCounter("aktimetrix.processes.cancelled", "Process instances cancelled", process).increment();
+    }
+
+    public void processOverdue(ProcessInstance process) {
+        processCounter("aktimetrix.processes.overdue", "Process instances that passed their deadline", process).increment();
     }
 
     public void stepCompleted(StepInstance step) {

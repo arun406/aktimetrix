@@ -2,6 +2,7 @@ package com.aktimetrix.core.configurations;
 
 import com.aktimetrix.autoconfigure.AktimetrixDefaultProperties;
 import com.aktimetrix.core.api.EventHandler;
+import com.aktimetrix.core.api.EventMapper;
 import com.aktimetrix.core.event.handler.DefaultEventHandler;
 import com.aktimetrix.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
@@ -10,9 +11,6 @@ import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.storage.AktimetrixTransactions;
 import com.aktimetrix.core.transferobjects.Event;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +29,7 @@ public class ProcessConfig {
 
     final private static Logger logger = LoggerFactory.getLogger(ProcessConfig.class);
     @Autowired
-    private ObjectMapper objectMapper;
+    private EventMapper eventMapper;
     @Autowired
     private RegistryService registryService;
     @Autowired
@@ -52,10 +50,14 @@ public class ProcessConfig {
             logger.debug("payload: {}", payload);
             final Event<?, ?> event;
             try {
-                event = objectMapper.readValue(payload, new TypeReference<Event<Object, Object>>() {
-                });
-            } catch (JsonProcessingException e) {
-                reject(null, payload, "is not valid JSON: " + e.getOriginalMessage());
+                event = eventMapper.map(payload, message.getHeaders());
+            } catch (Exception e) {
+                reject(null, payload, "cannot be read: " + e.getMessage());
+                return;
+            }
+            if (event == null) {
+                logger.debug("Event ignored by the event mapper: {}", payload);
+                metrics.eventReceived(null, null, "ignored");
                 return;
             }
             if (event.getEventCode() == null || event.getTenantKey() == null || event.getEntityId() == null) {
