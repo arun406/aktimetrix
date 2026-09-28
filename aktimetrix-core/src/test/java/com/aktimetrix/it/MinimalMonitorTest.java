@@ -2,10 +2,13 @@ package com.aktimetrix.it;
 
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.MeasurementInstance;
+import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.outbox.OutboxRepository;
 import com.aktimetrix.core.repository.MeasurementInstanceRepository;
 import com.aktimetrix.core.repository.StepInstanceRepository;
+import com.aktimetrix.core.storage.AktimetrixStorageInitializer;
+import com.aktimetrix.core.storage.AktimetrixTransactions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.bwaldvogel.mongo.MongoServer;
@@ -18,12 +21,17 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.index.IndexInfo;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -35,6 +43,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +53,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * The smallest possible monitor, {@link ParcelMonitor}: JSON definitions ({@code src/test/resources/aktimetrix}) and
@@ -58,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "aktimetrix.monitor.enabled=false"
 })
 @EmbeddedKafka(partitions = 1, topics = {"parcel-events", "step-instance-out-0", "process-instance-out-0",
-        "measurement-instance-out-0"})
+        "measurement-instance-out-0", "parcel-events.dlq"})
 class MinimalMonitorTest {
 
     private static final LocalDateTime BOOKED = LocalDateTime.of(2024, 1, 10, 9, 0);
@@ -96,6 +106,12 @@ class MinimalMonitorTest {
     private MeterRegistry meterRegistry;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private MongoTemplate mongoTemplate;
+    @Autowired
+    private AktimetrixTransactions transactions;
+    @Autowired
+    private AktimetrixStorageInitializer storage;
 
     @Test
     void plansByMeterAndByDurationForecastsRiskAndPublishesThroughTheOutbox() throws Exception {
@@ -146,6 +162,59 @@ class MinimalMonitorTest {
         assertThat(total(meterRegistry.get("aktimetrix.events").tag("outcome", "handled").counters())).isEqualTo(3);
     }
 
+    @Test
+    void sendsInvalidEventsToTheDeadLetterTopic() throws Exception {
+        sendRaw("P-2", "this is not JSON");
+        sendRaw("P-2", "{\"eventCode\":\"PARCEL_BOOKED\",\"entityId\":\"P-2\"}");   // no tenant
+
+        assertThat(recordsOn("parcel-events.dlq", 2))
+                .containsExactly("this is not JSON", "{\"eventCode\":\"PARCEL_BOOKED\",\"entityId\":\"P-2\"}");
+        assertThat(total(meterRegistry.get("aktimetrix.events").tag("outcome", "invalid").counters())).isEqualTo(2);
+    }
+
+    @Test
+    void createsIndexesAndDetectsThatAStandaloneServerHasNoTransactions() {
+        IndexInfo processKey = mongoTemplate.indexOps(ProcessInstance.class).getIndexInfo().stream()
+                .filter(index -> "aktimetrix_process_entity".equals(index.getName())).findFirst().orElseThrow();
+        assertThat(processKey.isUnique()).isTrue();
+        assertThat(mongoTemplate.indexOps(StepInstance.class).getIndexInfo())
+                .extracting(IndexInfo::getName).contains("aktimetrix_process_steps", "aktimetrix_deadlines");
+
+        // the in-memory server, like a standalone mongod, is not a replica set
+        assertThat(transactions.isEnabled()).isFalse();
+    }
+
+    @Test
+    void rejectsASaveBasedOnAStaleCopyOfAStep() {
+        StepInstance step = new StepInstance();
+        step.setTenant("T1");
+        step.setStepCode("STALE");
+        steps.save(step);
+        StepInstance first = steps.findById(step.getId().toString()).orElseThrow();
+        StepInstance second = steps.findById(step.getId().toString()).orElseThrow();
+
+        first.setStatus("Completed");
+        steps.save(first);
+        second.setTimeliness(Timeliness.OVERDUE);
+
+        // e.g. the overdue monitor read the step just before its event completed it
+        assertThatThrownBy(() -> steps.save(second)).isInstanceOf(OptimisticLockingFailureException.class);
+        assertThat(steps.findById(step.getId().toString()).orElseThrow().getStatus()).isEqualTo("Completed");
+    }
+
+    @Test
+    void upgradesStepsSavedWithoutARevisionSoTheyCanStillBeSaved() {
+        ObjectId id = new ObjectId();
+        mongoTemplate.getCollection("stepInstances").insertOne(new Document("_id", id).append("tenant", "T1")
+                .append("stepCode", "LEGACY").append("status", "Created"));
+        storage.upgradeStepRevisions();
+
+        StepInstance legacy = steps.findById(id.toString()).orElseThrow();
+        legacy.setStatus("Completed");
+        steps.save(legacy);
+        assertThat(steps.findById(id.toString()).orElseThrow().getStatus()).isEqualTo("Completed");
+    }
+
     private static double total(Collection<Counter> counters) {
         return counters.stream().mapToDouble(Counter::count).sum();
     }
@@ -159,6 +228,29 @@ class MinimalMonitorTest {
                 new DefaultKafkaProducerFactory<>(props, new StringSerializer(), new StringSerializer()));
         template.send("parcel-events", "P-1", event);
         template.flush();
+    }
+
+    private void sendRaw(String key, String payload) {
+        Map<String, Object> props = KafkaTestUtils.producerProps(kafka);
+        KafkaTemplate<String, String> template = new KafkaTemplate<>(
+                new DefaultKafkaProducerFactory<>(props, new StringSerializer(), new StringSerializer()));
+        template.send("parcel-events", key, payload);
+        template.flush();
+    }
+
+    private List<String> recordsOn(String topic, int expected) {
+        Map<String, Object> props = KafkaTestUtils.consumerProps("dlq-verifier", "false", kafka);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        List<String> values = new ArrayList<>();
+        try (Consumer<String, String> consumer = new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(),
+                new StringDeserializer()).createConsumer()) {
+            kafka.consumeFromAnEmbeddedTopic(consumer, topic);
+            long deadline = System.currentTimeMillis() + 20_000;
+            while (values.size() < expected && System.currentTimeMillis() < deadline) {
+                KafkaTestUtils.getRecords(consumer, 1000).forEach(record -> values.add(record.value()));
+            }
+        }
+        return values;
     }
 
     private StepInstance step(String stepCode) {
