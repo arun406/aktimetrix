@@ -14,5 +14,37 @@
       { "stepCode": "DELIVER", "startEventCodes": ["PARCEL_DELIVERED"], "plannedAfter": "SORT", "plannedWithin": "PT5H" }
     ],
     "measurements": [ { "measurementCode": "DISTANCE", "type": "P" } ]
+  },
+  {
+    "tenant": "SHOP",
+    "processCode": "ORDER_DELIVERY",
+    "entityType": "order",
+    "startEventCodes": ["ORDER_CREATED"],
+    "cancelEventCodes": ["ORDER_CANCELLED"],
+    "status": "CONFIRMED",
+    "plannedWithin": "P1D",
+    "steps": [
+      { "stepCode": "CONFIRM", "startEventCodes": ["ORDER_CONFIRMED"], "plannedWithin": "PT5M" },
+      { "stepCode": "PAY", "startEventCodes": ["PAYMENT_CONFIRMED"], "plannedAfter": "CONFIRM", "plannedWithin": "PT15M",
+        "tolerance": "PT5M" },
+      { "stepCode": "HANDOVER", "startEventCodes": ["HANDED_TO_AGENT"], "plannedWithin": "PT2H" },
+      { "stepCode": "ACCEPT", "startEventCodes": ["AGENT_ACCEPTED"], "plannedAfter": "HANDOVER", "plannedWithin": "PT15M" },
+      { "stepCode": "TRAVEL", "startEventCodes": ["TRAVEL_STARTED"], "endEventCodes": ["ARRIVED"],
+        "plannedAfter": "ACCEPT", "plannedWithin": "PT30M",
+        "measurements": [
+          { "measurementCode": "DISTANCE", "type": "P", "value": "5", "unit": "KM", "tolerance": "20%" },
+          { "measurementCode": "DISTANCE", "type": "A", "valueFrom": "route.distanceKm", "unit": "KM" },
+          { "measurementCode": "FUEL", "type": "P", "value": "0.4", "unit": "L", "tolerance": "25%" },
+          { "measurementCode": "FUEL", "type": "A", "valueFrom": "fuelLitres", "unit": "L" } ] },
+      { "stepCode": "DELIVERED", "startEventCodes": ["DELIVERED"],
+        "measurements": [
+          { "measurementCode": "TIME", "type": "P" },
+          { "measurementCode": "TEMPERATURE", "type": "P", "value": "30", "unit": "C", "tolerance": "5" },
+          { "measurementCode": "TEMPERATURE", "type": "A", "valueFrom": "parcelTemperatureC", "unit": "C" } ] },
+      { "stepCode": "RATED", "startEventCodes": ["RATED"], "optionalInd": "Y",
+        "measurements": [
+          { "measurementCode": "RATING", "type": "P", "value": "5", "unit": "STARS", "tolerance": "1" },
+          { "measurementCode": "RATING", "type": "A", "valueFrom": "review.stars", "unit": "STARS" } ] }
+    ]
   }
 ]
