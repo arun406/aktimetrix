@@ -40,7 +40,7 @@ public class AktimetrixMetrics {
     }
 
     /**
-     * @param outcome {@code handled}, {@code invalid} or {@code failed}
+     * @param outcome {@code handled}, {@code ignored}, {@code invalid} or {@code failed}
      */
     public void eventReceived(String tenant, String eventCode, String outcome) {
         Counter.builder("aktimetrix.events").description("Business events received")

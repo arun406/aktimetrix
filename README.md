@@ -80,7 +80,7 @@ from event routing to state management, deadline tracking and publication of res
 
 | Goal | Consequence in the design |
 |---|---|
-| **Non-invasive** | Source systems are not changed. They publish the business events they already produce; Aktimetrix only consumes them. |
+| **Non-invasive** | Source systems are not changed. They publish the business events they already produce, in their own format; an event mapper translates them, and Aktimetrix only consumes them. |
 | **Declarative** | Processes, steps and simple deadlines are data, versioned with the application or managed at run time. |
 | **Minimal code** | A working monitor needs definitions and, only for computed deadlines, a meter. Every other component has a default. |
 | **Infrastructure-neutral model** | The model assumes only a message broker and a state store with the properties listed in [§4.2](#42-infrastructure-contract). |
@@ -143,7 +143,9 @@ Every inbound event uses one envelope, whatever its source. The fields the model
 | `eventTime` | When the event happened in the business; it becomes the actual time of the step. |
 | `entity` | The domain object, which becomes metadata. |
 
-The full envelope is specified in the [event format](./docs/getting-started.md#the-event-format).
+The full envelope is specified in the [event format](./docs/getting-started.md#the-event-format). Source systems do not
+need to adopt it: an **event mapper** translates each system's own messages into this envelope as they are consumed
+([§7](#7-extensibility)).
 
 ## 4. Architecture
 
@@ -275,6 +277,7 @@ discovered at startup.
 |---|---|---|
 | **Meter** | Computes the planned value of a measurement, in any dimension, for a process or for a step. | None; durations in the step definition still apply. |
 | **Process handler** | Chooses the metadata of a process and its steps. | The event's entity becomes the metadata. |
+| **Event mapper** | Reads the source systems' own event format. | Messages are expected in the Aktimetrix envelope. |
 | **Event handler** | Changes how an event is interpreted, such as where its business time is read from. | Generic handling of the envelope. |
 | **Pre-processor** | Validates or enriches an entity before a process instance is created. | None. |
 | **Post-processor** | Acts on a newly created and planned process instance. | None. |
@@ -287,7 +290,7 @@ The runtime reports its own behaviour and the health of the monitored processes 
 
 | Metric | Meaning |
 |---|---|
-| `aktimetrix.events` | Events received, by tenant, event code and outcome (handled, invalid, failed). |
+| `aktimetrix.events` | Events received, by tenant, event code and outcome (handled, ignored, invalid, failed). |
 | `aktimetrix.processes.started` / `.completed` | Process instances started and completed, by process. |
 | `aktimetrix.steps.completed` | Steps completed, by step and timeliness. |
 | `aktimetrix.steps.lateness` | How long after its planned time each step completed. |

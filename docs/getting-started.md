@@ -217,7 +217,9 @@ Extend `AbstractEventHandler` instead for an event that can also start a process
 
 ## The event format
 
-Every business event uses the same envelope. Your domain object goes in `entity`:
+By default, business events use the envelope below, with your domain object in `entity`. If your systems already
+publish events in another format, keep it and declare an `EventMapper` instead: see
+[Accepting your own event format](extending.md#accepting-your-own-event-format).
 
 ```json
 {
