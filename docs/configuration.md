@@ -84,8 +84,7 @@ Outbound events are first written to the `outbox` collection, next to the state 
 them to Kafka in order. When MongoDB runs as a replica set or sharded cluster, each business event is processed in a
 transaction, so its state and its outbound events are saved together or not at all. A standalone MongoDB server has
 no transactions: Aktimetrix then logs a warning at startup, and a crash in the middle of an event can keep its state
-without its outbound events. A single-node replica set is enough for transactions; the reference project's
-`docker-compose.yml` runs one. When Kafka is unavailable, events wait in the outbox and are sent once it is back, instead of
+without its outbound events. A single-node replica set is enough for transactions. When Kafka is unavailable, events wait in the outbox and are sent once it is back, instead of
 being lost. Delivery is **at least once**: after a crash between sending and recording an event, it is sent again, so
 consumers should de-duplicate on the event's `eventId`. Relays in several application instances share the work
 safely. With more than one instance, events of different entities may be published in a slightly different order
