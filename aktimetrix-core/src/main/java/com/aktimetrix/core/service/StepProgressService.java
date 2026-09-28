@@ -164,8 +164,10 @@ public class StepProgressService {
                 stepInstanceService.save(planned);
                 stepInstancePublisherService.publish(planned, "PLANNED");
             });
-            forecast(step, step.getPlannedAt() == null ? null : Duration.between(step.getPlannedAt(), occurredAt),
-                    steps, definitions);
+            if (step.getTimeliness() == Timeliness.LATE) {
+                // a step completed within its tolerance delays nothing; a late one delays the steps after it
+                forecast(step, Duration.between(step.getPlannedAt(), occurredAt), steps, definitions);
+            }
         }
 
         if (!actuals.isEmpty()) {

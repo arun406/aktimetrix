@@ -67,10 +67,10 @@ document describes the model, its execution semantics and its reliability guaran
 
 ## 1. Introduction
 
-A long-running business process is a sequence of milestones that happen in different systems, often owned by
-different teams or organisations. An e-commerce order is created in a shop, paid through a payment provider, handed
-over by a warehouse and delivered by a courier. A loan is submitted in a portal, checked by a credit bureau, approved by an underwriter and disbursed by
-core banking.
+A long-running business process is a sequence of milestones that happen in different systems, often owned by different
+teams or organisations. An e-commerce order is created in a shop, paid through a payment provider, handed over by a
+warehouse and delivered by a courier. A loan is submitted in a portal, checked by a credit bureau, approved by an
+underwriter and disbursed by core banking.
 
 Each of these systems already announces what it did, as a business event. What is missing is the layer that joins
 those events into a single account of each entity and compares it with what was supposed to happen. Without it,
@@ -122,7 +122,8 @@ role: because a plan says *when* a step should happen, the runtime can also rais
 or **overdue**, before anyone has measured anything.
 
 The rest of this paper describes the model behind this example (§3), how the runtime executes it (§4), how it is built
-and kept reliable (§5–§6), and how an application adapts and observes it (§7–§8).
+and kept reliable (§5–§6), how an application adapts and observes it (§7–§8), and the reference implementation that
+realises it (§9).
 
 ## 2. Design goals
 

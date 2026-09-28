@@ -73,8 +73,9 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
 ### When a deadline passes
 
 Every minute, on every instance, `OverdueStepMonitor` and `OverdueProcessMonitor` query the steps and processes whose
-`lateAfter` has passed, that are not completed or cancelled and not yet overdue. Each is marked `OVERDUE` in its own
-transaction, with an `OVERDUE` event queued, and, for a step, the later steps are forecast. Saves are version-checked:
+`lateAfter` has passed, that are not completed or cancelled and not yet overdue. Each is read again and marked
+`OVERDUE` in its own transaction, with an `OVERDUE` event queued, and, for a step, the later steps are forecast; a step
+that an earlier one has just put at risk is therefore marked from its current state. Saves are version-checked:
 if another instance, or the step's event, changed it since it was read, the save fails and the monitor moves on.
 
 ### When results are published

@@ -373,6 +373,22 @@ class StepProgressServiceTest {
     }
 
     @Test
+    void aStepCompletedWithinItsToleranceDelaysNothing() {
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
+        ship.setLateAfter(LocalDateTime.of(2022, 5, 23, 2, 1));
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        givenSteps(ship, deliver);
+        givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 2, 0));
+
+        assertThat(ship.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
+        assertThat(deliver.getExpectedAt()).isNull();
+        assertThat(deliver.getTimeliness()).isNull();
+    }
+
+    @Test
     void completionPlansTheStepsThatCountFromIt() {
         StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
         StepInstance deliver = step("DELIVER", Constants.STATUS_CREATED);
