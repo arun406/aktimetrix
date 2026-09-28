@@ -49,7 +49,10 @@ public abstract class AbstractMeter implements Meter {
      * @return the value, or {@code null} when the key is absent
      */
     protected LocalDateTime metadataTime(StepInstance step, String key) {
-        final Object value = step.getMetadata() == null ? null : step.getMetadata().get(key);
+        return toLocalDateTime(step.getMetadata() == null ? null : step.getMetadata().get(key));
+    }
+
+    static LocalDateTime toLocalDateTime(Object value) {
         if (value == null || value instanceof LocalDateTime) {
             return (LocalDateTime) value;
         }

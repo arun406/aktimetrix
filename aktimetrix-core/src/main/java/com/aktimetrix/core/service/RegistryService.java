@@ -12,6 +12,7 @@ import com.aktimetrix.core.exception.ProcessHandlerNotFoundException;
 import com.aktimetrix.core.exception.UnknownNameException;
 import com.aktimetrix.core.impl.RegistryEntry;
 import com.aktimetrix.core.meter.api.Meter;
+import com.aktimetrix.core.meter.api.ProcessMeter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,15 +149,32 @@ public class RegistryService {
      * @param measurementCode measurement code
      */
     public Meter getMeter(String tenant, String stepCode, String measurementCode) {
+        return lookupMeter(Constants.ATT_STEP_CODE, stepCode, measurementCode, Meter.class);
+    }
+
+    /**
+     * Return the process-level meter for the process and measurement code, or {@code null}
+     *
+     * @param tenant          tenant parameter
+     * @param processCode     process code
+     * @param measurementCode measurement code
+     */
+    public ProcessMeter getProcessMeter(String tenant, String processCode, String measurementCode) {
+        return lookupMeter(Constants.ATT_PROCESS_CODE, processCode, measurementCode, ProcessMeter.class);
+    }
+
+    private <T> T lookupMeter(String levelAttribute, String levelCode, String measurementCode, Class<T> type) {
         final List<Object> meters = this.registry.lookupAll(registryEntry ->
                 registryEntry.hasAttribute(Constants.ATT_METER_SERVICE) &&
                         registryEntry.attribute(Constants.ATT_METER_SERVICE).equals(Constants.VAL_YES) &&
-                        (registryEntry.attribute(Constants.ATT_CODE).equals(measurementCode)
-                                && registryEntry.attribute(Constants.ATT_STEP_CODE).equals(stepCode))
+                        Objects.equals(registryEntry.attribute(Constants.ATT_CODE), measurementCode) &&
+                        Objects.equals(registryEntry.attribute(levelAttribute), levelCode)
         );
-        Meter meter = null;
+        T meter = null;
         for (Object m : meters) {
-            meter = (Meter) m;
+            if (type.isInstance(m)) {
+                meter = type.cast(m);
+            }
         }
         return meter;
     }
