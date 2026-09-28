@@ -69,9 +69,9 @@ class OrderDeliveryScenarioTest {
     private MongoTemplate mongo;
 
     /**
-     * A priority customer's order: created 09:00, planned by rule to be delivered within 4 hours, and within the
-     * process's 1-day deadline. Time is compared on every step; distance and fuel while travelling, and the parcel's
-     * temperature on delivery, are compared with their plans.
+     * A priority customer's order, created at 09:00. Rules plan it: the order within 1 day, the delivery step within
+     * 4 hours. Time is compared on every step; distance and fuel while travelling, the parcel's temperature on
+     * delivery, and the customer's rating the next morning, after the order completed, are compared with their plans.
      */
     @Test
     void comparesPlanAndActualInEveryDimension() throws Exception {
@@ -86,6 +86,8 @@ class OrderDeliveryScenarioTest {
         send("DELIVERED", "2024-03-01 12:55:00", "{\"parcelTemperatureC\":40}");
 
         awaitTrue(() -> "Completed".equals(process().getStatus()));
+        send("RATED", "2024-03-02 08:00:00", "{\"review\":{\"stars\":4}}");
+        awaitTrue(() -> "Completed".equals(step("RATED").getStatus()));
         ProcessInstance order = process();
         assertThat(order.getPlannedAt()).isEqualTo(LocalDateTime.of(2024, 3, 2, 9, 0));
         assertThat(order.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
@@ -103,6 +105,8 @@ class OrderDeliveryScenarioTest {
         assertActual("TRAVEL", "FUEL", "0.6", Conformance.OUT_OF_TOLERANCE);
         assertActual("DELIVERED", "TEMPERATURE", "10", Conformance.OUT_OF_TOLERANCE);
         assertActual("DELIVERED", "TIME", "PT-5M", Conformance.WITHIN_TOLERANCE);
+        // rated the next morning, after the order completed: one star below plan, within tolerance
+        assertActual("RATED", "RATING", "-1", Conformance.WITHIN_TOLERANCE);
     }
 
     private ProcessInstance process() {

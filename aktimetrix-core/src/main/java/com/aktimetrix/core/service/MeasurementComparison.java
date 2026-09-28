@@ -13,7 +13,8 @@ import java.math.RoundingMode;
 /**
  * Compares an actual measurement with the planned measurement of the same code, for the same step or process: sets
  * the actual's {@code plannedValue}, its {@code deviation} (actual minus planned) and, when the measurement declares a
- * tolerance, its {@link Conformance}. Works for any numeric dimension: distance, fuel, temperature, rating…
+ * tolerance or a bad direction ({@code worseWhen}), its {@link Conformance}. Works for any numeric dimension:
+ * distance, fuel, temperature, rating…
  */
 @Service
 @RequiredArgsConstructor
@@ -24,20 +25,28 @@ public class MeasurementComparison {
 
     /**
      * @param tolerance the tolerance declared for the measurement, e.g. {@code 2} or {@code 10%}; may be {@code null}
+     * @param worseWhen {@code HIGHER} or {@code LOWER}, the direction of a bad deviation; may be {@code null} for both
      */
-    public void compare(MeasurementInstance actual, String tolerance) {
+    public void compare(MeasurementInstance actual, String tolerance, String worseWhen) {
         repository.findByOwnerAndCodeAndType(actual.getTenant(), actual.getProcessInstanceId(),
                         actual.getStepInstanceId(), actual.getCode(), Constants.PLAN_MEASUREMENT_TYPE).stream()
                 .findFirst()
-                .ifPresent(planned -> apply(actual, planned.getValue(), tolerance));
+                .ifPresent(planned -> apply(actual, planned.getValue(), tolerance, worseWhen));
         metrics.measurementRecorded(actual);
+    }
+
+    /**
+     * Compares {@code actual} with {@code plannedValue}, counting deviations both ways.
+     */
+    public static void apply(MeasurementInstance actual, String plannedValue, String tolerance) {
+        apply(actual, plannedValue, tolerance, null);
     }
 
     /**
      * Sets the comparison of {@code actual} with {@code plannedValue}. Values that are not numbers are only recorded
      * side by side.
      */
-    public static void apply(MeasurementInstance actual, String plannedValue, String tolerance) {
+    public static void apply(MeasurementInstance actual, String plannedValue, String tolerance, String worseWhen) {
         actual.setPlannedValue(plannedValue);
         final BigDecimal planned = number(plannedValue);
         final BigDecimal value = number(actual.getValue());
@@ -46,11 +55,18 @@ public class MeasurementComparison {
         }
         final BigDecimal deviation = value.subtract(planned);
         actual.setDeviation(deviation.stripTrailingZeros().toPlainString());
-        final BigDecimal allowed = allowed(planned, tolerance);
-        if (allowed != null) {
-            actual.setConformance(deviation.abs().compareTo(allowed) <= 0
-                    ? Conformance.WITHIN_TOLERANCE : Conformance.OUT_OF_TOLERANCE);
+        final String worse = worseWhen == null ? null : worseWhen.trim().toUpperCase();
+        BigDecimal allowed = allowed(planned, tolerance);
+        if (allowed == null && ("HIGHER".equals(worse) || "LOWER".equals(worse))) {
+            allowed = BigDecimal.ZERO;   // at most, or at least, the plan
         }
+        if (allowed == null) {
+            return;
+        }
+        final boolean harmless = ("HIGHER".equals(worse) && deviation.signum() <= 0)
+                || ("LOWER".equals(worse) && deviation.signum() >= 0);
+        actual.setConformance(harmless || deviation.abs().compareTo(allowed) <= 0
+                ? Conformance.WITHIN_TOLERANCE : Conformance.OUT_OF_TOLERANCE);
     }
 
     private static BigDecimal allowed(BigDecimal planned, String tolerance) {

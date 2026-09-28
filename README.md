@@ -253,7 +253,8 @@ Every business event passes through the same four stages.
 | `Completed` | an event in its end events arrives; a step with no end events is a single milestone and completes on its start event | all of its mandatory steps have completed |
 | `Cancelled` | its process is cancelled before it completed | an event in the process's cancel events arrives, e.g. *order cancelled* |
 
-Completed and cancelled processes are no longer monitored: a cancelled order does not leave steps to go overdue.
+A cancelled process is no longer monitored: a cancelled order does not leave steps to go overdue. A completed
+process still records its optional steps, which may happen later: the customer's rating the day after delivery.
 
 ### 5.2 Planning
 
@@ -264,10 +265,13 @@ Planned values are derived when a process instance is created, for the process a
 | **Fixed value** | `{ "measurementCode": "RATING", "type": "P", "value": "5" }` | the same for every entity: 5 stars |
 | **Duration from the start** (time) | `"plannedWithin": "PT2H"` on a step, or `"P1D"` on the process | start + 2 h; start + 1 day |
 | **Duration from another step** (time) | `"plannedAfter": "TRAVEL", "plannedWithin": "PT15M"` | actual completion of `TRAVEL` + 15 min, set when it completes |
-| **Rule** | a planned measurement and a **meter** for it | whatever the meter computes from the entity: 1 day for priority customers, 3 otherwise; the route length to the address |
+| **Rule** | a planned measurement and a **meter** for it, on a step or on the process | whatever the meter computes from the entity: 1 day for priority customers, 3 otherwise; the route length to the address. A planned `TIME` of the process is its deadline. |
 
 A **tolerance** says how far the actual may deviate before it counts: `"tolerance": "20%"` or `"2"` on a
-measurement, and `"tolerance": "PT15M"` on a step's or process's time.
+measurement, and `"tolerance": "PT15M"` on a step's or process's time. Most measurements have a bad direction: a
+longer route, more fuel or a hotter parcel is worse, a lower rating is worse. `"worseWhen": "HIGHER"` or `"LOWER"`
+makes only that direction count, so a shorter route is never out of tolerance; without a tolerance, the plan itself
+is then the limit: *at most 30 °C*, *at least 4 stars*.
 
 ### 5.3 Comparing plan and actual
 

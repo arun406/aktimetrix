@@ -58,7 +58,8 @@ public class StepProgressService {
     private final ActualMeasurementService actualMeasurementService;
 
     /**
-     * Applies the event to every active process instance of the business entity.
+     * Applies the event to the business entity's process instances that are not cancelled: running ones, and completed
+     * ones, whose optional steps may still happen, such as a rating after delivery.
      *
      * @return actual measurements recorded for the steps this event completed
      */
@@ -68,7 +69,7 @@ public class StepProgressService {
     }
 
     /**
-     * Applies the event to every active process instance of the business entity.
+     * Applies the event to the business entity's process instances that are not cancelled.
      *
      * @param event the event itself, from which actual measurements are read; may be {@code null}
      * @return actual measurements recorded for the steps and processes this event completed
@@ -77,14 +78,17 @@ public class StepProgressService {
                                                       String eventCode, LocalDateTime occurredAt, Event<?, ?> event) {
         final List<MeasurementInstance> actuals = new ArrayList<>();
         final List<ProcessInstance> processInstances =
-                processInstanceService.getActiveProcessInstances(tenant, entityType, entityId);
+                processInstanceService.getNotCancelledProcessInstances(tenant, entityType, entityId);
         if (processInstances.isEmpty()) {
-            logger.debug("No active process instance for {} {}; {} records nothing", entityType, entityId, eventCode);
+            logger.debug("No process instance for {} {}; {} records nothing", entityType, entityId, eventCode);
         }
         for (ProcessInstance processInstance : processInstances) {
             final ProcessDefinition definition = processDefinitionService.findByCode(tenant,
                     processInstance.getProcessCode());
             if (definition != null && contains(definition.getCancelEventCodes(), eventCode)) {
+                if (processInstance.isComplete()) {
+                    continue;   // too late to cancel
+                }
                 cancel(processInstance, occurredAt);
             } else {
                 actuals.addAll(recordMilestone(eventCode, processInstance, occurredAt, event));
