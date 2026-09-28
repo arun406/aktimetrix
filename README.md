@@ -68,8 +68,8 @@ document describes the model, its execution semantics and its reliability guaran
 ## 1. Introduction
 
 A long-running business process is a sequence of milestones that happen in different systems, often owned by
-different teams or organisations. An e-commerce order is placed in a shop, shipped by a warehouse and delivered by
-a carrier. A loan is submitted in a portal, checked by a credit bureau, approved by an underwriter and disbursed by
+different teams or organisations. An e-commerce order is created in a shop, paid through a payment provider, handed
+over by a warehouse and delivered by a courier. A loan is submitted in a portal, checked by a credit bureau, approved by an underwriter and disbursed by
 core banking.
 
 Each of these systems already announces what it did, as a business event. What is missing is the layer that joins
@@ -116,8 +116,8 @@ Every actual value is compared with its plan. At step level, the route was 12 km
 instead of 0.4 and kept the parcel at 40 °C instead of 30, all outside their tolerances; the customer gave four stars
 instead of five, within tolerance; four steps ran late. At process level, the order was still delivered well within
 its one-day promise, but cost €9.50 instead of €8: the two levels answer different questions. From these
-measurements follow the **metrics** a business steers by: the share of steps on time, distance over plan, fuel per
-kilometre, the average rating, per order and across all orders. Time is one measurement among these, with one extra
+measurements follow the **metrics** a business steers by: per order, such as its fuel per kilometre, and across all
+orders, such as the share of steps on time or how far routes run over plan. Time is one measurement among these, with one extra
 role: because a plan says *when* a step should happen, the runtime can also raise an alarm while a step is **at risk**
 or **overdue**, before anyone has measured anything.
 
@@ -216,8 +216,9 @@ belongs to an optional step: a completed process still records its optional step
 
 ### 3.4 Metadata
 
-Instances carry **metadata**: key/value pairs taken from the domain, such as an order's id, customer and order time.
-Metadata is the input to planning (a meter reads the order time to compute the delivery deadline) and travels with
+Instances carry **metadata**: key/value pairs taken from the domain, such as an order's id, when it was created and
+whether its customer is a priority customer. Metadata is the input to planning (a meter reads the creation time and
+the priority to compute the delivery deadline) and travels with
 every published result, so consumers do not need to query the source systems.
 
 ### 3.5 Business events
@@ -238,7 +239,8 @@ need to adopt it: an **event mapper** translates each system's own messages into
 
 ## 4. Execution semantics
 
-Every business event passes through the same four stages. The figures in this section follow order 1234 of §1.1,
+The runtime works in four stages: the first three are driven by each business event, the fourth by the clock. The
+figures in this section follow order 1234 of §1.1,
 which the [reference project](#92-running-the-example) implements.
 
 <p align="center">
@@ -262,7 +264,7 @@ which the [reference project](#92-running-the-example) implements.
 
 | | Implicit | Explicit |
 |---|---|---|
-| **Start** | a business event that is also the first milestone, e.g. *order booked*: it starts the process and completes its first step | a dedicated event, e.g. *order fulfilment started*, raised by whichever system decides that monitoring begins |
+| **Start** | a business event with its own meaning, e.g. *order created*; it can also complete the first step | a dedicated event, e.g. *order fulfilment started*, raised by whichever system decides that monitoring begins |
 | **End** | the last mandatory step completes, e.g. *order delivered* | a dedicated event, e.g. *order closed* after the returns window: the process completes on it, whatever its steps |
 
 A process definition lists its start events and, optionally, its end and cancel events. Without end events, a process
@@ -638,7 +640,7 @@ expectations about them: when they happen, and what they measure.
 
 | Domain | Entity | Milestones |
 |---|---|---|
-| E-commerce | Order | placed → shipped → delivered |
+| E-commerce | Order | created → paid → handed over → delivered → rated |
 | Retail banking | Loan application | submitted → KYC → credit check → approved → disbursed |
 | Air cargo | Air waybill | booked → accepted → departed → arrived → delivered |
 | Customer service | Ticket | opened → acknowledged → resolved |
@@ -724,12 +726,12 @@ still change.
 | Term | Meaning |
 |---|---|
 | **Business entity** | The real-world object followed, such as an order; identified by entity type and entity id. |
-| **Business event** | A message from a source system saying something happened to an entity, such as *order shipped*. |
+| **Business event** | A message from a source system saying something happened to an entity, such as *order delivered*. |
 | **Process definition** | The declaration of a business process: its steps in order, the events that start, end and cancel it, and optionally its own deadline and measurements. |
 | **Step definition** | The declaration of a milestone: the events that start and complete it, its plan, tolerance and measurements. Shared by a tenant's processes, and adaptable per process. |
 | **Process instance** / **step instance** | A process, or one of its steps, for one business entity. |
 | **Measurement** | A user-defined dimension observed at a process or step, such as time, distance or rating. |
-| **Planned** / **actual** (`P` / `A`) | What a measurement should be, set when the instance is created; and what it was, recorded when it completes. |
+| **Planned** / **actual** (`P` / `A`) | What a measurement should be, set when the instance is created; and what it was, recorded when it completes, or read as an interim reading while it is in progress. |
 | **Deviation** | Actual minus planned value of a measurement. |
 | **Tolerance** / **conformance** | How far an actual may deviate from its plan; and whether it did (`WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`). |
 | **Metric** | A figure computed from measurements: declared on a process as arithmetic over its measurements, such as fuel per kilometre, and compared with the same figure computed from the plan; or reported by the runtime across all entities, such as the share within tolerance. |
