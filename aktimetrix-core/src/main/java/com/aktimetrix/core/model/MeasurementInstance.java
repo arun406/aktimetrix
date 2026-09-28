@@ -1,5 +1,6 @@
 package com.aktimetrix.core.model;
 
+import com.aktimetrix.core.api.Conformance;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -35,6 +36,18 @@ public class MeasurementInstance {
     private String unit;
     private String type;
     private String measuredAt;
+    /**
+     * For an actual measurement: the planned value it is compared with, if one was planned.
+     */
+    private String plannedValue;
+    /**
+     * For an actual measurement: actual minus planned; a number, or an ISO-8601 duration for {@code TIME}.
+     */
+    private String deviation;
+    /**
+     * For an actual measurement with a tolerance: whether the deviation is within it.
+     */
+    private Conformance conformance;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonProperty("measuredOn")

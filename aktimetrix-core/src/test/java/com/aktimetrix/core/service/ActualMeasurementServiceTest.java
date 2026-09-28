@@ -26,9 +26,11 @@ class ActualMeasurementServiceTest {
 
     @Mock
     private RegistryService registryService;
+    @Mock
+    private MeasurementComparison comparison;
 
     private ActualMeasurementService service() {
-        return new ActualMeasurementService(registryService, Clock.systemUTC());
+        return new ActualMeasurementService(registryService, Clock.systemUTC(), comparison);
     }
 
     @Test

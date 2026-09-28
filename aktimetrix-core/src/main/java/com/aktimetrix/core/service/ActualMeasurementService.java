@@ -20,11 +20,13 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Records the actual ({@code A}) measurements of a step or process when it completes, in any dimension: read from
  * the completing event's entity when the measurement says where ({@code valueFrom}), otherwise computed by the meter
- * registered for it. The actual {@code TIME} of a step is recorded separately, always.
+ * registered for it. Each is then compared with its plan by {@link MeasurementComparison}. The actual {@code TIME} of
+ * a step is recorded separately, always.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,7 @@ public class ActualMeasurementService {
 
     private final RegistryService registryService;
     private final Clock clock;
+    private final MeasurementComparison comparison;
 
     /**
      * @param event the event that completed the step; may be {@code null}
@@ -52,7 +55,7 @@ public class ActualMeasurementService {
                         measurement.getMeasurementCode());
                 actual = meter == null ? null : meter.measureActual(step.getTenant(), step, event);
             }
-            add(actuals, actual, measurement, step.getStepCode());
+            add(actuals, actual, measurement, step.getStepCode(), declared);
         }
         return actuals;
     }
@@ -75,7 +78,7 @@ public class ActualMeasurementService {
                         measurement.getMeasurementCode());
                 actual = meter == null ? null : meter.measureActual(process.getTenant(), process, event);
             }
-            add(actuals, actual, measurement, process.getProcessCode());
+            add(actuals, actual, measurement, process.getProcessCode(), declared);
         }
         return actuals;
     }
@@ -94,13 +97,29 @@ public class ActualMeasurementService {
         return actuals;
     }
 
-    private static void add(List<MeasurementInstance> actuals, MeasurementInstance actual, MeasurementDefinition measurement,
-                            String owner) {
+    private void add(List<MeasurementInstance> actuals, MeasurementInstance actual, MeasurementDefinition measurement,
+                     String owner, List<MeasurementDefinition> declared) {
         if (actual != null) {
+            final String code = measurement.getMeasurementCode();
+            comparison.compare(actual, declaredField(declared, code, MeasurementDefinition::getTolerance),
+                    declaredField(declared, code, MeasurementDefinition::getWorseWhen));
             actuals.add(actual);
         } else {
             logger.debug("No actual {} recorded for {}", measurement.getMeasurementCode(), owner);
         }
+    }
+
+    /**
+     * A field declared for the code, on its planned or its actual measurement, e.g. the tolerance.
+     */
+    private static String declaredField(List<MeasurementDefinition> declared, String code,
+                                        Function<MeasurementDefinition, String> field) {
+        for (MeasurementDefinition measurement : declared) {
+            if (code.equals(measurement.getMeasurementCode()) && field.apply(measurement) != null) {
+                return field.apply(measurement);
+            }
+        }
+        return null;
     }
 
     /**

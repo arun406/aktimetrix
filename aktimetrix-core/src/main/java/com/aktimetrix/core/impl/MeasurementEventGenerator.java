@@ -56,6 +56,9 @@ public class MeasurementEventGenerator implements EventGenerator {
                 .createdOn(instance.getCreatedOn())
                 .type(instance.getType())
                 .value(instance.getValue())
+                .plannedValue(instance.getPlannedValue())
+                .deviation(instance.getDeviation())
+                .conformance(instance.getConformance())
                 .processInstanceId(instance.getProcessInstanceId().toString())
                 .createdOn(instance.getCreatedOn())
                 .build();

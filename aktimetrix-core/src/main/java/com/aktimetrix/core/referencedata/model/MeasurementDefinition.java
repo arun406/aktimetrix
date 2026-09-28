@@ -17,13 +17,31 @@ public class MeasurementDefinition {
      */
     private MeasurementType type;
     /**
+     * For a planned measurement: a fixed planned value, e.g. {@code 5} for a customer rating, used when no meter is
+     * registered for the measurement. Plans that depend on the entity, such as a shorter delivery for priority
+     * customers, are computed by a meter instead.
+     */
+    private String value;
+    /**
+     * How far the actual value may differ from the planned value, either way: an absolute amount in the measurement's
+     * unit, e.g. {@code 2}, or a percentage of the planned value, e.g. {@code 10%}. Declared on the planned or the
+     * actual measurement; without it, the difference is recorded but not judged.
+     */
+    private String tolerance;
+    /**
+     * Which way of deviating is bad: {@code HIGHER} (more distance, more fuel, a hotter parcel) or {@code LOWER} (a
+     * lower rating). A deviation the other way is always within tolerance. Without it, both ways count; with it but no
+     * tolerance, the plan itself is the limit: at most, or at least, the planned value.
+     */
+    private String worseWhen;
+    /**
      * For an actual measurement: where to read its value in the entity of the event that completes the step or
      * process, as a dot-separated path, e.g. {@code weightKg} or {@code delivery.distanceKm}. Without it, the meter
      * registered for the measurement computes the value.
      */
     private String valueFrom;
     /**
-     * For an actual measurement read with {@link #valueFrom}: its unit, e.g. {@code KG}.
+     * The unit of a value given here or read with {@link #valueFrom}, e.g. {@code KG}.
      */
     private String unit;
 }
