@@ -36,14 +36,16 @@
   <text x="310" y="348" text-anchor="middle" class="ts">ordered milestones of the process</text>
 
   <rect x="160" y="420" width="300" height="86" rx="12" class="def"/>
-  <text x="310" y="450" text-anchor="middle" class="tb">StepMeasurement</text>
-  <text x="310" y="474" text-anchor="middle" class="mono">TIME (P) · PCS (P)</text>
-  <text x="310" y="494" text-anchor="middle" class="ts">what to measure — Planned / Actual</text>
+  <text x="310" y="450" text-anchor="middle" class="tb">Measurement</text>
+  <text x="310" y="474" text-anchor="middle" class="mono">TIME · DISTANCE · RATING · …</text>
+  <text x="310" y="494" text-anchor="middle" class="ts">user-defined dimension · Planned / Actual</text>
 
   <path d="M310,216 L310,268" class="edge" marker-end="url(#arr)"/>
   <text x="322" y="248" class="card">1..*</text>
   <path d="M310,366 L310,418" class="edge" marker-end="url(#arr)"/>
   <text x="322" y="398" class="card">0..*</text>
+  <path d="M160,168 C100,168 100,463 158,463" class="edge" marker-end="url(#arr)"/>
+  <text x="70" y="320" class="card">0..*</text>
 
   <!-- instances -->
   <rect x="820" y="120" width="300" height="96" rx="12" class="ins"/>
@@ -58,13 +60,15 @@
 
   <rect x="820" y="420" width="300" height="86" rx="12" class="ins"/>
   <text x="970" y="450" text-anchor="middle" class="tb">MeasurementInstance</text>
-  <text x="970" y="474" text-anchor="middle" class="mono">TIME = 2022-05-23T01:46</text>
-  <text x="970" y="494" text-anchor="middle" class="ts">type P · unit TIMESTAMP</text>
+  <text x="970" y="474" text-anchor="middle" class="mono">SHIP · TIME = 2022-05-23T01:46</text>
+  <text x="970" y="494" text-anchor="middle" class="ts">of a process or a step · P or A · with unit</text>
 
   <path d="M970,216 L970,268" class="edge" marker-end="url(#arr)"/>
   <text x="982" y="248" class="card">1..*</text>
   <path d="M970,366 L970,418" class="edge" marker-end="url(#arr)"/>
   <text x="982" y="398" class="card">0..*</text>
+  <path d="M1120,168 C1180,168 1180,463 1122,463" class="edge" marker-end="url(#arr)"/>
+  <text x="1178" y="320" class="card">0..*</text>
 
   <!-- instantiates -->
   <g stroke="#8A9AA1" stroke-width="1.6" stroke-dasharray="6 5" fill="none">

@@ -13,11 +13,11 @@ happening to one particular business entity** (instances, created at run time).
 |---|---|---|
 | **Process** | definition | A named business process, e.g. `ORDER_DELIVERY`. Lists its steps, the event codes that start it, and the entity type it tracks. |
 | **Step** | definition | One milestone in the process, e.g. `SHIP`. Lists the measurements to take at that milestone. |
-| **Measurement** | definition | *What* to measure at a step (`TIME`, `PCS`, `WT`, …) and whether it is **P**lanned or **A**ctual. |
+| **Measurement** | definition | A user-defined dimension to measure (`TIME`, `DISTANCE`, `WT`, `RATING`, …), at the process or at a step, and whether it is **P**lanned or **A**ctual. Timeliness is judged on `TIME` only. |
 | **Business entity** | external | The real-world object being tracked: an order, a loan application, an air waybill. Identified by `entityType` + `entityId`. |
 | **Process instance** | runtime | One run of a process for one business entity. *ProcessInstance = Process + identifying metadata.* |
 | **Step instance** | runtime | One step of one process instance, carrying its own metadata. |
-| **Measurement instance** | runtime | A concrete value computed for one step instance, e.g. *SHIP planned TIME = 2022-05-23T01:46*. |
+| **Measurement instance** | runtime | A concrete value for one process or step instance, e.g. *SHIP planned TIME = 2022-05-23T01:46*. In the reference implementation, meters currently compute step-level measurements. |
 | **Metadata** | runtime | Key/value pairs you attach to process and step instances (order details, customer, location, …) for use by meters and consumers. |
 
 ### Step lifecycle: plan and actual

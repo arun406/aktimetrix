@@ -103,18 +103,34 @@ The model separates **what a process looks like** from **what is happening to on
 |---|---|
 | **Process**: a named business process, such as `ORDER_DELIVERY`, the entity type it follows and the events that start it | **Process instance**: that process for one entity, such as order `#1234` |
 | **Step**: one milestone, such as `SHIP`, and the events that start and complete it | **Step instance**: `SHIP` for order `#1234`, with its planned time, actual time and timeliness |
-| **Measurement**: a quantity observed at a step (`TIME`, weight, pieces), either **P**lanned or **A**ctual | **Measurement instance**: one value, such as *planned TIME = 2022-05-23T01:46* |
+| **Measurement**: a user-defined dimension observed at the process or at a step (`TIME`, distance, rating, weight…), either **P**lanned or **A**ctual | **Measurement instance**: one value for one process or step instance, such as *planned TIME of SHIP = 2022-05-23T01:46* |
 
 A **business entity** is the real-world object being followed. It is identified by an entity type and an entity id,
 and it is owned by the source systems, not by Aktimetrix.
 
-### 3.2 Metadata
+### 3.2 Measurements
+
+A **measurement** is a dimension of the process that can be planned and observed. Measurement types are defined by
+the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `WEIGHT` (kg), `PIECES`, `RATING`
+(1–5), or any other quantity the business cares about.
+
+- **Level.** A measurement is attached either to a **process**, when it describes the entity as a whole (the total
+  distance of a delivery, the customer's rating of an order), or to a **step**, when it describes one milestone (the
+  weight accepted at `ACCEPT`, the time of `SHIP`).
+- **Kind.** Each measurement is **planned** (`P`), computed by a meter when the instance is created, or **actual**
+  (`A`), recorded when the milestone happens. Comparing the two, for any dimension, is the core of the model.
+- **Time is special.** `TIME` is the one dimension the runtime interprets itself: a step's planned `TIME` becomes
+  its planned time, from which its deadline and its timeliness follow ([§5.3](#53-timeliness)). Other dimensions are
+  computed, stored and published as measurement instances, so that consumers can compare plan and actual in the
+  terms of their own domain.
+
+### 3.3 Metadata
 
 Instances carry **metadata**: key/value pairs taken from the domain, such as an order's id, customer and order time.
 Metadata is the input to planning (a meter reads the order time to compute the delivery deadline) and travels with
 every published result, so consumers do not need to query the source systems.
 
-### 3.3 Business events
+### 3.4 Business events
 
 Every inbound event uses one envelope, whatever its source. The fields the model depends on are:
 
@@ -195,6 +211,9 @@ A step's planned time is derived in one of three ways:
 
 ### 5.3 Timeliness
 
+Timeliness is defined on the `TIME` dimension only: it compares when a step happened with when it was planned.
+Plan-versus-actual for other dimensions is expressed by their measurement instances rather than by a timeliness.
+
 | Timeliness | Assigned when |
 |---|---|
 | `ON_TIME` | The step completes no later than its deadline. |
@@ -239,7 +258,7 @@ discovered at startup.
 
 | Extension point | Purpose | Default when absent |
 |---|---|---|
-| **Meter** | Computes a step's planned value. | None; durations in the step definition still apply. |
+| **Meter** | Computes the planned value of a measurement, in any dimension. | None; durations in the step definition still apply. |
 | **Process handler** | Chooses the metadata of a process and its steps. | The event's entity becomes the metadata. |
 | **Event handler** | Changes how an event is interpreted, such as where its business time is read from. | Generic handling of the envelope. |
 | **Pre-processor** | Validates or enriches an entity before a process instance is created. | None. |
@@ -408,6 +427,8 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
   the namespace and signing key
 - [ ] Verified bindings for further message brokers
 - [ ] A state-store abstraction, with implementations beyond MongoDB
+- [ ] Evaluation of process-level measurements at run time: they can be declared on a process definition today, but
+  only step-level measurements are computed by meters
 
 ## 12. Further reading
 
