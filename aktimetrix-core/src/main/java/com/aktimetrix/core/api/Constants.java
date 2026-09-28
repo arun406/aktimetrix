@@ -7,6 +7,7 @@ public class Constants {
     public static final String ATT_NAME = "name";
     public static final String ATT_CODE = "code";
     public static final String ATT_STEP_CODE = "step-code";
+    public static final String ATT_PROCESS_CODE = "process-code";
     public static final String ATT_VERSION = "version";
     public static final String ATT_CLASS = "class";
     public static final String ATT_SCOPE = "scope";
