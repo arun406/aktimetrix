@@ -19,7 +19,7 @@ git clone https://github.com/arun406/aktimetrix.git
 # 2. Start Kafka and MongoDB, then the monitor
 git clone https://github.com/arun406/aktimetrix-reference-project-order-monitor.git
 cd aktimetrix-reference-project-order-monitor
-docker compose up -d
+docker compose up -d --wait
 ./mvnw spring-boot:run
 ```
 
