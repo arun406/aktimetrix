@@ -157,12 +157,16 @@ need to adopt it: an **event mapper** translates each system's own messages into
   <img src="./img/architecture.svg" alt="Logical architecture of an Aktimetrix monitor" width="100%">
 </p>
 
-Source systems publish business events to an **inbound channel** on the message broker. The Aktimetrix runtime
-consumes them and passes each one to an **event router**, which starts processes and records milestones. **Process
-handlers** and **meters**, the application's own code (shown dashed), decide an instance's metadata and plan.
-Built-in components advance steps, watch deadlines, and keep all definitions and instances in the **state store**.
-Every change to a process, step or measurement is published to an **outbound channel** for downstream consumers, and
-a query API serves the current state of any entity.
+Source systems publish business events, in their own format, to an **inbound channel** on the message broker. The
+runtime consumes each one as a single unit of work: an optional **event mapper** (the application's own code, shown
+dashed) translates it, and an **event router** starts the processes it starts and records the milestones it completes.
+**Process handlers** and **meters** decide an instance's metadata and planned values. Built-in components advance
+steps and processes, watch deadlines, and keep definitions, instances and pending results in the **state store**. An
+**outbox relay** publishes every result to the **outbound channels** for downstream consumers; events that cannot be
+processed go to a **dead-letter channel**. A query API serves the current state of any entity.
+
+The internal components of the reference implementation, and how an event flows through them, are described in
+[Architecture](./docs/architecture.md).
 
 ### 4.2 Infrastructure contract
 
@@ -555,6 +559,7 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
 | Document | Contents |
 |---|---|
 | [Core concepts](./docs/concepts.md) | The model in detail, with examples from banking and air cargo |
+| [Architecture](./docs/architecture.md) | The internal components, the flow of an event through them, and how to adapt them |
 | [Getting started](./docs/getting-started.md) | Running the example; building a monitor; the event format |
 | [Extending Aktimetrix](./docs/extending.md) | Meters, process and event handlers, pre- and post-processors |
 | [Configuration and API reference](./docs/configuration.md) | Properties, channels, storage, metrics and REST endpoints of the reference implementation |
