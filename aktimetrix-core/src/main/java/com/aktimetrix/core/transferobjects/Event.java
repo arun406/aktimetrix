@@ -24,4 +24,25 @@ public class Event<U, V> {
     private String entityType;
     private U entity;
     private V eventDetails;
+
+    /**
+     * An event with the fields Aktimetrix needs, for use in an {@code EventMapper}; set {@code entity} for the data
+     * that becomes metadata.
+     *
+     * @param tenantKey  the tenant
+     * @param eventCode  what happened, e.g. {@code ORDER_SHIPPED_EVENT}
+     * @param entityType the type of business entity, which must match the process definition's
+     * @param entityId   the business entity, e.g. the order number
+     * @param eventTime  when it happened in the business
+     */
+    public static Event<Object, Object> of(String tenantKey, String eventCode, String entityType, String entityId,
+                                           ZonedDateTime eventTime) {
+        final Event<Object, Object> event = new Event<>();
+        event.setTenantKey(tenantKey);
+        event.setEventCode(eventCode);
+        event.setEntityType(entityType);
+        event.setEntityId(entityId);
+        event.setEventTime(eventTime);
+        return event;
+    }
 }

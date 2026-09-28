@@ -9,6 +9,7 @@ carries a stereotype annotation; Aktimetrix discovers it at startup.
 
 | Annotation | Extend / implement | Selected by | Default when absent | Purpose |
 |---|---|---|---|---|
+| a bean of type `EventMapper` | `api.EventMapper` | n/a: one per application | `EnvelopeEventMapper`: messages are in the Aktimetrix event envelope | Reads your own event format; see [Accepting your own event format](#accepting-your-own-event-format). |
 | `@Measurement(code, stepCode)` | `AbstractMeter` or `meter.api.Meter` | step code + measurement code | none: the planned value is skipped | Computes a planned measurement of a step. |
 | `@Measurement(code, processCode)` | `AbstractProcessMeter` or `meter.api.ProcessMeter` | process code + measurement code | none: the planned value is skipped, with a warning | Computes a planned measurement of the process as a whole, once when the process instance is created. |
 | `@ProcessHandler(processType)` | `AbstractProcessor` | the process code | `DefaultProcessor`: the event's entity becomes the metadata | Chooses the metadata of the process and its steps. |
@@ -71,6 +72,33 @@ public class LateEveningDeliveryWarning implements com.aktimetrix.core.api.PostP
 
 To react to steps becoming late or overdue, consume `step-instance-out-0` instead: see the
 [configuration reference](configuration.md#kafka-topics).
+
+## Accepting your own event format
+
+Source systems do not have to adopt the Aktimetrix envelope. Declare an `EventMapper` bean to turn each message on
+the inbound topic into an Aktimetrix event:
+
+```java
+@Bean
+EventMapper shopEvents(ObjectMapper json) {
+    return (payload, headers) -> {
+        JsonNode order = json.readTree(payload);           // {"id":"1234","status":"SHIPPED","updatedAt":"…"}
+        if (!order.has("status")) {
+            return null;                                   // not an order event: ignored
+        }
+        Event<Object, Object> event = Event.of("AA", "ORDER_" + order.get("status").asText() + "_EVENT",
+                "com.ecom.order", order.get("id").asText(), ZonedDateTime.parse(order.get("updatedAt").asText()));
+        event.setEntity(json.convertValue(order, Map.class));   // becomes metadata
+        return event;
+    };
+}
+```
+
+| The mapper… | Aktimetrix… |
+|---|---|
+| returns an event | processes it; tenant, event code and entity id are required |
+| returns `null` | ignores the message, counted with outcome `ignored` |
+| throws | sends the message unchanged to the dead-letter topic, counted with outcome `invalid` |
 
 ## Built-in components
 

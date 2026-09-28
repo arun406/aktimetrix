@@ -126,7 +126,7 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 
 | Metric | Type | Tags |
 |---|---|---|
-| `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `invalid`, `failed`) |
+| `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `ignored`, `invalid`, `failed`) |
 | `aktimetrix.processes.started` / `.completed` | counter | `tenant`, `process` |
 | `aktimetrix.steps.completed` | counter | `tenant`, `step`, `timeliness` |
 | `aktimetrix.steps.lateness` | timer | `tenant`, `step`: how long after its planned time a step completed |

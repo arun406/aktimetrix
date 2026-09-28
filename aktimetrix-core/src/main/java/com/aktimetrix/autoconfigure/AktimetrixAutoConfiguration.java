@@ -1,6 +1,9 @@
 package com.aktimetrix.autoconfigure;
 
+import com.aktimetrix.core.api.EventMapper;
 import com.aktimetrix.core.configurations.AktimetrixProperties;
+import com.aktimetrix.core.event.EnvelopeEventMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -36,5 +39,15 @@ public class AktimetrixAutoConfiguration {
     @ConditionalOnMissingBean
     public Clock aktimetrixClock(AktimetrixProperties properties) {
         return Clock.system(properties.getTimeZone());
+    }
+
+    /**
+     * Reads inbound messages in the Aktimetrix event envelope, unless the application declares its own
+     * {@link EventMapper}.
+     */
+    @Bean
+    @ConditionalOnMissingBean(EventMapper.class)
+    public EventMapper aktimetrixEventMapper(ObjectMapper objectMapper) {
+        return new EnvelopeEventMapper(objectMapper);
     }
 }
