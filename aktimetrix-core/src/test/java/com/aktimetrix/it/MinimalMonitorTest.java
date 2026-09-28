@@ -1,5 +1,6 @@
 package com.aktimetrix.it;
 
+import com.aktimetrix.core.api.Conformance;
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
@@ -151,13 +152,22 @@ class MinimalMonitorTest {
         assertThat(await("DELIVER", step -> step.getPlannedAt() != null).getPlannedAt())
                 .isEqualTo(LocalDateTime.of(2024, 1, 10, 17, 10));
 
-        // the sorting event carried the parcel's weight: recorded as SORT's actual WEIGHT
+        // the sorting event carried the parcel's weight: SORT's actual WEIGHT, compared with the planned 2 kg ± 10%
         MeasurementInstance weight = measurements.findAll().stream()
-                .filter(m -> "WEIGHT".equals(m.getCode())).findFirst().orElseThrow();
+                .filter(m -> "WEIGHT".equals(m.getCode()) && "A".equals(m.getType())).findFirst().orElseThrow();
         assertThat(weight.getValue()).isEqualTo("2.5");
         assertThat(weight.getUnit()).isEqualTo("KG");
-        assertThat(weight.getType()).isEqualTo("A");
         assertThat(weight.getStepCode()).isEqualTo("SORT");
+        assertThat(weight.getPlannedValue()).isEqualTo("2");
+        assertThat(weight.getDeviation()).isEqualTo("0.5");
+        assertThat(weight.getConformance()).isEqualTo(Conformance.OUT_OF_TOLERANCE);
+
+        // SORT's actual TIME is compared with its plan too: 10 minutes late
+        MeasurementInstance sortTime = measurements.findAll().stream()
+                .filter(m -> "TIME".equals(m.getCode()) && "A".equals(m.getType()) && "SORT".equals(m.getStepCode()))
+                .findFirst().orElseThrow();
+        assertThat(sortTime.getPlannedValue()).isEqualTo("2024-01-10T12:00");
+        assertThat(sortTime.getDeviation()).isEqualTo("PT10M");
 
         // the process has its own deadline: 12 hours after booking
         ProcessInstance parcel = mongoTemplate.findAll(ProcessInstance.class).stream()

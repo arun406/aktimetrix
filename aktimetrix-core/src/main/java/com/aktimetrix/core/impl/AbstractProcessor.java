@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -124,12 +125,16 @@ public abstract class AbstractProcessor implements Processor {
             }
             final ProcessMeter meter = registryService.getProcessMeter(context.getTenant(),
                     definition.getProcessCode(), measurement.getMeasurementCode());
-            if (meter == null) {
-                logger.warn("No process-level meter for {} of the {} process", measurement.getMeasurementCode(),
-                        definition.getProcessCode());
-                continue;
+            if (meter != null) {
+                measurements.add(meter.measure(context.getTenant(), processInstance));
+            } else if (measurement.getValue() != null) {
+                measurements.add(new MeasurementInstance(context.getTenant(), measurement.getMeasurementCode(),
+                        measurement.getValue(), measurement.getUnit(), processInstance.getId(), null, null,
+                        Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.now()));
+            } else {
+                logger.warn("No process-level meter, and no planned value, for {} of the {} process",
+                        measurement.getMeasurementCode(), definition.getProcessCode());
             }
-            measurements.add(meter.measure(context.getTenant(), processInstance));
         }
         if (measurements.isEmpty()) {
             return;
