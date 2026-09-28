@@ -83,7 +83,7 @@ class OrderDeliveryScenarioTest {
         send("AGENT_ACCEPTED", "2024-03-01 11:50:00", null);
         send("TRAVEL_STARTED", "2024-03-01 11:55:00", null);
         send("ARRIVED", "2024-03-01 12:45:00", "{\"route\":{\"distanceKm\":12},\"fuelLitres\":1.0}");
-        send("DELIVERED", "2024-03-01 12:55:00", "{\"parcelTemperatureC\":40}");
+        send("DELIVERED", "2024-03-01 12:55:00", "{\"parcelTemperatureC\":40,\"deliveryCost\":9.5}");
 
         awaitTrue(() -> "Completed".equals(process().getStatus()));
         send("RATED", "2024-03-02 08:00:00", "{\"review\":{\"stars\":4}}");
@@ -105,6 +105,12 @@ class OrderDeliveryScenarioTest {
         assertActual("TRAVEL", "FUEL", "0.6", Conformance.OUT_OF_TOLERANCE);
         assertActual("DELIVERED", "TEMPERATURE", "10", Conformance.OUT_OF_TOLERANCE);
         assertActual("DELIVERED", "TIME", "PT-5M", Conformance.WITHIN_TOLERANCE);
+        // the order as a whole: its cost, planned when it was created, actual on the event that completed it
+        MeasurementInstance cost = mongo.findAll(MeasurementInstance.class).stream()
+                .filter(m -> "COST".equals(m.getCode()) && "A".equals(m.getType())).findFirst().orElseThrow();
+        assertThat(cost.getStepInstanceId()).as("process level").isNull();
+        assertThat(cost.getDeviation()).isEqualTo("1.5");
+        assertThat(cost.getConformance()).isEqualTo(Conformance.OUT_OF_TOLERANCE);
         // rated the next morning, after the order completed: one star below plan, within tolerance
         assertActual("RATED", "RATING", "-1", Conformance.WITHIN_TOLERANCE);
     }
