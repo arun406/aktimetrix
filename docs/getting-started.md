@@ -3,7 +3,7 @@
 [← Back to README](../README.md)
 
 > This guide describes the **reference implementation**, which binds the message broker to Apache Kafka and the
-> state store to MongoDB. The model itself is technology-neutral: see the [README](../README.md#42-infrastructure-contract).
+> state store to MongoDB. The model itself is technology-neutral: see the [README](../README.md#52-infrastructure-contract).
 
 ## Run the reference project
 
