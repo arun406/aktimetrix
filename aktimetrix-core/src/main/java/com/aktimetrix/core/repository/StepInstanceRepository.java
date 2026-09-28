@@ -36,7 +36,7 @@ public interface StepInstanceRepository extends MongoRepository<StepInstance, St
      * Steps whose deadline ({@code lateAfter}) is before {@code now}, that have not completed and are not already
      * overdue.
      */
-    @Query("{ 'status' : { $nin: ['Completed', 'Cancelled'] }, 'lateAfter': { $lt: ?0 }, 'timeliness': { $ne: 'OVERDUE' } }")
+    @Query("{ 'status' : { $nin: ['Completed', 'Cancelled', 'Skipped'] }, 'lateAfter': { $lt: ?0 }, 'timeliness': { $ne: 'OVERDUE' } }")
     List<StepInstance> findOverdue(LocalDateTime now);
 
     /**

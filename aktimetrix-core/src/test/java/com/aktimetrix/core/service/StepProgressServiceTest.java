@@ -216,6 +216,46 @@ class StepProgressServiceTest {
     }
 
     @Test
+    void anExplicitEndEventCompletesTheProcessAndSkipsItsOpenMandatorySteps() {
+        // the order is closed before it was delivered, and before the customer rated it
+        process.setProcessCode("ORDER_DELIVERY");
+        ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
+        definition.setEndEventCodes(List.of("ORDER_CLOSED_EVENT"));
+        when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
+        when(processDefinitionService.findByCode(TENANT, "ORDER_DELIVERY")).thenReturn(definition);
+        StepInstance place = step("PLACE", Constants.STATUS_COMPLETED);
+        StepInstance deliver = step("DELIVER", Constants.STATUS_CREATED);
+        StepInstance rated = step("RATED", Constants.STATUS_CREATED);
+        givenSteps(place, deliver, rated);
+        givenDefinition("PLACE", List.of("ORDER_PLACED_EVENT"), List.of());
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+        givenDefinition("RATED", List.of("ORDER_RATED_EVENT"), List.of()).setOptionalInd("Y");
+
+        service.recordMilestones(TENANT, "com.ecom.order", "1234", "ORDER_CLOSED_EVENT", SHIPPED_AT);
+
+        assertThat(process.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
+        assertThat(process.getEndedAt()).isEqualTo(SHIPPED_AT);
+        assertThat(deliver.getStatus()).isEqualTo(Constants.STATUS_SKIPPED);
+        assertThat(rated.getStatus()).as("optional: may still happen").isEqualTo(Constants.STATUS_CREATED);
+        verify(stepInstancePublisherService).publish(deliver, "SKIPPED");
+        verify(processInstancePublisherService).publish(process, "COMPLETED");
+    }
+
+    @Test
+    void withExplicitEndEventsTheLastStepDoesNotCompleteTheProcess() {
+        process.setProcessCode("ORDER_DELIVERY");
+        ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
+        definition.setEndEventCodes(List.of("ORDER_CLOSED_EVENT"));
+        when(processDefinitionService.findByCode(TENANT, "ORDER_DELIVERY")).thenReturn(definition);
+        givenSteps(step("DELIVER", Constants.STATUS_CREATED));
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+
+        service.recordMilestone("ORDER_DELIVERED_EVENT", process, SHIPPED_AT);
+
+        assertThat(process.isComplete()).as("waits for ORDER_CLOSED_EVENT").isFalse();
+    }
+
+    @Test
     void aCompletedProcessCannotBeCancelled() {
         process.setComplete(true);
         process.setStatus(Constants.STATUS_COMPLETED);
