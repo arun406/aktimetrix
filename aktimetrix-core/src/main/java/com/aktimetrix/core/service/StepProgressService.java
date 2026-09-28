@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -202,13 +203,24 @@ public class StepProgressService {
 
     private void forecast(StepInstance source, Duration delay, List<StepInstance> steps,
                           Map<String, StepDefinition> definitions) {
-        stepPlanner.forecast(source, delay, steps, definitions).forEach(atRisk -> {
+        final Map<StepInstance, LocalDateTime> expectedBefore = new IdentityHashMap<>();
+        steps.forEach(step -> expectedBefore.put(step, step.getExpectedAt()));
+        final List<StepInstance> newlyAtRisk = stepPlanner.forecast(source, delay, steps, definitions);
+        newlyAtRisk.forEach(atRisk -> {
             logger.warn("Step {} of process instance {} is at risk: expected at {}, after its deadline {}",
                     atRisk.getStepCode(), atRisk.getProcessInstanceId(), atRisk.getExpectedAt(), atRisk.getLateAfter());
             stepInstanceService.save(atRisk);
             stepInstancePublisherService.publish(atRisk, Timeliness.AT_RISK.name());
             metrics.stepAtRisk(atRisk);
         });
+        // a step already at risk whose forecast moved later: keep and republish the new expected time
+        steps.stream()
+                .filter(step -> !newlyAtRisk.contains(step) && step.getTimeliness() == Timeliness.AT_RISK)
+                .filter(step -> !Objects.equals(expectedBefore.get(step), step.getExpectedAt()))
+                .forEach(step -> {
+                    stepInstanceService.save(step);
+                    stepInstancePublisherService.publish(step, Timeliness.AT_RISK.name());
+                });
     }
 
     /**

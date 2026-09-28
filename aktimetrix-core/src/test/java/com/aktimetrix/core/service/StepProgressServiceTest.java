@@ -407,6 +407,25 @@ class StepProgressServiceTest {
         assertThat(registry.get("aktimetrix.steps.overdue").counter().count()).isEqualTo(1);
     }
 
+    @Test
+    void aStepAlreadyAtRiskKeepsItsLaterForecast() {
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
+        ship.setTimeliness(Timeliness.OVERDUE);
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        deliver.setTimeliness(Timeliness.AT_RISK);
+        deliver.setExpectedAt(LocalDateTime.of(2022, 5, 23, 9, 47));
+        givenSteps(ship, deliver);
+        givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 3, 0));
+
+        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 11, 0));
+        verify(stepInstanceService).save(deliver);
+        verify(stepInstancePublisherService).publish(deliver, "AT_RISK");
+        assertThat(registry.find("aktimetrix.steps.at.risk").counter()).isNull();
+    }
+
     private static StepInstance planned(StepInstance step, LocalDateTime plannedAt) {
         step.setPlannedAt(plannedAt);
         step.setLateAfter(plannedAt);
