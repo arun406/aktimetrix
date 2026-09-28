@@ -12,7 +12,7 @@
 <h1 align="center">Aktimetrix</h1>
 
 <p align="center">
-  <b>Plan-versus-actual monitoring of long-running business processes, derived from the events your systems already emit.</b><br>
+  <b>Plan-versus-actual monitoring of long-running business processes, in any dimension, derived from the events your systems already emit.</b><br>
   <sub>A white paper and its open-source reference implementation</sub>
 </p>
 
@@ -29,15 +29,19 @@
 
 ## Abstract
 
-Business processes such as *order → ship → deliver*, *apply → approve → disburse* or *book → accept → fly →
-deliver* span many independent systems. Each system records its own step, but no system holds the whole journey,
-so a delay is usually discovered by the customer before it is discovered by the business.
+Business processes such as *order → pay → deliver*, *apply → approve → disburse* or *book → accept → fly → deliver*
+span many independent systems. Each system records its own step, but no system holds the whole journey, so a
+deviation from what was promised is usually discovered by the customer before it is discovered by the business.
 
-**Aktimetrix** is a model and a runtime for closing that gap. A process is declared once as an ordered set of
-milestones. For each business entity, such as an order or a loan application, the runtime derives a **plan** (when
-each milestone should occur), records the **actuals** as business events arrive, and classifies every milestone as
-**on time**, **late**, **at risk** or **overdue**. The results can be queried ("where is order 1234?") and are
-published as events of their own, so that dashboards, alerting and analytics can act on them.
+**Aktimetrix** is a model and a runtime for closing that gap. A process is declared once as an ordered set of steps,
+and each process and step declares the **measurements** that matter to the business: when it happens, but equally the
+distance travelled, the fuel consumed, the temperature of the goods or the rating the customer gives. For each
+business entity, such as an order, the runtime derives a **plan**, the expected value of every measurement, by rules
+such as *priority customers are delivered within one day*. As business events arrive, it records the **actual**
+values, compares each with its plan, and reports the deviation and whether it is within tolerance. For time, which
+also lets it act before a step happens, it marks steps and processes **on time**, **late**, **at risk** or
+**overdue**. The results can be queried ("where is order 1234?"), are published as events of their own, and feed
+**metrics** computed from the measurements.
 
 The model depends on only two infrastructure capabilities: a **message broker** that delivers business events, and
 a **state store** that holds definitions and running instances. Neither is tied to a particular product. This
@@ -73,22 +77,56 @@ organisations rely on batch reports that arrive after the fact, or on bespoke in
 process.
 
 **Business process monitoring** provides that layer. It follows each business entity through a defined sequence of
-milestones and continuously compares the plan with the actuals. Aktimetrix treats this as a general, reusable
-capability: the process is data, the planning rules are configuration or small pieces of code, and everything else,
-from event routing to state management, deadline tracking and publication of results, is provided by the runtime.
+steps and continuously compares the plan with the actuals, in every dimension the business measures. Aktimetrix
+treats this as a general, reusable capability: the process is data, the planning rules are configuration or small
+pieces of code, and everything else, from event routing to state management, deadline tracking, comparison and
+publication of results, is provided by the runtime.
+
+### 1.1 A worked example: order delivery
+
+An order is created: that is a business event, and it starts an **order delivery** process for the order. From the
+order, rules derive the **plan**: this customer is a priority customer, so the order is to be delivered within one
+day, and each step has an expected time; the route is expected to be 5 km, to use 0.4 litres of fuel, to keep the
+parcel at 30 °C, and to earn a five-star rating. The process then runs through its steps, each reported by an event
+from the system that performs it, and each event records the **actual** measurements:
+
+| Step | Reported by | Measurements |
+|---|---|---|
+| 1. Order confirmed | shop | time |
+| 2. Payment confirmed | payment provider | time |
+| 3. Handed to the delivery agent | warehouse | time |
+| 4. Delivery agent accepted | delivery app | time |
+| 5. Travelled to the customer | delivery app | time, distance, fuel |
+| 6. Delivered | delivery app | time, temperature of the parcel |
+| 7. Rated by the customer | shop | rating |
+
+<p align="center">
+  <img src="./img/plan-vs-actual.svg" alt="Plan versus actual for order 1234, per step and measurement, and the metrics computed from them" width="100%">
+</p>
+
+Every actual value is compared with its plan. The route was 12 km instead of 5, used 1.0 litre instead of 0.4 and
+kept the parcel at 40 °C instead of 30, all outside their tolerances; the customer gave four stars instead of five,
+within tolerance; four steps ran late, but the order was still delivered well within its one-day promise. From these
+measurements follow the **metrics** a business steers by: the share of steps on time, distance over plan, fuel per
+kilometre, the average rating, per order and across all orders. Time is one measurement among these, with one extra
+role: because a plan says *when* a step should happen, the runtime can also raise an alarm while a step is **at risk**
+or **overdue**, before anyone has measured anything.
+
+The rest of this paper describes the model behind this example (§3), how the runtime executes it (§4–§6), and how an
+application adapts it (§7).
 
 ## 2. Design goals
 
 | Goal | Consequence in the design |
 |---|---|
 | **Non-invasive** | Source systems are not changed. They publish the business events they already produce, in their own format; an event mapper translates them, and Aktimetrix only consumes them. |
-| **Declarative** | Processes, steps and simple deadlines are data, versioned with the application or managed at run time. |
-| **Minimal code** | A working monitor needs definitions and, only for computed deadlines, a meter. Every other component has a default. |
+| **Declarative** | Processes, steps, measurements, fixed plans, durations and tolerances are data, versioned with the application or managed at run time. |
+| **Minimal code** | A working monitor needs definitions and, only for plans computed by rules, a meter. Every other component has a default. |
 | **Infrastructure-neutral model** | The model assumes only a message broker and a state store with the properties listed in [§4.2](#42-infrastructure-contract). |
 | **Reliable** | Results are persisted before they are published; an unavailable broker delays results but does not lose them. |
 | **Idempotent** | Replayed or duplicated events do not create duplicate processes or complete a step twice. |
 | **Multi-tenant** | Every definition and instance belongs to a tenant; definitions never apply across tenants. |
-| **Observable** | The runtime reports its own throughput and the timeliness of the processes it monitors as metrics. |
+| **Observable** | The runtime reports its own throughput, and the timeliness and deviations of the processes it monitors, as metrics. |
 
 ## 3. The monitoring model
 
@@ -103,29 +141,37 @@ The model separates **what a process looks like** from **what is happening to on
 | Definition (design time) | Instance (run time, one per business entity) |
 |---|---|
 | **Process**: a named business process, such as `ORDER_DELIVERY`, the entity type it follows and the events that start it | **Process instance**: that process for one entity, such as order `#1234` |
-| **Step**: one milestone, such as `SHIP`, and the events that start and complete it; shared by the tenant's processes, and adaptable per process | **Step instance**: `SHIP` for order `#1234`, with its planned time, actual time and timeliness |
-| **Measurement**: a user-defined dimension observed at the process or at a step (`TIME`, distance, rating, weight…), either **P**lanned or **A**ctual | **Measurement instance**: one value for one process or step instance, such as *planned TIME of SHIP = 2022-05-23T01:46* |
+| **Step**: one milestone, such as `DELIVERED`, and the events that start and complete it; shared by the tenant's processes, and adaptable per process | **Step instance**: `DELIVERED` for order `#1234`, with its status, planned and actual time, and timeliness |
+| **Measurement**: a user-defined dimension observed at the process or at a step (time, distance, fuel, temperature, rating…), either **P**lanned or **A**ctual | **Measurement instance**: one value for one process or step instance, such as *planned DISTANCE of TRAVEL = 5 km*, or *actual DISTANCE = 12 km, 7 km over plan, outside tolerance* |
 
 A **business entity** is the real-world object being followed. It is identified by an entity type and an entity id,
 and it is owned by the source systems, not by Aktimetrix.
 
-### 3.2 Measurements
+### 3.2 Measurements: plan and actual
 
-A **measurement** is a dimension of the process that can be planned and observed. Measurement types are defined by
-the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `WEIGHT` (kg), `PIECES`, `RATING`
-(1–5), or any other quantity the business cares about.
+A **measurement** is anything about a process that the business plans and observes. Measurement types are defined by
+the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `FUEL` (litres), `TEMPERATURE` (°C),
+`RATING` (stars), `WEIGHT` (kg), or any other quantity.
 
-- **Level.** A measurement is attached either to a **process**, when it describes the entity as a whole (the total
+- **Level.** A measurement belongs either to a **process**, when it describes the entity as a whole (the total
   distance of a delivery, the customer's rating of an order), or to a **step**, when it describes one milestone (the
-  weight accepted at `ACCEPT`, the time of `SHIP`).
-- **Kind.** Each measurement is **planned** (`P`), computed by a meter when the process or step instance is
-  created, or **actual** (`A`), recorded when the step or process completes. An actual value is read from the event
-  that completed it (the weight on a scale reading, the distance on a delivery confirmation) or computed by a meter.
-  Comparing the two, for any dimension, is the core of the model.
-- **Time is special.** `TIME` is the one dimension the runtime interprets itself: a step's planned `TIME` becomes
-  its planned time, from which its deadline and its timeliness follow ([§5.3](#53-timeliness)). Other dimensions are
-  computed, stored and published as measurement instances, so that consumers can compare plan and actual in the
-  terms of their own domain.
+  fuel used while travelling, the temperature on delivery, the time of each step).
+- **Plan.** A **planned** (`P`) value is set when the process or step instance is created: a fixed value from the
+  definition (a rating of 5), a duration (delivered within one day), or the result of a rule written as a **meter**
+  (priority customers within one day, others within three; the route length from the address).
+- **Actual.** An **actual** (`A`) value is recorded when the step or process completes: read from the event that
+  completed it (the distance on the delivery confirmation, the rating on the review) or computed by a meter. The
+  actual time of a step is always recorded: it is when its event happened.
+- **Comparison.** Each actual value is compared with the planned value of the same measurement: the **deviation**
+  is actual minus planned (+7 km), and, when the measurement declares a **tolerance** (2 km, or 20 %), the actual is
+  **within** or **outside** tolerance. Plan, actual and comparison are stored and published together.
+- **Time, in addition.** A planned time is also a **deadline**. Besides being compared once it happens, a step is
+  watched while it has not: it becomes `AT_RISK` when an earlier delay pushes its forecast past its deadline, and
+  `OVERDUE` when the deadline passes without its event ([§5.3](#53-comparing-plan-and-actual)).
+
+**Metrics** are computed from the measurements: by the runtime for the whole population (how many actuals were
+within tolerance, the distribution of deviations, the lateness of steps, [§8](#8-observability)), and by consumers of
+the published measurement events for anything domain-specific, such as fuel per kilometre.
 
 ### 3.3 Metadata
 
@@ -189,44 +235,73 @@ Every business event passes through the same four stages.
 </p>
 
 1. **Start.** If the event's code is one of a process's start events, a process instance and its step instances
-   are created for the entity, unless one already exists.
-2. **Plan.** Each new step receives a planned time and a **deadline**: the planned time plus the step's tolerance.
+   are created for the entity, unless one already exists. The same event may also complete the first step.
+2. **Plan.** The new process and its steps receive their planned measurements; a planned time also sets a
+   **deadline**: the planned time plus its tolerance.
 3. **Record.** The event is applied to every running process of the entity. Steps that list it are started or
-   completed, with the event's time as their actual time.
+   completed; a completed step records its actual measurements, starting with its time, and each is compared with
+   its plan.
 4. **Watch.** Independently of events, a monitor looks for steps whose deadline has passed without the event that
    completes them.
 
 ### 5.1 Lifecycle
 
+**Start and end of a process.** Both can be implicit or explicit, as the business case requires:
+
+| | Implicit | Explicit |
+|---|---|---|
+| **Start** | a business event that is also the first milestone, e.g. *order booked*: it starts the process and completes its first step | a dedicated event, e.g. *order fulfilment started*, raised by whichever system decides that monitoring begins |
+| **End** | the last mandatory step completes, e.g. *order delivered* | a dedicated event, e.g. *order closed* after the returns window: the process completes on it, whatever its steps |
+
+A process definition lists its start events and, optionally, its end and cancel events. Without end events, a process
+ends implicitly. With them, it ends only on one of them; its mandatory steps still open become `Skipped`, and its
+optional ones stay open.
+
 | Status | A step enters it when | A process enters it when |
 |---|---|---|
-| `Created` | the process instance is created | it is created |
+| `Created` | the process instance is created | it is created, by one of its start events |
 | `Started` | an event in its start events arrives, and it also defines end events | n/a |
-| `Completed` | an event in its end events arrives; a step with no end events is a single milestone and completes on its start event | all of its mandatory steps have completed |
+| `Completed` | an event in its end events arrives; a step with no end events is a single milestone and completes on its start event | implicitly, its last mandatory step completes; or explicitly, one of its end events arrives |
+| `Skipped` | it is mandatory and still open when its process ends explicitly | n/a |
 | `Cancelled` | its process is cancelled before it completed | an event in the process's cancel events arrives, e.g. *order cancelled* |
 
-Completed and cancelled processes are no longer monitored: a cancelled order does not leave steps to go overdue.
+A cancelled process is no longer monitored: a cancelled order does not leave steps to go overdue. A completed
+process still records its optional steps, which may happen later: the customer's rating the day after delivery.
 
 ### 5.2 Planning
 
-A step's planned time is derived in one of three ways:
+Planned values are derived when a process instance is created, for the process and for each of its steps:
 
-| Method | Declared as | Planned time |
+| Method | Declared as | Planned value |
 |---|---|---|
-| **Duration from the start** | `"plannedWithin": "PT2H"` | process start + 2 h |
-| **Duration from another step** | `"plannedAfter": "SHIP", "plannedWithin": "PT8H"` | actual completion of `SHIP` + 8 h, set when `SHIP` completes |
-| **Meter** | a planned `TIME` measurement and a meter for the step | whatever the meter computes, for example from business hours or a customer's service level |
+| **Fixed value** | `{ "measurementCode": "RATING", "type": "P", "value": "5" }` | the same for every entity: 5 stars |
+| **Duration from the start** (time) | `"plannedWithin": "PT2H"` on a step, or `"P1D"` on the process | start + 2 h; start + 1 day |
+| **Duration from another step** (time) | `"plannedAfter": "TRAVEL", "plannedWithin": "PT15M"` | actual completion of `TRAVEL` + 15 min, set when it completes |
+| **Rule** | a planned measurement and a **meter** for it, on a step or on the process | whatever the meter computes from the entity: 1 day for priority customers, 3 otherwise; the route length to the address. A planned `TIME` of the process is its deadline. |
 
-`"tolerance": "PT15M"` allows a step to run 15 minutes past its planned time before it is considered late.
+A **tolerance** says how far the actual may deviate before it counts: `"tolerance": "20%"` or `"2"` on a
+measurement, and `"tolerance": "PT15M"` on a step's or process's time. Most measurements have a bad direction: a
+longer route, more fuel or a hotter parcel is worse, a lower rating is worse. `"worseWhen": "HIGHER"` or `"LOWER"`
+makes only that direction count, so a shorter route is never out of tolerance; without a tolerance, the plan itself
+is then the limit: *at most 30 °C*, *at least 4 stars*.
 
-### 5.3 Timeliness
+### 5.3 Comparing plan and actual
 
-Timeliness is defined on the `TIME` dimension only: it compares when a step happened with when it was planned.
-Plan-versus-actual for other dimensions is expressed by their measurement instances rather than by a timeliness.
+**Every measurement.** When an actual value is recorded, it is compared with the planned value of the same
+measurement, for the same step or process:
 
-A process may also have a deadline of its own, a duration from its start such as *delivered within 24 hours*. It is
-then judged the same way when its last mandatory step completes, and marked overdue if the deadline passes first,
-independently of the timeliness of its steps.
+| Field | Meaning | Example |
+|---|---|---|
+| `plannedValue` | the plan | `5` km |
+| `value` | the actual | `12` km |
+| `deviation` | actual minus planned | `7` km, i.e. 12 − 5 |
+| `conformance` | `WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`, when a tolerance is declared | `OUT_OF_TOLERANCE` (tolerance 20 %) |
+
+Values that are not numbers are recorded side by side, without a deviation. The actual time of a step is compared the
+same way, with the deviation as a duration (`PT40M`).
+
+**Time: timeliness.** Because a plan says *when* a step should happen, time is also judged while it has not
+happened. Each step, and each process with a deadline of its own (*delivered within one day*), has a **timeliness**:
 
 | Timeliness | Assigned when |
 |---|---|
@@ -234,6 +309,9 @@ independently of the timeliness of its steps.
 | `LATE` | The step completes after its deadline. |
 | `AT_RISK` | The step has not completed, and an earlier step has run late by enough to push its forecast past its deadline. |
 | `OVERDUE` | The deadline has passed and the step's event has not arrived. |
+
+A process with a deadline is judged when its last mandatory step completes, independently of its steps: in the
+example above four steps ran late, yet the order was delivered on time.
 
 The distinction between `LATE` and `OVERDUE` matters in practice. `LATE` is known only once the step happens;
 `OVERDUE` is raised precisely because it has *not* happened, which is often the case that most needs attention.
@@ -257,8 +335,8 @@ querying the state store.
 | Event type | Event codes | Entity | Keyed by |
 |---|---|---|---|
 | `Process_Event` | `CREATED`, `COMPLETED`, `CANCELLED`, `OVERDUE` | the process instance: status, `startedAt`, `plannedAt`, `lateAfter`, `endedAt`, `timeliness`, metadata, and its steps | process instance id |
-| `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
-| `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, and the process and step it belongs to | measurement instance id |
+| `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
+| `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, the process and step it belongs to, and for an actual its `plannedValue`, `deviation` and `conformance` | measurement instance id |
 
 A step becoming overdue, for example, is published as:
 
@@ -337,10 +415,14 @@ The runtime reports its own behaviour and the health of the monitored processes 
 | `aktimetrix.steps.completed` | Steps completed, by step and timeliness. |
 | `aktimetrix.steps.lateness` | How long after its planned time each step completed. |
 | `aktimetrix.steps.at.risk` / `.overdue` | Steps forecast to be late, and steps past their deadline. |
+| `aktimetrix.measurements.actual` | Actual measurements recorded, by measurement and conformance. |
+| `aktimetrix.measurements.deviation` | Distribution of actual minus planned, by measurement. |
 | `aktimetrix.outbox.pending` | Results not yet published. |
 
-Together they answer operational questions directly, such as "what share of shipments were late this week?", without
-a separate analytics pipeline.
+Together they answer operational questions directly, without a separate analytics pipeline: *what share of
+deliveries were late this week? How often was the route longer than planned, and by how much?* Metrics specific to a
+domain, such as fuel per kilometre or the average rating per region, are computed by consumers of the published
+measurement events, which carry the plan, the actual and the deviation together.
 
 ## 9. Reference implementation
 
@@ -541,7 +623,7 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
 - [x] Planned durations and tolerances in step definitions
 - [x] Steps defined or adapted per process
 - [x] Process cancellation, and a deadline for the whole process
-- [x] Meters at process and step level, for any user-defined dimension; planned and actual values
+- [x] Planned and actual values in any user-defined dimension, at process and step level, compared with deviation and tolerance
 - [x] Source systems keep their own event format, through an event mapper
 - [x] Query API for the state of an entity
 - [x] Reliable publication through a transactional outbox, with atomic writes on transactional stores
@@ -575,11 +657,14 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
 | **Step definition** | The declaration of a milestone: the events that start and complete it, its plan, tolerance and measurements. Shared by a tenant's processes, and adaptable per process. |
 | **Process instance** / **step instance** | A process, or one of its steps, for one business entity. |
 | **Measurement** | A user-defined dimension observed at a process or step, such as time, distance or rating. |
-| **Planned** / **actual** (`P` / `A`) | What a measurement should be, computed when the instance is created; and what it was, recorded when it completes. |
-| **Meter** | Application code that computes a planned or actual measurement. |
+| **Planned** / **actual** (`P` / `A`) | What a measurement should be, set when the instance is created; and what it was, recorded when it completes. |
+| **Deviation** | Actual minus planned value of a measurement. |
+| **Tolerance** / **conformance** | How far an actual may deviate from its plan; and whether it did (`WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`). |
+| **Metric** | A figure computed from measurements, for one entity or across all of them, such as the share of steps on time or fuel per kilometre. |
+| **Meter** | Application code that computes a planned or actual measurement, typically a planning rule. |
 | **Metadata** | Domain data kept on an instance, such as an order's customer, used by meters and passed to consumers. |
 | **Deadline** | The planned time plus the tolerance: the moment after which a step or process is late. |
-| **Timeliness** | How a step or process compares with its deadline: `ON_TIME`, `LATE`, `AT_RISK` or `OVERDUE`. |
+| **Timeliness** | How a step or process compares with its planned time: `ON_TIME`, `LATE`, `AT_RISK` or `OVERDUE`. |
 | **Forecast** | The expected time of a later step, shifted by the delay of an earlier one; the basis of `AT_RISK`. |
 | **Tenant** | An independent set of definitions and instances, such as one business unit or customer. |
 | **Event mapper** | Application code that translates a source system's own message format into business events. |

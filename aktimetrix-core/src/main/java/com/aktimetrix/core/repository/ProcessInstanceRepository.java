@@ -41,8 +41,11 @@ public interface ProcessInstanceRepository extends MongoRepository<ProcessInstan
     @Query("{'tenant': ?0 , 'entityId': ?1 }")
     List<ProcessInstance> findByTenantAndEntityId(String tenant, String entityId);
 
-    @Query("{'tenant': ?0 , 'entityType' : ?1, 'entityId': ?2 , 'complete': false }")
-    List<ProcessInstance> findActiveByTenantAndEntityTypeAndEntityId(String tenant, String entityType, String entityId);
+    /**
+     * The entity's process instances that are running or completed, but not cancelled.
+     */
+    @Query("{'tenant': ?0 , 'entityType' : ?1, 'entityId': ?2 , 'status': { $ne: 'Cancelled' } }")
+    List<ProcessInstance> findNotCancelled(String tenant, String entityType, String entityId);
 
     /**
      * Running processes whose deadline ({@code lateAfter}) is before {@code now} and that are not yet marked overdue.

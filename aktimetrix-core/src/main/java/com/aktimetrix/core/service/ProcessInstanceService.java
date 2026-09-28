@@ -66,8 +66,8 @@ public class ProcessInstanceService {
     /**
      * Returns the process instances of the given business entity that are not complete yet.
      */
-    public List<ProcessInstance> getActiveProcessInstances(String tenant, String entityType, String entityId) {
-        return this.repository.findActiveByTenantAndEntityTypeAndEntityId(tenant, entityType, entityId);
+    public List<ProcessInstance> getNotCancelledProcessInstances(String tenant, String entityType, String entityId) {
+        return this.repository.findNotCancelled(tenant, entityType, entityId);
     }
 
 
