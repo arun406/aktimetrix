@@ -4,10 +4,12 @@ import com.aktimetrix.core.api.MeasurementType;
 import lombok.Data;
 
 /**
- * A measurement declared on a step or process definition: its code and whether it is planned or actual.
+ * A measurement declared on a step or process definition: what to measure ({@code measurementCode}, a
+ * user-defined dimension such as {@code TIME}, {@code DISTANCE} or {@code RATING}), and whether the value is planned
+ * or actual.
  */
 @Data
-public class StepMeasurement {
+public class MeasurementDefinition {
     private String measurementCode;
     /**
      * {@code P}: planned, computed by a meter when the instance is created. {@code A}: actual, recorded when the step

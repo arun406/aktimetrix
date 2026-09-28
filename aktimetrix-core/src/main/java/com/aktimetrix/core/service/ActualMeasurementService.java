@@ -7,7 +7,7 @@ import com.aktimetrix.core.meter.api.ProcessMeter;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
-import com.aktimetrix.core.referencedata.model.StepMeasurement;
+import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.transferobjects.Event;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +38,9 @@ public class ActualMeasurementService {
     /**
      * @param event the event that completed the step; may be {@code null}
      */
-    public List<MeasurementInstance> forStep(StepInstance step, List<StepMeasurement> declared, Event<?, ?> event) {
+    public List<MeasurementInstance> forStep(StepInstance step, List<MeasurementDefinition> declared, Event<?, ?> event) {
         final List<MeasurementInstance> actuals = new ArrayList<>();
-        for (StepMeasurement measurement : actualsOnly(declared)) {
+        for (MeasurementDefinition measurement : actualsOnly(declared)) {
             final MeasurementInstance actual;
             if (measurement.getValueFrom() != null) {
                 final Object value = read(event, measurement.getValueFrom());
@@ -60,10 +60,10 @@ public class ActualMeasurementService {
     /**
      * @param event the event that completed the process; may be {@code null}
      */
-    public List<MeasurementInstance> forProcess(ProcessInstance process, List<StepMeasurement> declared,
+    public List<MeasurementInstance> forProcess(ProcessInstance process, List<MeasurementDefinition> declared,
                                                 Event<?, ?> event) {
         final List<MeasurementInstance> actuals = new ArrayList<>();
-        for (StepMeasurement measurement : actualsOnly(declared)) {
+        for (MeasurementDefinition measurement : actualsOnly(declared)) {
             final MeasurementInstance actual;
             if (measurement.getValueFrom() != null) {
                 final Object value = read(event, measurement.getValueFrom());
@@ -80,10 +80,10 @@ public class ActualMeasurementService {
         return actuals;
     }
 
-    private static List<StepMeasurement> actualsOnly(List<StepMeasurement> declared) {
-        final List<StepMeasurement> actuals = new ArrayList<>();
+    private static List<MeasurementDefinition> actualsOnly(List<MeasurementDefinition> declared) {
+        final List<MeasurementDefinition> actuals = new ArrayList<>();
         if (declared != null) {
-            for (StepMeasurement measurement : declared) {
+            for (MeasurementDefinition measurement : declared) {
                 // the actual TIME of a step is always recorded, from its event's time
                 if (MeasurementType.A == measurement.getType()
                         && !Constants.MEASUREMENT_CODE_TIME.equals(measurement.getMeasurementCode())) {
@@ -94,7 +94,7 @@ public class ActualMeasurementService {
         return actuals;
     }
 
-    private static void add(List<MeasurementInstance> actuals, MeasurementInstance actual, StepMeasurement measurement,
+    private static void add(List<MeasurementInstance> actuals, MeasurementInstance actual, MeasurementDefinition measurement,
                             String owner) {
         if (actual != null) {
             actuals.add(actual);

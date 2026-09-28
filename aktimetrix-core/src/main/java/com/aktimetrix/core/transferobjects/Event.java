@@ -7,6 +7,17 @@ import lombok.ToString;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
+/**
+ * A business event, as Aktimetrix processes it. Inbound messages are read into this envelope, directly or by an
+ * {@code EventMapper}; outbound process, step and measurement events use it too.
+ * <p>
+ * Required inbound: {@code tenantKey}, {@code eventCode}, {@code entityId}, and {@code entityType} matching the process
+ * definition. {@code eventTime} (or {@code eventUTCTime}) is when it happened in the business, and {@code entity} the
+ * domain object, which becomes metadata.
+ *
+ * @param <U> type of the entity
+ * @param <V> type of the event details
+ */
 @Data
 @ToString
 public class Event<U, V> {

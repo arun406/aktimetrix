@@ -39,7 +39,7 @@ public class ProcessDefinition {
      * Measurements of the process as a whole, e.g. its total distance; planned ones are computed by
      * process-level meters when the process instance is created.
      */
-    private List<StepMeasurement> measurements;
+    private List<MeasurementDefinition> measurements;
     /**
      * ISO-8601 duration within which the whole process should complete, from its start, e.g. {@code P1D}.
      * Optional; gives the process its own deadline and timeliness.

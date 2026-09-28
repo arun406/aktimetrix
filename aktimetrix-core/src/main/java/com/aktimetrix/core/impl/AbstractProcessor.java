@@ -14,7 +14,7 @@ import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
-import com.aktimetrix.core.referencedata.model.StepMeasurement;
+import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.MeasurementInstancePublisherService;
 import com.aktimetrix.core.service.MeasurementInstanceService;
@@ -118,7 +118,7 @@ public abstract class AbstractProcessor implements Processor {
         }
         final ProcessInstance processInstance = context.getProcessInstance();
         final List<MeasurementInstance> measurements = new ArrayList<>();
-        for (StepMeasurement measurement : definition.getMeasurements()) {
+        for (MeasurementDefinition measurement : definition.getMeasurements()) {
             if (MeasurementType.P != measurement.getType()) {
                 continue;
             }
