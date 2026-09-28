@@ -33,6 +33,14 @@ public interface MeasurementInstanceRepository extends MongoRepository<Measureme
      * @param stepInstanceId    step instance id
      * @return list of measurement instances
      */
+    /**
+     * Measurements of one step, or of the process itself when {@code stepInstanceId} is {@code null}, with the code
+     * and type.
+     */
+    @Query("{ 'tenant': ?0, 'processInstanceId': ?1, 'stepInstanceId': ?2, 'code': ?3, 'type': ?4 }")
+    List<MeasurementInstance> findByOwnerAndCodeAndType(String tenant, ObjectId processInstanceId, ObjectId stepInstanceId,
+                                                        String code, String type);
+
     @Query(" { 'tenant': ?0 , 'processInstanceId': ?1 , 'stepInstanceId': ?2} ")
     List<MeasurementInstance> findByProcessInstanceIdAndStepInstanceId(String tenant, ObjectId processInstanceId, ObjectId stepInstanceId);
 }

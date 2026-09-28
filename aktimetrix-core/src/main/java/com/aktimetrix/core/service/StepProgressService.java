@@ -1,5 +1,6 @@
 package com.aktimetrix.core.service;
 
+import com.aktimetrix.core.api.Conformance;
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.impl.DefaultContext;
@@ -240,10 +241,23 @@ public class StepProgressService {
         return null;
     }
 
+    /**
+     * The step's actual TIME, compared with its planned time like any other measurement: the deviation is a
+     * duration, and the conformance follows from its timeliness.
+     */
     private MeasurementInstance actualTime(StepInstance step, LocalDateTime occurredAt) {
-        return new MeasurementInstance(step.getTenant(), Constants.MEASUREMENT_CODE_TIME, String.valueOf(occurredAt),
-                Constants.MEASUREMENT_UNIT_TIMESTAMP, step.getProcessInstanceId(), step.getId(), step.getStepCode(),
-                Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(), ZonedDateTime.now(clock));
+        final MeasurementInstance actual = new MeasurementInstance(step.getTenant(), Constants.MEASUREMENT_CODE_TIME,
+                String.valueOf(occurredAt), Constants.MEASUREMENT_UNIT_TIMESTAMP, step.getProcessInstanceId(),
+                step.getId(), step.getStepCode(), Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(),
+                ZonedDateTime.now(clock));
+        if (step.getPlannedAt() != null) {
+            actual.setPlannedValue(String.valueOf(step.getPlannedAt()));
+            actual.setDeviation(Duration.between(step.getPlannedAt(), occurredAt).toString());
+            actual.setConformance(step.getTimeliness() == Timeliness.ON_TIME
+                    ? Conformance.WITHIN_TOLERANCE : Conformance.OUT_OF_TOLERANCE);
+        }
+        metrics.measurementRecorded(actual);
+        return actual;
     }
 
     /**

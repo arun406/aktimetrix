@@ -57,7 +57,7 @@ public interface StepInstanceRepository extends MongoRepository<StepInstance, St
             "    }\n" +
             "}", "{\n" +
             "    $lookup: {\n" +
-            "        from: 'measurementInstances',\n" +
+            "        from: 'measurement-instance',\n" +
             "        localField: '_id',\n" +
             "        foreignField: 'stepInstanceId',\n" +
             "        as: 'measurements'\n" +

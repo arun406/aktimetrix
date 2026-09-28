@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -124,7 +125,13 @@ public class DefaultMeasurementProcessor implements Processor {
                 logger.debug("measurement instance found for " + meter.getClass().getName());
                 return measurement;
             }
-            logger.warn("No meter registered for planned {} measurement of the {} step",
+            if (measurementDefinition.getValue() != null) {
+                return new MeasurementInstance(context.getTenant(), measurementDefinition.getMeasurementCode(),
+                        measurementDefinition.getValue(), measurementDefinition.getUnit(), stepInstance.getProcessInstanceId(),
+                        stepInstance.getId(), stepInstance.getStepCode(), Constants.PLAN_MEASUREMENT_TYPE,
+                        stepInstance.getLocationCode(), ZonedDateTime.now());
+            }
+            logger.warn("No meter registered, and no planned value, for the planned {} measurement of the {} step",
                     measurementDefinition.getMeasurementCode(), stepDefinition.getStepCode());
         }
         return null;
