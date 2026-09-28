@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.*;
 import com.aktimetrix.core.meter.api.Meter;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.referencedata.model.StepMeasurement;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
@@ -80,7 +81,7 @@ public class DefaultMeasurementProcessor implements Processor {
 
         // applicable step definitions
         logger.debug("finding applicable step definition for the {} step", stepCode);
-        StepDefinition stepDefinition = getStepDefinition(context.getTenant(), stepInstance.getStepCode());
+        StepDefinition stepDefinition = getStepDefinition(context, stepInstance.getStepCode());
 
         if (stepDefinition != null && !CollectionUtil.isEmptyOrNull(stepDefinition.getMeasurements())) {
             List<MeasurementInstance> measurementInstances = new ArrayList<>();
@@ -130,13 +131,19 @@ public class DefaultMeasurementProcessor implements Processor {
     }
 
     /**
-     * Returns Step Definition
-     *
-     * @param tenant tenant
-     * @param code   step code
-     * @return step definition
+     * The step's definition as its process uses it: from the process definition in the context, whose steps are
+     * already resolved, or else looked up.
      */
-    private StepDefinition getStepDefinition(String tenant, String code) {
-        return this.stepDefinitionService.findByStepCode(tenant, code);
+    private StepDefinition getStepDefinition(Context context, String code) {
+        final ProcessDefinition process = (ProcessDefinition) context.getProperty(Constants.PROCESS_DEFINITION);
+        if (process != null && process.getSteps() != null) {
+            for (StepDefinition step : process.getSteps()) {
+                if (code.equals(step.getStepCode())) {
+                    return step;
+                }
+            }
+        }
+        return this.stepDefinitionService.findStepDefinition(context.getTenant(),
+                process == null ? null : process.getProcessCode(), code);
     }
 }

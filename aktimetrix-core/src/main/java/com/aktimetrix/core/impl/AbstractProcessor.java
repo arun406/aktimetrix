@@ -173,6 +173,7 @@ public abstract class AbstractProcessor implements Processor {
             DefaultContext stepContext = new DefaultContext();
             stepContext.setTenant(context.getTenant());
             stepContext.setProcessType(Constants.METER_PROCESSOR);
+            stepContext.setProperty(Constants.PROCESS_DEFINITION, context.getProperty(Constants.PROCESS_DEFINITION));
             stepContext.setStepInstances(new ArrayList<>(List.of(step)));
             meterProcessor.process(stepContext);
         }

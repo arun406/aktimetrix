@@ -141,10 +141,28 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
 | `startEventCodes` | The events that create a process instance. |
-| `steps` | The step codes, in order. |
+| `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
 | `measurements` | Planned (`P`) measurements of the process as a whole, computed by process-level meters, e.g. `{ "measurementCode": "DISTANCE", "type": "P" }`. |
 
 ## Step definition fields
+
+Steps are defined in `step-definitions.json`, shared by every process of the tenant, or directly in a process's
+`steps`, or both: a field set in the process overrides the shared definition for that process only. A step used by
+a single process needs no shared definition at all.
+
+```json
+{ "tenant": "AA", "processCode": "EXPRESS_DELIVERY", "startEventCodes": ["EXPRESS_ORDER_PLACED_EVENT"],
+  "status": "CONFIRMED",
+  "steps": [
+    { "stepCode": "PLACE" },
+    { "stepCode": "SHIP", "plannedWithin": "PT2H" },
+    { "stepCode": "DELIVER", "startEventCodes": ["ORDER_DELIVERED_EVENT"], "plannedAfter": "SHIP", "plannedWithin": "PT6H" }
+  ] }
+```
+
+Here `SHIP` keeps its shared definition, such as the event that completes it, but must happen within 2 hours
+instead of the shared plan. Lists such as `startEventCodes` or `measurements` are replaced as a whole.
+
 
 | Field | Purpose |
 |---|---|

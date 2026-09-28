@@ -61,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * in-memory MongoDB.
  * <p>
  * A parcel is booked at 09:00. PICKUP is planned by a meter (+1 h, 10 minutes' tolerance), SORT by a duration from the
- * start (+3 h), and DELIVER 5 h after SORT completes. The process as a whole has a planned DISTANCE.
+ * start (+3 h), and DELIVER 5 h after SORT completes. DELIVER is defined only in the process, not as a shared step. The process as a whole has a planned DISTANCE.
  */
 @SpringBootTest(classes = {ParcelMonitor.class, MinimalMonitorTest.Metrics.class}, properties = {
         "aktimetrix.events.topic=parcel-events",

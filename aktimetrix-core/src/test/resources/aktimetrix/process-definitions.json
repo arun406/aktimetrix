@@ -5,7 +5,12 @@
     "entityType": "parcel",
     "startEventCodes": ["PARCEL_BOOKED"],
     "status": "CONFIRMED",
-    "steps": [ { "stepCode": "BOOK" }, { "stepCode": "PICKUP" }, { "stepCode": "SORT" }, { "stepCode": "DELIVER" } ],
+    "steps": [
+      { "stepCode": "BOOK" },
+      { "stepCode": "PICKUP" },
+      { "stepCode": "SORT" },
+      { "stepCode": "DELIVER", "startEventCodes": ["PARCEL_DELIVERED"], "plannedAfter": "SORT", "plannedWithin": "PT5H" }
+    ],
     "measurements": [ { "measurementCode": "DISTANCE", "type": "P" } ]
   }
 ]

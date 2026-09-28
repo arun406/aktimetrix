@@ -37,7 +37,8 @@ public class ProcessDefinitionService {
 
     /**
      * Returns the confirmed process definitions of the tenant that the event code starts, with each step resolved
-     * to the tenant's step definition, in the order the process lists them.
+     * to the tenant's step definition overridden by the fields set on it in the process, in the order the process
+     * lists them.
      */
     public List<ProcessDefinition> findStartedBy(String tenant, String eventCode) {
         final List<ProcessDefinition> definitions = repository.findConfirmedStartedBy(tenant, eventCode);
@@ -50,10 +51,8 @@ public class ProcessDefinitionService {
             return List.of();
         }
         return steps.stream()
-                .map(step -> {
-                    StepDefinition resolved = stepDefinitionRepository.findByStepCode(tenant, step.getStepCode());
-                    return resolved != null ? resolved : step;
-                })
+                .map(step -> StepDefinitionService.resolve(
+                        stepDefinitionRepository.findByStepCode(tenant, step.getStepCode()), step))
                 .collect(Collectors.toList());
     }
 }

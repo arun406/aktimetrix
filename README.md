@@ -102,7 +102,7 @@ The model separates **what a process looks like** from **what is happening to on
 | Definition (design time) | Instance (run time, one per business entity) |
 |---|---|
 | **Process**: a named business process, such as `ORDER_DELIVERY`, the entity type it follows and the events that start it | **Process instance**: that process for one entity, such as order `#1234` |
-| **Step**: one milestone, such as `SHIP`, and the events that start and complete it | **Step instance**: `SHIP` for order `#1234`, with its planned time, actual time and timeliness |
+| **Step**: one milestone, such as `SHIP`, and the events that start and complete it; shared by the tenant's processes, and adaptable per process | **Step instance**: `SHIP` for order `#1234`, with its planned time, actual time and timeliness |
 | **Measurement**: a user-defined dimension observed at the process or at a step (`TIME`, distance, rating, weight…), either **P**lanned or **A**ctual | **Measurement instance**: one value for one process or step instance, such as *planned TIME of SHIP = 2022-05-23T01:46* |
 
 A **business entity** is the real-world object being followed. It is identified by an entity type and an entity id,
