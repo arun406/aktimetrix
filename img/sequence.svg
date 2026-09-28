@@ -16,8 +16,8 @@
   <text x="90" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">source</text>
   <line x1="268" y1="90" x2="268" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
   <rect x="188" y="30" width="160" height="60" rx="10" fill="#FFF4DE" stroke="#C77C02" stroke-width="1.6"/>
-  <text x="268" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Kafka</text>
-  <text x="268" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">order-events</text>
+  <text x="268" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Message broker</text>
+  <text x="268" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">inbound channel</text>
   <line x1="446" y1="90" x2="446" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
   <rect x="366" y="30" width="160" height="60" rx="10" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="1.6"/>
   <text x="446" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">Event router</text>
@@ -36,7 +36,7 @@
   <text x="980" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">built in</text>
   <line x1="1170" y1="90" x2="1170" y2="894" stroke="#B7C7CD" stroke-width="1.5" stroke-dasharray="4 5"/>
   <rect x="1090" y="30" width="160" height="60" rx="10" fill="#E9F5EC" stroke="#2E8B47" stroke-width="1.6"/>
-  <text x="1170" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">MongoDB</text>
+  <text x="1170" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2D33">State store</text>
   <text x="1170" y="76" text-anchor="middle" font-size="12" fill="#5B6B72" font-family="SFMono-Regular, Consolas, Menlo, monospace">state</text>
   <line x1="94" y1="130" x2="264" y2="130" stroke="#C77C02" stroke-width="1.8" marker-end="url(#ak)"/>
   <text x="120" y="121" text-anchor="start" font-size="13" fill="#1F2D33" stroke="#F7FAFB" stroke-width="6" stroke-linejoin="round" paint-order="stroke">ORDER_PLACED_EVENT · order #1234</text>

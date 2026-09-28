@@ -18,7 +18,7 @@
 
   <rect x="40" y="36" width="540" height="490" rx="14" fill="#FFFFFF" stroke="#CFE3D3"/>
   <text x="64" y="72" class="h" fill="#2E8B47">DEFINITIONS · design time</text>
-  <text x="64" y="94" class="ts">Reference data stored in MongoDB. Defined once per tenant.</text>
+  <text x="64" y="94" class="ts">Reference data kept in the state store. Defined once per tenant.</text>
 
   <rect x="700" y="36" width="540" height="490" rx="14" fill="#FFFFFF" stroke="#CAD9EE"/>
   <text x="724" y="72" class="h" fill="#2F6FC4">INSTANCES · run time</text>
