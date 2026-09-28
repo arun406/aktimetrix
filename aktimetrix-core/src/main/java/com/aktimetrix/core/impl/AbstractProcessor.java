@@ -220,6 +220,10 @@ public abstract class AbstractProcessor implements Processor {
             processInstance.setMetadata(getProcessMetadata(context));
             processInstance.setEntityId(entityId);
             processInstance.setStartedAt((LocalDateTime) context.getProperty(Constants.OCCURRED_AT));
+            if (definition.plannedWithinDuration() != null && processInstance.getStartedAt() != null) {
+                processInstance.setPlannedAt(processInstance.getStartedAt().plus(definition.plannedWithinDuration()));
+                processInstance.setLateAfter(processInstance.getPlannedAt().plus(definition.toleranceDuration()));
+            }
         }
         return processInstance;
     }

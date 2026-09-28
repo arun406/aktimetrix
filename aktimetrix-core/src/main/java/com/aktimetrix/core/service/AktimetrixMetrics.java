@@ -56,6 +56,14 @@ public class AktimetrixMetrics {
         processCounter("aktimetrix.processes.completed", "Process instances completed", process).increment();
     }
 
+    public void processCancelled(ProcessInstance process) {
+        processCounter("aktimetrix.processes.cancelled", "Process instances cancelled", process).increment();
+    }
+
+    public void processOverdue(ProcessInstance process) {
+        processCounter("aktimetrix.processes.overdue", "Process instances that passed their deadline", process).increment();
+    }
+
     public void stepCompleted(StepInstance step) {
         Counter.builder("aktimetrix.steps.completed").description("Steps completed, by timeliness")
                 .tag("tenant", value(step.getTenant())).tag("step", value(step.getStepCode()))

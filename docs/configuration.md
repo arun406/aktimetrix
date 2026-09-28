@@ -70,8 +70,8 @@ The overdue monitor is a `@Scheduled` task, so Aktimetrix enables Spring's sched
 | Topic | Direction | Messages |
 |---|---|---|
 | `aktimetrix.events.topic` | in | Your business events; see [the event format](getting-started.md#the-event-format). |
-| `process-instance-out-0` | out | `Process_Event` / `CREATED`: a process instance with its steps, keyed by process instance id. |
-| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK` or `OVERDUE`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
+| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps, `plannedAt`, `lateAfter`, `endedAt` and `timeliness`, keyed by process instance id. |
+| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE` or `CANCELLED`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `CREATED`: a planned (`P`) or actual (`A`) measurement, keyed by measurement instance id. |
 | `aktimetrix.events.dead-letter.topic` | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
@@ -127,7 +127,7 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | Metric | Type | Tags |
 |---|---|---|
 | `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `ignored`, `invalid`, `failed`) |
-| `aktimetrix.processes.started` / `.completed` | counter | `tenant`, `process` |
+| `aktimetrix.processes.started` / `.completed` / `.cancelled` / `.overdue` | counter | `tenant`, `process` |
 | `aktimetrix.steps.completed` | counter | `tenant`, `step`, `timeliness` |
 | `aktimetrix.steps.lateness` | timer | `tenant`, `step`: how long after its planned time a step completed |
 | `aktimetrix.steps.at.risk` / `.overdue` | counter | `tenant`, `step` |
@@ -141,6 +141,8 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
 | `startEventCodes` | The events that create a process instance. |
+| `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
+| `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. |
 | `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
 | `measurements` | Planned (`P`) measurements of the process as a whole, computed by process-level meters, e.g. `{ "measurementCode": "DISTANCE", "type": "P" }`. |
 

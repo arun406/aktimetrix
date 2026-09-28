@@ -18,9 +18,19 @@ import java.util.stream.Collectors;
 public class ProcessEventGenerator implements EventGenerator {
 
     private final ProcessInstance processInstance;
+    private final String eventCode;
 
     public ProcessEventGenerator(ProcessInstance processInstance) {
+        this(processInstance, "CREATED");
+    }
+
+    /**
+     * @param eventCode what happened to the process: {@code CREATED}, {@code COMPLETED}, {@code CANCELLED} or
+     *                  {@code OVERDUE}
+     */
+    public ProcessEventGenerator(ProcessInstance processInstance, String eventCode) {
         this.processInstance = processInstance;
+        this.eventCode = eventCode;
     }
 
     /**
@@ -37,8 +47,8 @@ public class ProcessEventGenerator implements EventGenerator {
         Event<ProcessInstanceDTO, Void> event = new Event<>();
         event.setEventId(UUID.randomUUID().toString());
         event.setEventType("Process_Event");
-        event.setEventCode("CREATED");
-        event.setEventName("Process Instance Created Event");
+        event.setEventCode(eventCode);
+        event.setEventName("Process Instance " + eventCode + " Event");
         event.setEventTime(ZonedDateTime.now());
         event.setEventUTCTime(LocalDateTime.now(ZoneOffset.UTC));
         event.setEntityId(String.valueOf(processInstance.getId()));
@@ -67,6 +77,11 @@ public class ProcessEventGenerator implements EventGenerator {
                 .valid(processInstance.isValid())
                 .version(processInstance.getVersion())
                 .metadata(processInstance.getMetadata())
+                .startedAt(processInstance.getStartedAt())
+                .plannedAt(processInstance.getPlannedAt())
+                .lateAfter(processInstance.getLateAfter())
+                .endedAt(processInstance.getEndedAt())
+                .timeliness(processInstance.getTimeliness())
                 .steps(stepInstanceDTOS)
                 .build();
     }

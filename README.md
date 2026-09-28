@@ -190,15 +190,16 @@ Every business event passes through the same four stages.
 4. **Watch.** Independently of events, a monitor looks for steps whose deadline has passed without the event that
    completes them.
 
-### 5.1 Step lifecycle
+### 5.1 Lifecycle
 
-| Status | Entered when |
-|---|---|
-| `Created` | The process instance is created. |
-| `Started` | An event in the step's start events arrives, and the step also defines end events. |
-| `Completed` | An event in the step's end events arrives. A step with no end events is a single milestone and completes on its start event. |
+| Status | A step enters it when | A process enters it when |
+|---|---|---|
+| `Created` | the process instance is created | it is created |
+| `Started` | an event in its start events arrives, and it also defines end events | n/a |
+| `Completed` | an event in its end events arrives; a step with no end events is a single milestone and completes on its start event | all of its mandatory steps have completed |
+| `Cancelled` | its process is cancelled before it completed | an event in the process's cancel events arrives, e.g. *order cancelled* |
 
-A process instance completes when all of its mandatory steps have completed.
+Completed and cancelled processes are no longer monitored: a cancelled order does not leave steps to go overdue.
 
 ### 5.2 Planning
 
@@ -216,6 +217,10 @@ A step's planned time is derived in one of three ways:
 
 Timeliness is defined on the `TIME` dimension only: it compares when a step happened with when it was planned.
 Plan-versus-actual for other dimensions is expressed by their measurement instances rather than by a timeliness.
+
+A process may also have a deadline of its own, a duration from its start such as *delivered within 24 hours*. It is
+then judged the same way when its last mandatory step completes, and marked overdue if the deadline passes first,
+independently of the timeliness of its steps.
 
 | Timeliness | Assigned when |
 |---|---|
@@ -291,7 +296,7 @@ The runtime reports its own behaviour and the health of the monitored processes 
 | Metric | Meaning |
 |---|---|
 | `aktimetrix.events` | Events received, by tenant, event code and outcome (handled, ignored, invalid, failed). |
-| `aktimetrix.processes.started` / `.completed` | Process instances started and completed, by process. |
+| `aktimetrix.processes.started` / `.completed` / `.cancelled` / `.overdue` | Process instances started, completed, cancelled, and past their own deadline, by process. |
 | `aktimetrix.steps.completed` | Steps completed, by step and timeliness. |
 | `aktimetrix.steps.lateness` | How long after its planned time each step completed. |
 | `aktimetrix.steps.at.risk` / `.overdue` | Steps forecast to be late, and steps past their deadline. |

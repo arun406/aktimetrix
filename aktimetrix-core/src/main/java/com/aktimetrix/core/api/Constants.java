@@ -27,6 +27,7 @@ public class Constants {
     public static final String CREATED = "C";
     public static final String STATUS_CREATED = "Created";
     public static final String STATUS_STARTED = "Started";
+    public static final String STATUS_CANCELLED = "Cancelled";
     /**
      * Process type of pre- and post-processors that apply to every process.
      */

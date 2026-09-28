@@ -61,7 +61,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * in-memory MongoDB.
  * <p>
  * A parcel is booked at 09:00. PICKUP is planned by a meter (+1 h, 10 minutes' tolerance), SORT by a duration from the
- * start (+3 h), and DELIVER 5 h after SORT completes. DELIVER is defined only in the process, not as a shared step. The process as a whole has a planned DISTANCE.
+ * start (+3 h), and DELIVER 5 h after SORT completes; DELIVER is defined only in the process, not as a shared step.
+ * The process as a whole has a planned DISTANCE and should take 12 hours; the parcel is cancelled before delivery.
  */
 @SpringBootTest(classes = {ParcelMonitor.class, MinimalMonitorTest.Metrics.class}, properties = {
         "aktimetrix.events.topic=parcel-events",
@@ -150,16 +151,31 @@ class MinimalMonitorTest {
         assertThat(await("DELIVER", step -> step.getPlannedAt() != null).getPlannedAt())
                 .isEqualTo(LocalDateTime.of(2024, 1, 10, 17, 10));
 
+        // the process has its own deadline: 12 hours after booking
+        ProcessInstance parcel = mongoTemplate.findAll(ProcessInstance.class).stream()
+                .filter(p -> "P-1".equals(p.getEntityId())).findFirst().orElseThrow();
+        assertThat(parcel.getPlannedAt()).isEqualTo(BOOKED.plusHours(12));
+
+        // cancelled before delivery: the process ends, and DELIVER is no longer awaited
+        send("PARCEL_CANCELLED", "2024-01-10 13:00:00", null);
+        assertThat(await("DELIVER", step -> "Cancelled".equals(step.getStatus())).getActualAt()).isNull();
+        parcel = mongoTemplate.findById(parcel.getId(), ProcessInstance.class);
+        assertThat(parcel.getStatus()).isEqualTo("Cancelled");
+        assertThat(parcel.getEndedAt()).isEqualTo(LocalDateTime.of(2024, 1, 10, 13, 0));
+
         // every change reached Kafka through the outbox
-        Set<String> stepEvents = stepEventsPublished(Set.of("SORT AT_RISK", "DELIVER PLANNED", "SORT COMPLETED"));
-        assertThat(stepEvents).contains("PICKUP CREATED", "SORT AT_RISK", "DELIVER PLANNED", "SORT COMPLETED");
+        Set<String> stepEvents = stepEventsPublished(Set.of("SORT AT_RISK", "DELIVER PLANNED", "SORT COMPLETED",
+                "DELIVER CANCELLED"));
+        assertThat(stepEvents).contains("PICKUP CREATED", "SORT AT_RISK", "DELIVER PLANNED", "SORT COMPLETED",
+                "DELIVER CANCELLED");
         awaitTrue(() -> outbox.countBySentAtIsNull() == 0);
 
         assertThat(meterRegistry.get("aktimetrix.processes.started").counter().count()).isEqualTo(1);
         assertThat(meterRegistry.get("aktimetrix.steps.at.risk").counter().count()).isEqualTo(1);
         assertThat(total(meterRegistry.get("aktimetrix.steps.completed").tag("timeliness", "LATE").counters()))
                 .as("PICKUP and SORT").isEqualTo(2);
-        assertThat(total(meterRegistry.get("aktimetrix.events").tag("outcome", "handled").counters())).isEqualTo(3);
+        assertThat(meterRegistry.get("aktimetrix.processes.cancelled").counter().count()).isEqualTo(1);
+        assertThat(total(meterRegistry.get("aktimetrix.events").tag("outcome", "handled").counters())).isEqualTo(4);
     }
 
     @Test
@@ -207,7 +223,7 @@ class MinimalMonitorTest {
         ObjectId id = new ObjectId();
         mongoTemplate.getCollection("stepInstances").insertOne(new Document("_id", id).append("tenant", "T1")
                 .append("stepCode", "LEGACY").append("status", "Created"));
-        storage.upgradeStepRevisions();
+        storage.upgradeRevisions();
 
         StepInstance legacy = steps.findById(id.toString()).orElseThrow();
         legacy.setStatus("Completed");
