@@ -24,9 +24,9 @@
   <rect width="1280" height="720" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
 
   <text x="40" y="52" class="h">SOURCES</text>
-  <text x="262" y="52" class="h">INBOUND TOPIC</text>
+  <text x="262" y="52" class="h">INBOUND CHANNEL</text>
   <text x="484" y="52" class="h">AKTIMETRIX APPLICATION</text>
-  <text x="1040" y="52" class="h">OUTBOUND TOPICS</text>
+  <text x="1040" y="52" class="h">OUTBOUND CHANNELS</text>
 
   <!-- sources -->
   <rect x="40" y="120" width="180" height="60" rx="10" class="box"/>
@@ -43,8 +43,8 @@
   <path d="M220,310 C245,310 240,245 262,238" class="kedge" marker-end="url(#arrK)"/>
 
   <rect x="264" y="198" width="190" height="64" rx="32" class="topic"/>
-  <text x="359" y="226" text-anchor="middle" class="tb">Kafka</text>
-  <text x="359" y="246" text-anchor="middle" class="mono">order-events</text>
+  <text x="359" y="226" text-anchor="middle" class="tb">Message broker</text>
+  <text x="359" y="246" text-anchor="middle" class="mono">business events</text>
 
   <!-- application -->
   <rect x="484" y="72" width="526" height="620" rx="16" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
@@ -93,7 +93,7 @@
   <g>
     <path d="M768,500 L768,650 A110,16 0 0 0 988,650 L988,500" class="db"/>
     <ellipse cx="878" cy="500" rx="110" ry="16" class="db"/>
-    <text x="878" y="552" text-anchor="middle" class="tb">MongoDB</text>
+    <text x="878" y="552" text-anchor="middle" class="tb">State store</text>
     <text x="878" y="576" text-anchor="middle" class="ts">definitions · process, step</text>
     <text x="878" y="594" text-anchor="middle" class="ts">and measurement instances</text>
   </g>
