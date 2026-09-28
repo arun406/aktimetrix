@@ -332,7 +332,9 @@ The distinction between `LATE` and `OVERDUE` matters in practice. `LATE` is know
 
 When a step completes late, the delay is propagated: each later step receives an **expected time**, its planned time
 shifted by the same delay. A step whose expected time falls after its deadline becomes `AT_RISK` and is published as
-such before its own deadline passes, which gives operators time to intervene.
+such before its own deadline passes, which gives operators time to intervene. A step that is already overdue delays
+the later steps in the same way, by as long as it has been overdue; each time a further delay moves a forecast later,
+the step is published again with its new expected time.
 
 <p align="center">
   <img src="./img/order-timeline.svg" alt="Planned, forecast and actual times of the steps of order 1234" width="100%">
@@ -350,7 +352,8 @@ querying the state store.
 | `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
 | `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, the process and step it belongs to, and for an actual its `plannedValue`, `deviation` and `conformance` | measurement instance id |
 
-When the handover of order 1234 runs late, for example, its delivery step is published as at risk:
+When order 1234 is finally handed to the delivery agent at 11:40, 40 minutes late, the forecast of its delivery step
+moves to 12:55, after its 12:15 deadline, and the step is published as at risk:
 
 ```json
 {
@@ -494,8 +497,7 @@ bindings is part of the [roadmap](#11-status-and-roadmap).
 
 The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) reference project implements
 the order of §1.1 end to end, with ten sample events from *order created* to *rated*; its test checks every figure of
-§1.1. It needs **JDK 11+**
-and **Docker**, which starts a local message broker and state store.
+§1.1. It needs **JDK 11+** and **Docker**, which starts a local message broker and state store.
 
 ```bash
 git clone https://github.com/arun406/aktimetrix.git
