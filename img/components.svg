@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1206" viewBox="0 0 1280 1206" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4A5B63"/>
+    </marker>
+    <marker id="arrK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C77C02"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B3261E"/>
+    </marker>
+    <style>
+      .t  { font-size: 14px; fill: #1F2D33; }
+      .tb { font-size: 15px; font-weight: 700; fill: #1F2D33; }
+      .ts { font-size: 12px; fill: #5B6B72; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 11.5px; fill: #0F4C5C; }
+      .h  { font-size: 12.5px; font-weight: 700; letter-spacing: 1.5px; fill: #5B6B72; }
+      .box { fill: #FFFFFF; stroke: #B7C7CD; stroke-width: 1.5; }
+      .core { fill: #E8F4F7; stroke: #0F4C5C; stroke-width: 1.5; }
+      .you { fill: #FFF8EC; stroke: #C77C02; stroke-width: 1.5; stroke-dasharray: 5 3; }
+      .topic { fill: #FFF4DE; stroke: #C77C02; stroke-width: 1.5; }
+      .db { fill: #E9F5EC; stroke: #2E8B47; stroke-width: 1.5; }
+      .dead { fill: #FCEBEA; stroke: #B3261E; stroke-width: 1.5; }
+      .band { fill: #FFFFFF; stroke: #DCE5E8; stroke-width: 1.2; }
+      .edge { stroke: #4A5B63; stroke-width: 1.7; fill: none; }
+      .kedge { stroke: #C77C02; stroke-width: 1.7; fill: none; }
+      .redge { stroke: #B3261E; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+    </style>
+  </defs>
+  <rect width="1280" height="1206" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <rect x="30" y="30" width="1220" height="124" rx="12" class="band"/>
+  <text x="48" y="54" text-anchor="start" class="h">① INBOUND</text>
+  <rect x="30" y="164" width="1220" height="124" rx="12" class="band"/>
+  <text x="48" y="188" text-anchor="start" class="h">② ROUTING</text>
+  <rect x="30" y="298" width="1220" height="124" rx="12" class="band"/>
+  <text x="48" y="322" text-anchor="start" class="h">③ START AND PLAN</text>
+  <rect x="30" y="432" width="1220" height="124" rx="12" class="band"/>
+  <text x="48" y="456" text-anchor="start" class="h">④ RECORD</text>
+  <rect x="30" y="566" width="1220" height="124" rx="12" class="band"/>
+  <text x="48" y="590" text-anchor="start" class="h">⑤ WATCH</text>
+  <rect x="30" y="700" width="1220" height="178" rx="12" class="band"/>
+  <text x="48" y="724" text-anchor="start" class="h">⑥ DEFINITIONS AND STATE</text>
+  <rect x="30" y="888" width="1220" height="124" rx="12" class="band"/>
+  <text x="48" y="912" text-anchor="start" class="h">⑦ OUTBOUND</text>
+  <rect x="30" y="1022" width="1220" height="124" rx="12" class="band"/>
+  <text x="48" y="1046" text-anchor="start" class="h">CROSS-CUTTING</text>
+  <rect x="60" y="72" width="262" height="64" rx="32.0" class="topic"/>
+  <text x="191.0" y="101.0" text-anchor="middle" class="tb">Message broker</text>
+  <text x="191.0" y="119.0" text-anchor="middle" class="ts">business-events topic</text>
+  <rect x="360" y="66" width="262" height="76" rx="10" class="core"/>
+  <text x="491.0" y="91.0" text-anchor="middle" class="tb">Event consumer</text>
+  <text x="491.0" y="109.0" text-anchor="middle" class="mono">ProcessConfig.processor()</text>
+  <text x="491.0" y="127.0" text-anchor="middle" class="ts">validates · dispatches · rejects</text>
+  <rect x="660" y="66" width="262" height="76" rx="10" class="you"/>
+  <text x="791.0" y="91.0" text-anchor="middle" class="tb">Event mapper</text>
+  <text x="791.0" y="109.0" text-anchor="middle" class="mono">EventMapper</text>
+  <text x="791.0" y="127.0" text-anchor="middle" class="ts">default: EnvelopeEventMapper</text>
+  <rect x="960" y="66" width="262" height="76" rx="10" class="core"/>
+  <text x="1091.0" y="91.0" text-anchor="middle" class="tb">Transactions</text>
+  <text x="1091.0" y="109.0" text-anchor="middle" class="mono">AktimetrixTransactions</text>
+  <text x="1091.0" y="127.0" text-anchor="middle" class="ts">one unit of work per event</text>
+  <path d="M322,104 L358,104" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M622,96 L658,96" class="edge" marker-end="url(#arr)"/>
+  <path d="M660,112 L624,112" class="edge" marker-end="url(#arr)"/>
+  <path d="M551.0,66 C551.0,42 1091.0,42 1091.0,64" class="edge" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+  <rect x="360" y="200" width="262" height="76" rx="10" class="you"/>
+  <text x="491.0" y="225.0" text-anchor="middle" class="tb">Event handlers</text>
+  <text x="491.0" y="243.0" text-anchor="middle" class="mono">@EventHandler</text>
+  <text x="491.0" y="261.0" text-anchor="middle" class="ts">default: DefaultEventHandler</text>
+  <rect x="660" y="200" width="262" height="76" rx="10" class="core"/>
+  <text x="791.0" y="225.0" text-anchor="middle" class="tb">Registry</text>
+  <text x="791.0" y="243.0" text-anchor="middle" class="mono">RegistryService · DefaultRegistry</text>
+  <text x="791.0" y="261.0" text-anchor="middle" class="ts">finds your components by code</text>
+  <rect x="960" y="200" width="262" height="76" rx="10" class="core"/>
+  <text x="1091.0" y="225.0" text-anchor="middle" class="tb">Component registration</text>
+  <text x="1091.0" y="243.0" text-anchor="middle" class="mono">*PostBeanProcessor</text>
+  <text x="1091.0" y="261.0" text-anchor="middle" class="ts">registers and validates at startup</text>
+  <path d="M431.0,142 L431.0,198" class="edge" marker-end="url(#arr)"/>
+  <path d="M660,238 L624,238" class="edge" marker-end="url(#arr)"/>
+  <path d="M960,238 L924,238" class="edge" marker-end="url(#arr)"/>
+  <rect x="60" y="334" width="262" height="76" rx="10" class="you"/>
+  <text x="191.0" y="359.0" text-anchor="middle" class="tb">Pre- and post-processors</text>
+  <text x="191.0" y="377.0" text-anchor="middle" class="mono">@PreProcessor · @PostProcessor</text>
+  <text x="191.0" y="395.0" text-anchor="middle" class="ts">validate · enrich · notify</text>
+  <rect x="360" y="334" width="262" height="76" rx="10" class="you"/>
+  <text x="491.0" y="359.0" text-anchor="middle" class="tb">Process handler</text>
+  <text x="491.0" y="377.0" text-anchor="middle" class="mono">@ProcessHandler · AbstractProcessor</text>
+  <text x="491.0" y="395.0" text-anchor="middle" class="ts">default: DefaultProcessor</text>
+  <rect x="660" y="334" width="262" height="76" rx="10" class="core"/>
+  <text x="791.0" y="359.0" text-anchor="middle" class="tb">Planned measurements</text>
+  <text x="791.0" y="377.0" text-anchor="middle" class="mono">DefaultMeasurementProcessor</text>
+  <text x="791.0" y="395.0" text-anchor="middle" class="ts">runs the meters of each new step</text>
+  <rect x="960" y="334" width="262" height="76" rx="10" class="you"/>
+  <text x="1091.0" y="359.0" text-anchor="middle" class="tb">Meters</text>
+  <text x="1091.0" y="377.0" text-anchor="middle" class="mono">@Measurement · AbstractMeter</text>
+  <text x="1091.0" y="395.0" text-anchor="middle" class="mono">AbstractProcessMeter</text>
+  <path d="M431.0,276 L431.0,332" class="edge" marker-end="url(#arr)"/>
+  <rect x="462.4" y="305" width="93.19999999999999" height="20" rx="10" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="509.0" y="319" text-anchor="middle" class="ts">start events</text>
+  <path d="M322,372 L358,372" class="edge" marker-end="url(#arr)"/>
+  <path d="M622,372 L658,372" class="edge" marker-end="url(#arr)"/>
+  <path d="M922,372 L958,372" class="edge" marker-end="url(#arr)"/>
+  <rect x="360" y="468" width="262" height="76" rx="10" class="core"/>
+  <text x="491.0" y="493.0" text-anchor="middle" class="tb">Progress</text>
+  <text x="491.0" y="511.0" text-anchor="middle" class="mono">StepProgressService</text>
+  <text x="491.0" y="529.0" text-anchor="middle" class="ts">lifecycle · timeliness · complete · cancel</text>
+  <rect x="660" y="468" width="262" height="76" rx="10" class="core"/>
+  <text x="791.0" y="493.0" text-anchor="middle" class="tb">Actual measurements</text>
+  <text x="791.0" y="511.0" text-anchor="middle" class="mono">ActualMeasurementService</text>
+  <text x="791.0" y="529.0" text-anchor="middle" class="ts">from the event (valueFrom) or a meter</text>
+  <rect x="960" y="468" width="262" height="76" rx="10" class="core"/>
+  <text x="1091.0" y="493.0" text-anchor="middle" class="tb">Planner</text>
+  <text x="1091.0" y="511.0" text-anchor="middle" class="mono">StepPlanner</text>
+  <text x="1091.0" y="529.0" text-anchor="middle" class="ts">durations · deadlines · forecasts</text>
+  <path d="M360,238 L346,238 L346,506 L358,506" class="edge" marker-end="url(#arr)"/>
+  <rect x="244.7" y="421" width="86.6" height="20" rx="10" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="288" y="435" text-anchor="middle" class="ts">every event</text>
+  <path d="M622,506 L658,506" class="edge" marker-end="url(#arr)"/>
+  <path d="M551.0,468 C551.0,428 1091.0,428 1091.0,466" class="edge" marker-end="url(#arr)"/>
+  <path d="M571.0,410 C571.0,448 1051.0,438 1051.0,466" class="edge" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+  <rect x="360" y="602" width="262" height="76" rx="10" class="core"/>
+  <text x="491.0" y="627.0" text-anchor="middle" class="tb">Step deadlines</text>
+  <text x="491.0" y="645.0" text-anchor="middle" class="mono">OverdueStepMonitor</text>
+  <text x="491.0" y="663.0" text-anchor="middle" class="ts">steps past lateAfter → OVERDUE</text>
+  <rect x="660" y="602" width="262" height="76" rx="10" class="core"/>
+  <text x="791.0" y="627.0" text-anchor="middle" class="tb">Process deadlines</text>
+  <text x="791.0" y="645.0" text-anchor="middle" class="mono">OverdueProcessMonitor</text>
+  <text x="791.0" y="663.0" text-anchor="middle" class="ts">processes past lateAfter → OVERDUE</text>
+  <rect x="60" y="610" width="262" height="60" rx="10" class="box"/>
+  <text x="191.0" y="636.0" text-anchor="middle" class="tb">@Scheduled</text>
+  <text x="191.0" y="654.0" text-anchor="middle" class="ts">on every instance; version-checked</text>
+  <path d="M491.0,602 L491.0,546" class="edge" marker-end="url(#arr)"/>
+  <path d="M791.0,602 C791.0,578 531.0,588 531.0,546" class="edge" marker-end="url(#arr)"/>
+  <rect x="60" y="736" width="262" height="60" rx="10" class="core"/>
+  <text x="191.0" y="762.0" text-anchor="middle" class="tb">Definition loading</text>
+  <text x="191.0" y="780.0" text-anchor="middle" class="mono">DefinitionLoader · aktimetrix/*.json</text>
+  <rect x="60" y="808" width="262" height="60" rx="10" class="core"/>
+  <text x="191.0" y="834.0" text-anchor="middle" class="tb">Storage preparation</text>
+  <text x="191.0" y="852.0" text-anchor="middle" class="mono">AktimetrixStorageInitializer</text>
+  <rect x="360" y="754" width="262" height="96" rx="10" class="core"/>
+  <text x="491.0" y="780.0" text-anchor="middle" class="tb">Definitions</text>
+  <text x="491.0" y="798.0" text-anchor="middle" class="mono">ProcessDefinitionService</text>
+  <text x="491.0" y="816.0" text-anchor="middle" class="mono">StepDefinitionService</text>
+  <text x="491.0" y="834.0" text-anchor="middle" class="ts">shared steps + process overrides</text>
+  <rect x="660" y="754" width="262" height="96" rx="10" class="core"/>
+  <text x="791.0" y="780.0" text-anchor="middle" class="tb">Instances</text>
+  <text x="791.0" y="798.0" text-anchor="middle" class="mono">*InstanceService · *Repository</text>
+  <text x="791.0" y="816.0" text-anchor="middle" class="ts">process, step, measurement</text>
+  <text x="791.0" y="834.0" text-anchor="middle" class="ts">@Version revision on every save</text>
+  <path d="M980,752 L980,852 A111.0,14 0 0 0 1202,852 L1202,752" class="db"/>
+  <ellipse cx="1091.0" cy="752" rx="111.0" ry="14" class="db"/>
+  <text x="1091.0" y="796.0" text-anchor="middle" class="tb">State store</text>
+  <text x="1091.0" y="814.0" text-anchor="middle" class="ts">MongoDB</text>
+  <text x="1091.0" y="832.0" text-anchor="middle" class="ts">definitions · instances · outbox</text>
+  <path d="M322,766 L358,786" class="edge" marker-end="url(#arr)"/>
+  <path d="M922,802 L978,802" class="edge" marker-end="url(#arr)"/>
+  <path d="M491.0,850 L491.0,860 L950,860 L950,832 L978,832" class="edge" marker-end="url(#arr)"/>
+  <path d="M322,838 L340,838 L340,870 L962,870 L962,844 L978,844" class="edge" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+  <rect x="60" y="924" width="262" height="76" rx="10" class="core"/>
+  <text x="191.0" y="949.0" text-anchor="middle" class="tb">Publishers</text>
+  <text x="191.0" y="967.0" text-anchor="middle" class="mono">Process/Step/Measurement…</text>
+  <text x="191.0" y="985.0" text-anchor="middle" class="mono">…InstancePublisherService</text>
+  <rect x="360" y="924" width="262" height="76" rx="10" class="core"/>
+  <text x="491.0" y="949.0" text-anchor="middle" class="tb">Outbox</text>
+  <text x="491.0" y="967.0" text-anchor="middle" class="mono">Outbox · outbox collection</text>
+  <text x="491.0" y="985.0" text-anchor="middle" class="ts">written with the state it describes</text>
+  <rect x="660" y="924" width="262" height="76" rx="10" class="core"/>
+  <text x="791.0" y="949.0" text-anchor="middle" class="tb">Relay</text>
+  <text x="791.0" y="967.0" text-anchor="middle" class="mono">OutboxRelay</text>
+  <text x="791.0" y="985.0" text-anchor="middle" class="ts">leases · retries · purge</text>
+  <rect x="960" y="930" width="262" height="64" rx="32.0" class="topic"/>
+  <text x="1091.0" y="959.0" text-anchor="middle" class="tb">Message broker</text>
+  <text x="1091.0" y="977.0" text-anchor="middle" class="ts">*-instance-out-0 · dead letters</text>
+  <path d="M322,962 L358,962" class="edge" marker-end="url(#arr)"/>
+  <path d="M622,962 L658,962" class="edge" marker-end="url(#arr)"/>
+  <path d="M922,962 L958,962" class="kedge" marker-end="url(#arrK)"/>
+  <rect x="60" y="1058" width="262" height="76" rx="10" class="box"/>
+  <text x="191.0" y="1083.0" text-anchor="middle" class="tb">Auto-configuration</text>
+  <text x="191.0" y="1101.0" text-anchor="middle" class="mono">AktimetrixAutoConfiguration</text>
+  <text x="191.0" y="1119.0" text-anchor="middle" class="mono">AktimetrixDefaultProperties</text>
+  <rect x="360" y="1058" width="262" height="76" rx="10" class="box"/>
+  <text x="491.0" y="1083.0" text-anchor="middle" class="tb">Configuration</text>
+  <text x="491.0" y="1101.0" text-anchor="middle" class="mono">AktimetrixProperties</text>
+  <text x="491.0" y="1119.0" text-anchor="middle" class="ts">aktimetrix.* properties</text>
+  <rect x="660" y="1058" width="262" height="76" rx="10" class="box"/>
+  <text x="791.0" y="1083.0" text-anchor="middle" class="tb">Metrics</text>
+  <text x="791.0" y="1101.0" text-anchor="middle" class="mono">AktimetrixMetrics</text>
+  <text x="791.0" y="1119.0" text-anchor="middle" class="ts">Micrometer</text>
+  <rect x="960" y="1058" width="262" height="76" rx="10" class="box"/>
+  <text x="1091.0" y="1083.0" text-anchor="middle" class="tb">REST API</text>
+  <text x="1091.0" y="1101.0" text-anchor="middle" class="mono">ProcessInstanceResource</text>
+  <text x="1091.0" y="1119.0" text-anchor="middle" class="ts">/process-instances · /reference-data</text>
+  <rect x="48" y="1164" width="18" height="14" rx="3" class="you"/>
+  <text x="74" y="1176" text-anchor="start" class="ts">extension point: you write or replace it</text>
+  <rect x="360.0" y="1164" width="18" height="14" rx="3" class="core"/>
+  <text x="386.0" y="1176" text-anchor="start" class="ts">built in</text>
+  <rect x="467.2" y="1164" width="18" height="14" rx="3" class="box"/>
+  <text x="493.2" y="1176" text-anchor="start" class="ts">infrastructure</text>
+  <rect x="612.8" y="1164" width="18" height="14" rx="3" class="topic"/>
+  <text x="638.8" y="1176" text-anchor="start" class="ts">message broker</text>
+</svg>
