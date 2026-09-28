@@ -13,11 +13,11 @@ happening to one particular business entity** (instances, created at run time).
 |---|---|---|
 | **Process** | definition | A named business process, e.g. `ORDER_DELIVERY`. Lists its steps, the event codes that start it, and the entity type it tracks. |
 | **Step** | definition | One milestone in the process, e.g. `SHIP`. Lists the measurements to take at that milestone. |
-| **Measurement** | definition | A user-defined dimension to measure (`TIME`, `DISTANCE`, `WT`, `RATING`, …), at the process or at a step, and whether it is **P**lanned or **A**ctual. Timeliness is judged on `TIME` only. |
+| **Measurement** | definition | A user-defined dimension to measure (`TIME`, `DISTANCE`, `FUEL`, `TEMPERATURE`, `RATING`, …), at the process or at a step, planned (`P`) and actual (`A`), with an optional tolerance. |
 | **Business entity** | external | The real-world object being tracked: an order, a loan application, an air waybill. Identified by `entityType` + `entityId`. |
 | **Process instance** | runtime | One run of a process for one business entity. *ProcessInstance = Process + identifying metadata.* |
 | **Step instance** | runtime | One step of one process instance, carrying its own metadata. |
-| **Measurement instance** | runtime | A concrete value for one process or step instance, e.g. *SHIP planned TIME = 2022-05-23T01:46*. |
+| **Measurement instance** | runtime | A concrete value for one process or step instance, e.g. *planned DISTANCE = 5 km*; an actual one also carries its plan, its deviation and whether it is within tolerance, e.g. *actual DISTANCE = 12 km, +7 km, outside tolerance*. |
 | **Metadata** | runtime | Key/value pairs you attach to process and step instances (order details, customer, location, …) for use by meters and consumers. |
 
 ### Step lifecycle: plan and actual
@@ -66,7 +66,9 @@ A step can pass through `AT_RISK` and `OVERDUE` before it completes; it ends as 
 event says it happened. Every change is published to `step-instance-out-0`, including `PLANNED` for steps planned
 from another step's completion.
 
-Each completion is also recorded as an **actual** `TIME` measurement (type `A`) next to the **planned** one. When
+Each completion is also recorded as an **actual** `TIME` measurement (type `A`), compared with the planned time,
+together with the step's other actual measurements, such as the distance travelled, each compared with its own plan
+(see [Measurement fields](configuration.md#measurement-fields)). When
 every non-optional step (`optionalInd` ≠ `Y`) is complete, the process instance is marked complete. Replayed events
 are ignored, so a completed step is never recorded twice.
 
