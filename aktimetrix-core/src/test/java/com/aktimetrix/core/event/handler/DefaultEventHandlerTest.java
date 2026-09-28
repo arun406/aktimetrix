@@ -58,7 +58,7 @@ class DefaultEventHandlerTest {
         InOrder order = inOrder(orderProcessor, stepProgressService);
         ArgumentCaptor<Context> context = ArgumentCaptor.forClass(Context.class);
         order.verify(orderProcessor).process(context.capture());
-        order.verify(stepProgressService).recordMilestones("AA", "com.ecom.order", "1234", "ORDER_PLACED_EVENT", PLACED_AT);
+        order.verify(stepProgressService).recordMilestones("AA", "com.ecom.order", "1234", "ORDER_PLACED_EVENT", PLACED_AT, event);
         assertThat(context.getValue().getProcessType()).as("process type defaults to the process code")
                 .isEqualTo("ORDER_DELIVERY");
         verify(defaultProcessor, never()).process(any());
@@ -87,7 +87,7 @@ class DefaultEventHandlerTest {
 
         handler.handle(event);
 
-        verify(stepProgressService).recordMilestones("AA", "com.ecom.order", "1234", "ORDER_SHIPPED_EVENT", PLACED_AT);
+        verify(stepProgressService).recordMilestones("AA", "com.ecom.order", "1234", "ORDER_SHIPPED_EVENT", PLACED_AT, event);
     }
 
     private static Event<Object, Object> event(String code) {

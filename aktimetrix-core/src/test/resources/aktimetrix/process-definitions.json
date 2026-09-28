@@ -4,8 +4,15 @@
     "processCode": "PARCEL",
     "entityType": "parcel",
     "startEventCodes": ["PARCEL_BOOKED"],
+    "cancelEventCodes": ["PARCEL_CANCELLED"],
+    "plannedWithin": "PT12H",
     "status": "CONFIRMED",
-    "steps": [ { "stepCode": "BOOK" }, { "stepCode": "PICKUP" }, { "stepCode": "SORT" }, { "stepCode": "DELIVER" } ],
+    "steps": [
+      { "stepCode": "BOOK" },
+      { "stepCode": "PICKUP" },
+      { "stepCode": "SORT" },
+      { "stepCode": "DELIVER", "startEventCodes": ["PARCEL_DELIVERED"], "plannedAfter": "SORT", "plannedWithin": "PT5H" }
+    ],
     "measurements": [ { "measurementCode": "DISTANCE", "type": "P" } ]
   }
 ]

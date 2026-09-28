@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.meter.api.ProcessMeter;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
+import com.aktimetrix.core.transferobjects.Event;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -22,6 +23,26 @@ public abstract class AbstractProcessMeter implements ProcessMeter {
         return new MeasurementInstance(tenant, code(), getMeasurementValue(tenant, process),
                 getMeasurementUnit(tenant, process), process.getId(), null, null, Constants.PLAN_MEASUREMENT_TYPE,
                 null, ZonedDateTime.now());
+    }
+
+    @Override
+    public MeasurementInstance measureActual(String tenant, ProcessInstance process, Event<?, ?> event) {
+        final String value = getActualValue(tenant, process, event);
+        if (value == null) {
+            return null;
+        }
+        return new MeasurementInstance(tenant, code(), value, getMeasurementUnit(tenant, process), process.getId(),
+                null, null, Constants.ACTUAL_MEASUREMENT_TYPE, null, ZonedDateTime.now());
+    }
+
+    /**
+     * The actual value when the process completes, e.g. read from the event's entity. Override it for an actual
+     * ({@code A}) measurement; by default there is none.
+     *
+     * @param event the event that completed the process
+     */
+    protected String getActualValue(String tenant, ProcessInstance process, Event<?, ?> event) {
+        return null;
     }
 
     protected abstract String getMeasurementUnit(String tenant, ProcessInstance process);

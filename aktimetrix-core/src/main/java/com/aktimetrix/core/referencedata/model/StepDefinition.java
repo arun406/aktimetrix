@@ -28,7 +28,7 @@ public class StepDefinition {
     private List<String> startEventCodes;
     private List<String> endEventCodes;
     private String groupCode;
-    private List<StepMeasurement> measurements;
+    private List<MeasurementDefinition> measurements;
     /**
      * Plans the step without a meter: its planned time is {@code plannedWithin} after the step
      * {@code plannedAfter} completes, or after the process starts when {@code plannedAfter} is absent.
@@ -50,5 +50,37 @@ public class StepDefinition {
 
     public Duration toleranceDuration() {
         return tolerance == null ? Duration.ZERO : Duration.parse(tolerance);
+    }
+
+    /**
+     * This definition with every field that {@code override} sets replacing its own; lists are replaced as a whole.
+     * Used to let a process adapt a step shared by several processes, e.g. a shorter {@code plannedWithin} for an
+     * express delivery.
+     */
+    public StepDefinition overriddenBy(StepDefinition override) {
+        final StepDefinition merged = new StepDefinition();
+        merged.setTenant(tenant);
+        merged.setId(id);
+        merged.setStepCode(stepCode);
+        merged.setStepName(pick(override.getStepName(), stepName));
+        merged.setOptionalInd(pick(override.getOptionalInd(), optionalInd));
+        merged.setCategoryCode(pick(override.getCategoryCode(), categoryCode));
+        merged.setSubCategoryCode(pick(override.getSubCategoryCode(), subCategoryCode));
+        merged.setStatus(pick(override.getStatus(), status));
+        merged.setFunctionalCtxCode(pick(override.getFunctionalCtxCode(), functionalCtxCode));
+        merged.setLocationCtxCode(pick(override.getLocationCtxCode(), locationCtxCode));
+        merged.setResponsiblePartyCode(pick(override.getResponsiblePartyCode(), responsiblePartyCode));
+        merged.setStartEventCodes(pick(override.getStartEventCodes(), startEventCodes));
+        merged.setEndEventCodes(pick(override.getEndEventCodes(), endEventCodes));
+        merged.setGroupCode(pick(override.getGroupCode(), groupCode));
+        merged.setMeasurements(pick(override.getMeasurements(), measurements));
+        merged.setPlannedAfter(pick(override.getPlannedAfter(), plannedAfter));
+        merged.setPlannedWithin(pick(override.getPlannedWithin(), plannedWithin));
+        merged.setTolerance(pick(override.getTolerance(), tolerance));
+        return merged;
+    }
+
+    private static <T> T pick(T override, T base) {
+        return override != null ? override : base;
     }
 }

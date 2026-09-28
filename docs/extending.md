@@ -9,8 +9,9 @@ carries a stereotype annotation; Aktimetrix discovers it at startup.
 
 | Annotation | Extend / implement | Selected by | Default when absent | Purpose |
 |---|---|---|---|---|
-| `@Measurement(code, stepCode)` | `AbstractMeter` or `meter.api.Meter` | step code + measurement code | none: the planned value is skipped | Computes a planned measurement of a step. |
-| `@Measurement(code, processCode)` | `AbstractProcessMeter` or `meter.api.ProcessMeter` | process code + measurement code | none: the planned value is skipped, with a warning | Computes a planned measurement of the process as a whole, once when the process instance is created. |
+| a bean of type `EventMapper` | `api.EventMapper` | n/a: one per application | `EnvelopeEventMapper`: messages are in the Aktimetrix event envelope | Reads your own event format; see [Accepting your own event format](#accepting-your-own-event-format). |
+| `@Measurement(code, stepCode)` | `AbstractMeter` or `meter.api.Meter` | step code + measurement code | none: the value is skipped | Computes a planned measurement of a step when it is created, and, by overriding `getActualValue`, an actual one when it completes. |
+| `@Measurement(code, processCode)` | `AbstractProcessMeter` or `meter.api.ProcessMeter` | process code + measurement code | none: the value is skipped, with a warning | Computes a planned measurement of the process as a whole when it is created, and, by overriding `getActualValue`, an actual one when it completes. |
 | `@ProcessHandler(processType)` | `AbstractProcessor` | the process code | `DefaultProcessor`: the event's entity becomes the metadata | Chooses the metadata of the process and its steps. |
 | `@EventHandler(eventType)` | `AbstractEventHandler` | the event code | `DefaultEventHandler` | Starts processes and records milestones; override to read the entity id or event time differently. |
 | `@EventHandler(eventType)` | `AbstractMilestoneEventHandler` | the event code | `DefaultEventHandler` | Records milestones only, for events that never start a process. |
@@ -71,6 +72,51 @@ public class LateEveningDeliveryWarning implements com.aktimetrix.core.api.PostP
 
 To react to steps becoming late or overdue, consume `step-instance-out-0` instead: see the
 [configuration reference](configuration.md#kafka-topics).
+
+## Accepting your own event format
+
+Source systems do not have to adopt the Aktimetrix envelope. Declare an `EventMapper` bean to turn each message on
+the inbound topic into an Aktimetrix event:
+
+```java
+@Bean
+EventMapper shopEvents(ObjectMapper json) {
+    return (payload, headers) -> {
+        JsonNode order = json.readTree(payload);           // {"id":"1234","status":"SHIPPED","updatedAt":"…"}
+        if (!order.has("status")) {
+            return null;                                   // not an order event: ignored
+        }
+        Event<Object, Object> event = Event.of("AA", "ORDER_" + order.get("status").asText() + "_EVENT",
+                "com.ecom.order", order.get("id").asText(), ZonedDateTime.parse(order.get("updatedAt").asText()));
+        event.setEntity(json.convertValue(order, Map.class));   // becomes metadata
+        return event;
+    };
+}
+```
+
+| The mapper… | Aktimetrix… |
+|---|---|
+| returns an event | processes it; tenant, event code and entity id are required |
+| returns `null` | ignores the message, counted with outcome `ignored` |
+| throws | sends the message unchanged to the dead-letter topic, counted with outcome `invalid` |
+
+## Public API
+
+These are the types an application uses. Everything else is internal and may change between releases; each
+package's `package-info.java` says which it is.
+
+| Package | Types | Use |
+|---|---|---|
+| `core.stereotypes` | `@Measurement`, `@ProcessHandler`, `@EventHandler`, `@PreProcessor`, `@PostProcessor` | Register your components. |
+| `core.meter.impl`, `core.meter.api` | `AbstractMeter`, `AbstractProcessMeter`, `Meter`, `ProcessMeter` | Compute planned and actual measurements. |
+| `core.api` | `EventMapper`, `PreProcessor`, `PostProcessor`, `Context`, `Timeliness`, `Constants` | Read your own event format; hook into process creation; read the processing context. |
+| `core.impl` | `AbstractProcessor`, `DefaultProcessor` | Choose the metadata of a process and its steps. |
+| `core.event.handler` | `AbstractEventHandler`, `AbstractMilestoneEventHandler` | Change how an event code is interpreted. |
+| `core.transferobjects` | `Event` | The event envelope, inbound and outbound. |
+| `core.model`, `core.referencedata.model` | `ProcessInstance`, `StepInstance`, `MeasurementInstance`, `ProcessDefinition`, `StepDefinition`, `MeasurementDefinition` | Read instances and definitions in your components. |
+
+In a `Context`, read the event's data with the `Constants` context properties: `ENTITY`, `ENTITY_ID`,
+`ENTITY_TYPE`, `EVENT`, `EVENT_DATA`, `PROCESS_DEFINITION` and `OCCURRED_AT`.
 
 ## Built-in components
 

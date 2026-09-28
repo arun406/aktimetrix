@@ -5,6 +5,7 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -42,4 +43,10 @@ public interface ProcessInstanceRepository extends MongoRepository<ProcessInstan
 
     @Query("{'tenant': ?0 , 'entityType' : ?1, 'entityId': ?2 , 'complete': false }")
     List<ProcessInstance> findActiveByTenantAndEntityTypeAndEntityId(String tenant, String entityType, String entityId);
+
+    /**
+     * Running processes whose deadline ({@code lateAfter}) is before {@code now} and that are not yet marked overdue.
+     */
+    @Query("{ 'complete': false, 'lateAfter': { $lt: ?0 }, 'timeliness': { $ne: 'OVERDUE' } }")
+    List<ProcessInstance> findOverdue(LocalDateTime now);
 }
