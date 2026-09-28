@@ -55,9 +55,10 @@ document describes the model, its execution semantics and its reliability guaran
 7. [Extensibility](#7-extensibility)
 8. [Observability](#8-observability)
 9. [Reference implementation](#9-reference-implementation)
-10. [Applicability and limitations](#10-applicability-and-limitations)
+10. [Positioning and limitations](#10-positioning-and-limitations)
 11. [Status and roadmap](#11-status-and-roadmap)
-12. [Further reading](#12-further-reading) · [Contributing](#contributing) · [License](#license)
+12. [Further reading](#12-further-reading)
+13. [Appendix A. Glossary](#appendix-a-glossary) · [Contributing](#contributing) · [License](#license)
 
 ## 1. Introduction
 
@@ -242,6 +243,37 @@ such before its own deadline passes, which gives operators time to intervene.
 <p align="center">
   <img src="./img/order-timeline.svg" alt="Planned and actual timeline of order 1234" width="100%">
 </p>
+
+### 5.5 Published events
+
+Every change the runtime makes is published as an event of its own, in the same envelope as inbound events, with the
+changed instance as its `entity`. Consumers such as dashboards, alerting and analytics subscribe to these instead of
+querying the state store.
+
+| Event type | Event codes | Entity | Keyed by |
+|---|---|---|---|
+| `Process_Event` | `CREATED`, `COMPLETED`, `CANCELLED`, `OVERDUE` | the process instance: status, `startedAt`, `plannedAt`, `lateAfter`, `endedAt`, `timeliness`, metadata, and its steps | process instance id |
+| `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
+| `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, and the process and step it belongs to | measurement instance id |
+
+A step becoming overdue, for example, is published as:
+
+```json
+{
+  "eventId": "7f0c2a52-…", "eventType": "Step_Event", "eventCode": "OVERDUE",
+  "eventTime": "2022-05-23T10:47:00.000+0000", "tenantKey": "AA",
+  "entityType": "com.aktimetrix.step.instance", "entityId": "628b0f3c9d2a4e1f5c3b7a91",
+  "entity": {
+    "id": "628b0f3c9d2a4e1f5c3b7a91", "processInstanceId": "628b0f3c9d2a4e1f5c3b7a8e", "tenant": "AA",
+    "stepCode": "DELIVER", "sequence": 2, "status": "Created",
+    "plannedAt": "2022-05-23T09:46:00", "lateAfter": "2022-05-23T10:46:00", "actualAt": null,
+    "timeliness": "OVERDUE", "metadata": { "orderId": "1234", "orderedOn": "2022-05-22T23:46:00" }
+  }
+}
+```
+
+Delivery is at least once ([§6](#6-reliability-and-consistency)): consumers de-duplicate on `eventId`. The
+[configuration reference](./docs/configuration.md#published-event-payloads) lists every field.
 
 ## 6. Reliability and consistency
 
@@ -445,10 +477,11 @@ aktimetrix:
 The [getting-started guide](./docs/getting-started.md) builds this monitor step by step, and the
 [configuration reference](./docs/configuration.md) lists every property, channel and endpoint.
 
-## 10. Applicability and limitations
+## 10. Positioning and limitations
 
-**Applicability.** The model applies wherever an entity passes through time-bound milestones that are reported by
-events:
+### 10.1 When to use it
+
+The model applies wherever an entity passes through time-bound milestones that are reported by events:
 
 | Domain | Entity | Milestones |
 |---|---|---|
@@ -457,9 +490,41 @@ events:
 | Air cargo | Air waybill | booked → accepted → departed → arrived → delivered |
 | Customer service | Ticket | opened → acknowledged → resolved |
 
-**Limitations.** Aktimetrix monitors processes; it does not orchestrate them, and it never calls back into source
-systems. Processes are modelled as sequences of milestones rather than arbitrary graphs. The quality of the results
-depends on the source systems publishing an event, with an accurate business time, for each milestone.
+It fits best when the milestones happen in systems you do not want to change, when commitments such as *delivered
+within 10 hours* must be tracked per entity and acted on while they can still be met, and when events are already
+available on a message broker.
+
+It is not the right tool when a process should be **driven** rather than observed (use a workflow engine), when the
+goal is to **discover** how processes actually run from historical logs (use process mining), or when the milestones
+are not visible as events at all.
+
+### 10.2 Compared with neighbouring tools
+
+| | Aktimetrix | Workflow engines | Process mining | Application monitoring | Stream processing |
+|---|---|---|---|---|---|
+| Purpose | Track each entity against its plan, live | Execute a process: call services, wait, decide | Discover and analyse processes from event logs | Observe the health of services | Compute over event streams |
+| Owns the process | No: observes events from any system | Yes: the process runs inside it | No | No | No |
+| Unit of attention | One business entity and its deadlines | One process execution | Aggregate process variants | Requests, traces, hosts | Whatever the job computes |
+| Timing | Live: at risk before a deadline, overdue when it passes | Live, for the steps it runs | Mostly after the fact | Live, technical | Live |
+| Business plan per entity | Yes: planned times and measurements | Timers per task | Derived statistically | No | Must be built |
+| Effort to adopt | Definitions, and meters for computed plans | Model and deploy the process; integrate every step | Extract and prepare event logs | Instrument services | Write and operate the pipeline |
+
+The tools combine well: a workflow engine or any other system emits events, Aktimetrix tracks the commitments, and its
+published events feed dashboards, process-mining datasets or stream jobs.
+
+### 10.3 Known limitations
+
+- **Ordered milestones.** A process is a sequence of steps, each completed once. Branches, loops and repeated
+  attempts of a step are not modelled.
+- **One run per entity.** There is one instance of a process per tenant, process and entity. A second run for the
+  same entity, for example a re-delivery, needs a different entity id or process.
+- **Definitions are not versioned.** Changing a definition affects instances that are already running.
+- **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
+- **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
+  each milestone. An event mapper can translate formats, but cannot supply missing events.
+- **Monitoring only.** Aktimetrix never calls back into source systems; acting on its events is up to consumers.
+- **Reference implementation.** The broker binding is Kafka and the state store is MongoDB; atomic writes need
+  MongoDB transactions (a replica set). The REST API has no authentication of its own.
 
 ## 11. Status and roadmap
 
@@ -470,7 +535,10 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
 - [x] Overdue detection for events that never arrive
 - [x] At-risk forecasting from the delays of earlier steps
 - [x] Planned durations and tolerances in step definitions
-- [x] Meters at process and step level, for any user-defined dimension
+- [x] Steps defined or adapted per process
+- [x] Process cancellation, and a deadline for the whole process
+- [x] Meters at process and step level, for any user-defined dimension; planned and actual values
+- [x] Source systems keep their own event format, through an event mapper
 - [x] Query API for the state of an entity
 - [x] Reliable publication through a transactional outbox, with atomic writes on transactional stores
 - [x] Safe concurrency across instances, a dead-letter channel, and indexes created at startup
@@ -480,6 +548,7 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
   the namespace and signing key
 - [ ] Verified bindings for further message brokers
 - [ ] A state-store abstraction, with implementations beyond MongoDB
+- [ ] Versioned definitions, so that running instances keep the definition they started with
 
 ## 12. Further reading
 
@@ -490,6 +559,27 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
 | [Extending Aktimetrix](./docs/extending.md) | Meters, process and event handlers, pre- and post-processors |
 | [Configuration and API reference](./docs/configuration.md) | Properties, channels, storage, metrics and REST endpoints of the reference implementation |
 | [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) | A complete, tested example application |
+
+## Appendix A. Glossary
+
+| Term | Meaning |
+|---|---|
+| **Business entity** | The real-world object followed, such as an order; identified by entity type and entity id. |
+| **Business event** | A message from a source system saying something happened to an entity, such as *order shipped*. |
+| **Process definition** | The declaration of a business process: its steps in order, the events that start and cancel it, and optionally its own deadline and measurements. |
+| **Step definition** | The declaration of a milestone: the events that start and complete it, its plan, tolerance and measurements. Shared by a tenant's processes, and adaptable per process. |
+| **Process instance** / **step instance** | A process, or one of its steps, for one business entity. |
+| **Measurement** | A user-defined dimension observed at a process or step, such as time, distance or rating. |
+| **Planned** / **actual** (`P` / `A`) | What a measurement should be, computed when the instance is created; and what it was, recorded when it completes. |
+| **Meter** | Application code that computes a planned or actual measurement. |
+| **Metadata** | Domain data kept on an instance, such as an order's customer, used by meters and passed to consumers. |
+| **Deadline** | The planned time plus the tolerance: the moment after which a step or process is late. |
+| **Timeliness** | How a step or process compares with its deadline: `ON_TIME`, `LATE`, `AT_RISK` or `OVERDUE`. |
+| **Forecast** | The expected time of a later step, shifted by the delay of an earlier one; the basis of `AT_RISK`. |
+| **Tenant** | An independent set of definitions and instances, such as one business unit or customer. |
+| **Event mapper** | Application code that translates a source system's own message format into business events. |
+| **Outbox** | The part of the state store where results wait until they are published to the broker. |
+| **Dead-letter channel** | Where events that cannot be processed are kept for inspection and replay. |
 
 ## Contributing
 

@@ -105,6 +105,49 @@ Step instances carry a `revision` and are saved with a version check, so when tw
 the second change fails instead of overwriting the first: the monitor skips such a step until its next check, and an
 event is retried.
 
+## Published event payloads
+
+Every outbound message is an [event envelope](getting-started.md#the-event-format) whose `entity` is the instance
+that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventType`, `eventCode`, `eventTime`,
+`tenantKey`, `entityType` and `entityId` (the instance id, also the message key).
+
+**`Process_Event`** (`entityType` `com.aktimetrix.process.instance`)
+
+| Field | Meaning |
+|---|---|
+| `id`, `tenant`, `processCode`, `entityType`, `entityId` | The process instance, and the business entity it follows. |
+| `status` | `Created`, `Completed` or `Cancelled`. |
+| `complete` | `true` once completed or cancelled. |
+| `startedAt` | Business time of the event that started it. |
+| `plannedAt`, `lateAfter` | Its own deadline, if the definition has `plannedWithin`: planned completion, and that plus the tolerance. |
+| `endedAt` | Business time of the event that completed or cancelled it. |
+| `timeliness` | `ON_TIME` or `LATE` at completion, or `OVERDUE`; empty without a deadline. |
+| `metadata` | The process metadata. |
+| `steps` | Its steps, as in `Step_Event` (on `CREATED`). |
+
+**`Step_Event`** (`entityType` `com.aktimetrix.step.instance`)
+
+| Field | Meaning |
+|---|---|
+| `id`, `processInstanceId`, `tenant`, `stepCode`, `sequence` | The step instance, its process, and its position from 0. |
+| `status` | `Created`, `Started`, `Completed` or `Cancelled`. |
+| `plannedAt`, `lateAfter` | When it should happen, and its deadline (planned plus tolerance). |
+| `expectedAt` | Forecast, when an earlier step ran late. |
+| `actualAt` | Business time of the event that completed it. |
+| `timeliness` | `ON_TIME`, `LATE`, `AT_RISK` or `OVERDUE`; empty until it can be judged. |
+| `metadata` | The step metadata. |
+
+**`Measurement_Event`** (`entityType` `com.aktimetrix.measurement.instance`)
+
+| Field | Meaning |
+|---|---|
+| `id`, `tenant`, `processInstanceId` | The measurement, and the process it belongs to. |
+| `stepInstanceId`, `stepCode` | The step it belongs to; empty for a process-level measurement. |
+| `code`, `value`, `unit` | What was measured, e.g. `WEIGHT`, `2.5`, `KG`. Values are strings; times are ISO-8601 local date-times. |
+| `type` | `P` planned or `A` actual. |
+
+Times inside `entity` are local date-times in `aktimetrix.time-zone`.
+
 ## MongoDB collections
 
 | Collection | Contents |
