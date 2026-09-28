@@ -29,6 +29,12 @@ public class MeasurementDefinition {
      */
     private String tolerance;
     /**
+     * Which way of deviating is bad: {@code HIGHER} (more distance, more fuel, a hotter parcel) or {@code LOWER} (a
+     * lower rating). A deviation the other way is always within tolerance. Without it, both ways count; with it but no
+     * tolerance, the plan itself is the limit: at most, or at least, the planned value.
+     */
+    private String worseWhen;
+    /**
      * For an actual measurement: where to read its value in the entity of the event that completes the step or
      * process, as a dot-separated path, e.g. {@code weightKg} or {@code delivery.distanceKm}. Without it, the meter
      * registered for the measurement computes the value.

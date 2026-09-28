@@ -50,6 +50,37 @@ class MeasurementComparisonTest {
         assertThat(grade.getConformance()).isNull();
     }
 
+    @Test
+    void aShorterRouteIsNeverOutOfToleranceWhenOnlyHigherIsWorse() {
+        MeasurementInstance distance = actual("DISTANCE", "3");
+
+        MeasurementComparison.apply(distance, "5", "20%", "HIGHER");
+
+        assertThat(distance.getDeviation()).isEqualTo("-2");
+        assertThat(distance.getConformance()).isEqualTo(Conformance.WITHIN_TOLERANCE);
+    }
+
+    @Test
+    void withADirectionButNoToleranceThePlanIsTheLimit() {
+        MeasurementInstance hot = actual("TEMPERATURE", "31");
+        MeasurementInstance cool = actual("TEMPERATURE", "25");
+
+        MeasurementComparison.apply(hot, "30", null, "higher");
+        MeasurementComparison.apply(cool, "30", null, "HIGHER");
+
+        assertThat(hot.getConformance()).as("at most 30").isEqualTo(Conformance.OUT_OF_TOLERANCE);
+        assertThat(cool.getConformance()).isEqualTo(Conformance.WITHIN_TOLERANCE);
+    }
+
+    @Test
+    void aLowerRatingThanToleratedIsOutOfToleranceWhenLowerIsWorse() {
+        MeasurementInstance rating = actual("RATING", "2");
+
+        MeasurementComparison.apply(rating, "5", "1", "LOWER");
+
+        assertThat(rating.getConformance()).isEqualTo(Conformance.OUT_OF_TOLERANCE);
+    }
+
     private static MeasurementInstance actual(String code, String value) {
         MeasurementInstance measurement = new MeasurementInstance();
         measurement.setCode(code);

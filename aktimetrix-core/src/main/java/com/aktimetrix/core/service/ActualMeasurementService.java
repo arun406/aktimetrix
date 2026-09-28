@@ -20,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Records the actual ({@code A}) measurements of a step or process when it completes, in any dimension: read from
@@ -99,7 +100,9 @@ public class ActualMeasurementService {
     private void add(List<MeasurementInstance> actuals, MeasurementInstance actual, MeasurementDefinition measurement,
                      String owner, List<MeasurementDefinition> declared) {
         if (actual != null) {
-            comparison.compare(actual, tolerance(declared, measurement.getMeasurementCode()));
+            final String code = measurement.getMeasurementCode();
+            comparison.compare(actual, declaredField(declared, code, MeasurementDefinition::getTolerance),
+                    declaredField(declared, code, MeasurementDefinition::getWorseWhen));
             actuals.add(actual);
         } else {
             logger.debug("No actual {} recorded for {}", measurement.getMeasurementCode(), owner);
@@ -107,12 +110,13 @@ public class ActualMeasurementService {
     }
 
     /**
-     * The tolerance declared for the code, on its planned or its actual measurement.
+     * A field declared for the code, on its planned or its actual measurement, e.g. the tolerance.
      */
-    private static String tolerance(List<MeasurementDefinition> declared, String code) {
+    private static String declaredField(List<MeasurementDefinition> declared, String code,
+                                        Function<MeasurementDefinition, String> field) {
         for (MeasurementDefinition measurement : declared) {
-            if (code.equals(measurement.getMeasurementCode()) && measurement.getTolerance() != null) {
-                return measurement.getTolerance();
+            if (code.equals(measurement.getMeasurementCode()) && field.apply(measurement) != null) {
+                return field.apply(measurement);
             }
         }
         return null;

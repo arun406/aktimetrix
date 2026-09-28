@@ -188,7 +188,7 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
 | `startEventCodes` | The events that create a process instance. |
 | `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
-| `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. |
+| `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. For a deadline set by a rule, such as 1 day for priority customers and 3 otherwise, declare a planned `TIME` measurement on the process and a process-level meter for it instead. |
 | `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
 | `measurements` | Measurements of the process as a whole, e.g. the total distance or the customer's rating; see [Measurement fields](#measurement-fields). Planned ones are set when the process starts, actual ones recorded when it completes. |
 
@@ -228,9 +228,9 @@ for its actual value (`A`):
 
 ```json
 "measurements": [
-  { "measurementCode": "DISTANCE", "type": "P", "unit": "KM", "tolerance": "20%" },
+  { "measurementCode": "DISTANCE", "type": "P", "unit": "KM", "tolerance": "20%", "worseWhen": "HIGHER" },
   { "measurementCode": "DISTANCE", "type": "A", "unit": "KM", "valueFrom": "route.distanceKm" },
-  { "measurementCode": "RATING",   "type": "P", "value": "5", "unit": "STARS", "tolerance": "1" },
+  { "measurementCode": "RATING",   "type": "P", "value": "5", "unit": "STARS", "tolerance": "1", "worseWhen": "LOWER" },
   { "measurementCode": "RATING",   "type": "A", "valueFrom": "review.stars" }
 ]
 ```
@@ -243,6 +243,7 @@ for its actual value (`A`):
 | `valueFrom` | `A` | Where to read the actual value in the completing event's entity, as a dot path. Without it, the meter's `getActualValue` computes it. |
 | `unit` | both | The unit of a `value` or of a value read with `valueFrom`. |
 | `tolerance` | either | How far the actual may deviate from the plan: absolute (`2`) or relative (`20%`). Without it, the deviation is recorded but not judged. |
+| `worseWhen` | either | `HIGHER` (distance, fuel, temperature) or `LOWER` (rating): only a deviation that way counts; the other way is always within tolerance. Without a tolerance, the plan itself is the limit: at most, or at least, the planned value. |
 
 A planned value may also come from a meter: `@Measurement(code = "DISTANCE", stepCode = "TRAVEL")`, e.g. the route
 length to the customer's address. When the actual value is recorded, it is compared with the plan: its

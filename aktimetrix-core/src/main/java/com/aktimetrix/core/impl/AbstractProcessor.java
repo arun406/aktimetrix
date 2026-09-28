@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -139,11 +140,34 @@ public abstract class AbstractProcessor implements Processor {
         if (measurements.isEmpty()) {
             return;
         }
+        applyPlannedTime(processInstance, definition, measurements);
         measurementInstanceService.saveMeasurementInstances(measurements);
         final DefaultContext measurementContext = new DefaultContext();
         measurementContext.setTenant(context.getTenant());
         measurementContext.setMeasurementInstances(measurements);
         measurementInstancePublisher.postProcess(measurementContext);
+    }
+
+    /**
+     * A planned TIME of the process, from a meter (a rule, e.g. priority customers within 1 day) or a fixed value, is
+     * its deadline; it replaces one computed from {@code plannedWithin}.
+     */
+    private void applyPlannedTime(ProcessInstance processInstance, ProcessDefinition definition,
+                                  List<MeasurementInstance> measurements) {
+        for (MeasurementInstance measurement : measurements) {
+            if (Constants.MEASUREMENT_CODE_TIME.equals(measurement.getCode()) && measurement.getValue() != null) {
+                try {
+                    processInstance.setPlannedAt(LocalDateTime.parse(measurement.getValue()));
+                } catch (DateTimeParseException e) {
+                    logger.warn("Planned TIME of the {} process is not an ISO date-time: {}",
+                            definition.getProcessCode(), measurement.getValue());
+                    return;
+                }
+                processInstance.setLateAfter(processInstance.getPlannedAt().plus(definition.toleranceDuration()));
+                processInstanceService.saveProcessInstance(processInstance);
+                return;
+            }
+        }
     }
 
     /**
