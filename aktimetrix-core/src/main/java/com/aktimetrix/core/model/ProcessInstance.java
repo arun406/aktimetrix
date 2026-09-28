@@ -1,7 +1,9 @@
 package com.aktimetrix.core.model;
 
+import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
@@ -10,6 +12,7 @@ import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -47,6 +50,28 @@ public class ProcessInstance {
      */
     private LocalDateTime startedAt;
     private Map<String, Object> metadata;
+    /**
+     * When the whole process should complete: its start plus the definition's {@code plannedWithin}, if any.
+     */
+    private LocalDateTime plannedAt;
+    /**
+     * When the process counts as late: {@code plannedAt} plus the definition's tolerance.
+     */
+    private LocalDateTime lateAfter;
+    /**
+     * When the process completed or was cancelled: the time of the event that ended it.
+     */
+    private LocalDateTime endedAt;
+    /**
+     * How the process compares with its deadline; {@code null} when it has none, or until it can be judged.
+     */
+    private Timeliness timeliness;
+    /**
+     * Incremented on every save; a save based on a stale copy fails instead of overwriting a newer state.
+     */
+    @Version
+    @JsonIgnore
+    private Long revision;
     @Transient
     private List<StepInstance> steps = new ArrayList<>();
 

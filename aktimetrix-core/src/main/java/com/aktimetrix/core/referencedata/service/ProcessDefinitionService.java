@@ -29,6 +29,13 @@ public class ProcessDefinitionService {
     }
 
     /**
+     * The tenant's definition of the process, or {@code null}.
+     */
+    public ProcessDefinition findByCode(String tenant, String processCode) {
+        return repository.findByTenantAndProcessCode(tenant, processCode).stream().findFirst().orElse(null);
+    }
+
+    /**
      * Returns all process definitions as stored.
      */
     public List<ProcessDefinition> list() {

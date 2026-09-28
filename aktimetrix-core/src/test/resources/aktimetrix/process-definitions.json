@@ -4,6 +4,8 @@
     "processCode": "PARCEL",
     "entityType": "parcel",
     "startEventCodes": ["PARCEL_BOOKED"],
+    "cancelEventCodes": ["PARCEL_CANCELLED"],
+    "plannedWithin": "PT12H",
     "status": "CONFIRMED",
     "steps": [
       { "stepCode": "BOOK" },

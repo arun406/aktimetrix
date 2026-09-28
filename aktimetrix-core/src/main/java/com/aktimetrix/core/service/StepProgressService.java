@@ -6,7 +6,9 @@ import com.aktimetrix.core.impl.DefaultContext;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
 import com.aktimetrix.core.transferobjects.Event;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,9 @@ import java.util.Objects;
  * event matches the step definition's start or end event codes, captures an actual TIME measurement when a step
  * completes, and judges the step against its plan.
  * <p>
- * A step whose definition has no end event codes is a single milestone and completes on its start event.
+ * A step whose definition has no end event codes is a single milestone and completes on its start event. An event in
+ * the process definition's cancel event codes cancels the process instead. When all mandatory steps have completed,
+ * the process completes, and is judged against its own deadline if it has one.
  *
  * @author arun kumar kandakatla
  */
@@ -48,6 +52,8 @@ public class StepProgressService {
     private final StepPlanner stepPlanner;
     private final AktimetrixMetrics metrics;
     private final Clock clock;
+    private final ProcessDefinitionService processDefinitionService;
+    private final ProcessInstancePublisherService processInstancePublisherService;
 
     /**
      * Applies the event to every active process instance of the business entity.
@@ -62,8 +68,15 @@ public class StepProgressService {
         if (processInstances.isEmpty()) {
             logger.debug("No active process instance for {} {}; {} records nothing", entityType, entityId, eventCode);
         }
-        processInstances.forEach(processInstance ->
-                actuals.addAll(recordMilestone(eventCode, processInstance, occurredAt)));
+        for (ProcessInstance processInstance : processInstances) {
+            final ProcessDefinition definition = processDefinitionService.findByCode(tenant,
+                    processInstance.getProcessCode());
+            if (definition != null && contains(definition.getCancelEventCodes(), eventCode)) {
+                cancel(processInstance, occurredAt);
+            } else {
+                actuals.addAll(recordMilestone(eventCode, processInstance, occurredAt));
+            }
+        }
         return actuals;
     }
 
@@ -122,7 +135,7 @@ public class StepProgressService {
             context.setTenant(tenant);
             context.setMeasurementInstances(actuals);
             measurementInstancePublisherService.postProcess(context);
-            completeProcessIfDone(processInstance, steps, definitions);
+            completeProcessIfDone(processInstance, steps, definitions, occurredAt);
         }
         return actuals;
     }
@@ -210,8 +223,42 @@ public class StepProgressService {
                 Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(), ZonedDateTime.now(clock));
     }
 
+    /**
+     * Cancels the process instance: it and its open steps become {@code Cancelled}, so they are no longer monitored,
+     * and a CANCELLED event is published for each.
+     */
+    public void cancel(ProcessInstance processInstance, LocalDateTime occurredAt) {
+        logger.info("Process instance {} is cancelled", processInstance.getId());
+        processInstance.setStatus(Constants.STATUS_CANCELLED);
+        processInstance.setComplete(true);
+        processInstance.setEndedAt(occurredAt);
+        processInstanceService.saveProcessInstance(processInstance);
+        processInstancePublisherService.publish(processInstance, "CANCELLED");
+        metrics.processCancelled(processInstance);
+        for (StepInstance step : stepInstanceService.getStepInstancesByProcessInstanceId(processInstance.getTenant(),
+                processInstance.getId())) {
+            if (!Constants.STATUS_COMPLETED.equals(step.getStatus())) {
+                step.setStatus(Constants.STATUS_CANCELLED);
+                stepInstanceService.save(step);
+                stepInstancePublisherService.publish(step, "CANCELLED");
+            }
+        }
+    }
+
+    /**
+     * Marks a running process whose deadline has passed as {@link Timeliness#OVERDUE}, and publishes it.
+     */
+    public void markProcessOverdue(ProcessInstance processInstance) {
+        logger.warn("Process instance {} is overdue: planned to complete at {}", processInstance.getId(),
+                processInstance.getPlannedAt());
+        processInstance.setTimeliness(Timeliness.OVERDUE);
+        processInstanceService.saveProcessInstance(processInstance);
+        processInstancePublisherService.publish(processInstance, Timeliness.OVERDUE.name());
+        metrics.processOverdue(processInstance);
+    }
+
     private void completeProcessIfDone(ProcessInstance processInstance, List<StepInstance> steps,
-                                       Map<String, StepDefinition> definitions) {
+                                       Map<String, StepDefinition> definitions, LocalDateTime occurredAt) {
         final boolean done = steps.stream()
                 .filter(step -> !isOptional(definitions.get(step.getStepCode())))
                 .allMatch(step -> Constants.STATUS_COMPLETED.equals(step.getStatus()));
@@ -219,7 +266,13 @@ public class StepProgressService {
             logger.info("Process instance {} is complete", processInstance.getId());
             processInstance.setComplete(true);
             processInstance.setStatus(Constants.STATUS_COMPLETED);
+            processInstance.setEndedAt(occurredAt);
+            if (processInstance.getLateAfter() != null) {
+                processInstance.setTimeliness(occurredAt.isAfter(processInstance.getLateAfter())
+                        ? Timeliness.LATE : Timeliness.ON_TIME);
+            }
             processInstanceService.saveProcessInstance(processInstance);
+            processInstancePublisherService.publish(processInstance, "COMPLETED");
             metrics.processCompleted(processInstance);
         }
     }

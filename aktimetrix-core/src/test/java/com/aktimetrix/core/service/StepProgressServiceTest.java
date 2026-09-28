@@ -6,7 +6,9 @@ import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
 import com.aktimetrix.core.transferobjects.Event;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -54,6 +56,10 @@ class StepProgressServiceTest {
     private MeasurementInstancePublisherService measurementInstancePublisherService;
     @Mock
     private StepInstancePublisherService stepInstancePublisherService;
+    @Mock
+    private ProcessDefinitionService processDefinitionService;
+    @Mock
+    private ProcessInstancePublisherService processInstancePublisherService;
     private StepProgressService service;
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
     private int nextSequence;
@@ -64,7 +70,8 @@ class StepProgressServiceTest {
     void setUp() {
         service = new StepProgressService(stepInstanceService, stepDefinitionService, processInstanceService,
                 measurementInstanceService, measurementInstancePublisherService, stepInstancePublisherService,
-                new StepPlanner(), metrics(registry), Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC));
+                new StepPlanner(), metrics(registry), Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC),
+                processDefinitionService, processInstancePublisherService);
         process = new ProcessInstance();
         process.setId(new ObjectId());
         process.setTenant(TENANT);
@@ -149,7 +156,53 @@ class StepProgressServiceTest {
 
         assertThat(process.isComplete()).isTrue();
         assertThat(process.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
+        assertThat(process.getEndedAt()).isEqualTo(SHIPPED_AT);
+        assertThat(process.getTimeliness()).as("no deadline, no timeliness").isNull();
         verify(processInstanceService).saveProcessInstance(process);
+        verify(processInstancePublisherService).publish(process, "COMPLETED");
+    }
+
+    @Test
+    void processWithADeadlineIsJudgedWhenItCompletes() {
+        process.setLateAfter(SHIPPED_AT.minusMinutes(1));
+        givenSteps(step("DELIVER", Constants.STATUS_CREATED));
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+
+        service.recordMilestone("ORDER_DELIVERED_EVENT", process, SHIPPED_AT);
+
+        assertThat(process.getTimeliness()).isEqualTo(Timeliness.LATE);
+    }
+
+    @Test
+    void cancelEventCancelsTheProcessAndItsOpenSteps() {
+        process.setProcessCode("ORDER_DELIVERY");
+        ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
+        definition.setCancelEventCodes(List.of("ORDER_CANCELLED_EVENT"));
+        when(processInstanceService.getActiveProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
+        when(processDefinitionService.findByCode(TENANT, "ORDER_DELIVERY")).thenReturn(definition);
+        StepInstance place = step("PLACE", Constants.STATUS_COMPLETED);
+        StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
+        givenSteps(place, ship);
+
+        service.recordMilestones(TENANT, "com.ecom.order", "1234", "ORDER_CANCELLED_EVENT", SHIPPED_AT);
+
+        assertThat(process.getStatus()).isEqualTo(Constants.STATUS_CANCELLED);
+        assertThat(process.isComplete()).as("no longer active").isTrue();
+        assertThat(process.getEndedAt()).isEqualTo(SHIPPED_AT);
+        assertThat(place.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
+        assertThat(ship.getStatus()).isEqualTo(Constants.STATUS_CANCELLED);
+        verify(processInstancePublisherService).publish(process, "CANCELLED");
+        verify(stepInstancePublisherService).publish(ship, "CANCELLED");
+        verify(stepInstancePublisherService, never()).publish(place, "CANCELLED");
+    }
+
+    @Test
+    void processPastItsDeadlineIsMarkedOverdue() {
+        service.markProcessOverdue(process);
+
+        assertThat(process.getTimeliness()).isEqualTo(Timeliness.OVERDUE);
+        verify(processInstanceService).saveProcessInstance(process);
+        verify(processInstancePublisherService).publish(process, "OVERDUE");
     }
 
     @Test
@@ -198,7 +251,8 @@ class StepProgressServiceTest {
         StepProgressService inKolkata = new StepProgressService(stepInstanceService, stepDefinitionService,
                 processInstanceService, measurementInstanceService, measurementInstancePublisherService,
                 stepInstancePublisherService, new StepPlanner(), metrics(registry),
-                Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneId.of("Asia/Kolkata")));
+                Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneId.of("Asia/Kolkata")),
+                processDefinitionService, processInstancePublisherService);
         Event<Object, Object> event = new Event<>();
         assertThat(inKolkata.occurredAt(event)).isEqualTo(LocalDateTime.of(2022, 5, 23, 17, 30));
 
