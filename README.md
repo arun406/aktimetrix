@@ -237,10 +237,20 @@ such before its own deadline passes, which gives operators time to intervene.
 
 ## 6. Reliability and consistency
 
-**Transactional outbox.** A result is first written to the state store, next to the state it describes, and a relay
-then publishes it to the broker. If the broker is unavailable, results accumulate in the outbox and are sent when it
-returns, instead of being lost. Relays on several runtime instances share the work by leasing entries with an atomic
-conditional update, so an entry held by a failed instance is taken over by another once its lease expires.
+**Transactional outbox.** Each business event is processed as one unit of work. The state it changes and the
+results it produces are written to the state store together, in one transaction, and a relay then publishes the
+results to the broker. If the broker is unavailable, results accumulate in the outbox and are sent when it returns,
+instead of being lost; if processing fails half-way, nothing of it is kept and the event is processed again. Relays
+on several runtime instances share the work by leasing entries with an atomic conditional update, so an entry held
+by a failed instance is taken over by another once its lease expires.
+
+The atomicity relies on the state store's transactions. A store without them (in the reference implementation, a
+standalone MongoDB server rather than a replica set) still works, but a crash in the middle of a unit of work can then
+keep its state without its results. The runtime detects this and says so at startup.
+
+**Concurrency.** Every step carries a revision, and a save based on a stale copy is rejected rather than overwriting
+a newer state. The deadline monitor can therefore run on every runtime instance: when two instances find the same
+overdue step, or the step's event arrives at the same moment, only one change wins and only it is published.
 
 **Delivery guarantee.** Delivery is *at least once*. A failure between sending a result and recording it as sent
 causes it to be sent again, so consumers de-duplicate on the event id.
@@ -249,8 +259,12 @@ causes it to be sent again, so consumers de-duplicate on the event id.
 ordering then guarantees that one entity's events are processed in sequence, while different entities are processed
 in parallel.
 
-**Idempotency.** There is at most one process instance per *tenant + process + entity*, and a completed step is
-never completed again. Replaying an event stream is therefore safe.
+**Idempotency.** There is at most one process instance per *tenant + process + entity*, enforced by a unique index,
+and a completed step is never completed again. Replaying an event stream is therefore safe.
+
+**Failed events.** An event that cannot be parsed, or lacks its tenant, event code or entity id, can never succeed
+and goes straight to a **dead-letter channel**. An event whose processing fails is retried, and goes to the same
+channel if it still fails, so no event is lost silently and each can be inspected and replayed.
 
 ## 7. Extensibility
 
@@ -449,7 +463,8 @@ works end to end and is verified by tests on JDK 11, 17 and 21. APIs may still c
 - [x] Planned durations and tolerances in step definitions
 - [x] Meters at process and step level, for any user-defined dimension
 - [x] Query API for the state of an entity
-- [x] Reliable publication through a transactional outbox
+- [x] Reliable publication through a transactional outbox, with atomic writes on transactional stores
+- [x] Safe concurrency across instances, a dead-letter channel, and indexes created at startup
 - [x] Metrics
 - [x] Definitions as code, and auto-configuration
 - [ ] First release to Maven Central: the pipeline is ready ([RELEASING.md](./RELEASING.md)); the release waits on

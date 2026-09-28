@@ -29,6 +29,8 @@ aktimetrix:
 |---|---|---|
 | `aktimetrix.events.topic` | `business-events` | Kafka topic of the inbound business events. |
 | `aktimetrix.events.group` | `aktimetrix` | Consumer group of the inbound business events. |
+| `aktimetrix.events.dead-letter.enabled` | `true` | Send events that cannot be processed to a dead-letter topic instead of dropping them. |
+| `aktimetrix.events.dead-letter.topic` | *events topic*`.dlq` | The dead-letter topic. |
 | `aktimetrix.time-zone` | `UTC` | Zone of all planned and actual times. Event times are converted to it, and the overdue monitor compares planned times with the current time in it. |
 | `aktimetrix.definitions.load-on-startup` | `true` | Load process and step definitions from the classpath at startup. |
 | `aktimetrix.definitions.processes` | `classpath*:aktimetrix/process-definitions.json` | Location of the process definitions: a JSON array. |
@@ -39,6 +41,8 @@ aktimetrix:
 | `aktimetrix.outbox.batch-size` | `100` | Most events published per relay run. |
 | `aktimetrix.outbox.lease` | `PT30S` | How long a relay holds a claimed event before another instance may retry it. |
 | `aktimetrix.outbox.retention` | `P7D` | How long sent events stay in the outbox before being purged. |
+| `aktimetrix.storage.transactions` | `auto` | Process each event, and each overdue step, in a MongoDB transaction: `auto` when MongoDB supports it (replica set or sharded cluster), `always`, or `never`. |
+| `aktimetrix.storage.create-indexes` | `true` | Create the indexes Aktimetrix relies on at startup. |
 
 ### Defaults Aktimetrix provides
 
@@ -69,6 +73,7 @@ The overdue monitor is a `@Scheduled` task, so Aktimetrix enables Spring's sched
 | `process-instance-out-0` | out | `Process_Event` / `CREATED`: a process instance with its steps, keyed by process instance id. |
 | `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK` or `OVERDUE`: a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `CREATED`: a planned (`P`) or actual (`A`) measurement, keyed by measurement instance id. |
+| `aktimetrix.events.dead-letter.topic` | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
 A dashboard or alerting service subscribes to `step-instance-out-0` and acts on `AT_RISK` and `OVERDUE`, or on
 `COMPLETED` with `timeliness` `LATE`.
@@ -76,11 +81,29 @@ A dashboard or alerting service subscribes to `step-instance-out-0` and acts on 
 ### Delivery guarantees
 
 Outbound events are first written to the `outbox` collection, next to the state they describe, and a relay publishes
-them to Kafka in order. When Kafka is unavailable, events wait in the outbox and are sent once it is back, instead of
+them to Kafka in order. When MongoDB runs as a replica set or sharded cluster, each business event is processed in a
+transaction, so its state and its outbound events are saved together or not at all. A standalone MongoDB server has
+no transactions: Aktimetrix then logs a warning at startup, and a crash in the middle of an event can keep its state
+without its outbound events. A single-node replica set is enough for transactions. When Kafka is unavailable, events wait in the outbox and are sent once it is back, instead of
 being lost. Delivery is **at least once**: after a crash between sending and recording an event, it is sent again, so
 consumers should de-duplicate on the event's `eventId`. Relays in several application instances share the work
 safely. With more than one instance, events of different entities may be published in a slightly different order
 than they happened.
+
+### Failed events
+
+An inbound event that is not valid JSON, or has no `tenantKey`, `eventCode` or `entityId`, can never be processed: it
+is sent unchanged to the dead-letter topic at once, and counted in `aktimetrix.events` with outcome `invalid`. An
+event whose processing throws is retried by the Kafka binder (3 attempts by default,
+`spring.cloud.stream.bindings.processor-in-0.consumer.max-attempts`) and then sent to the same topic. Fix the cause,
+then replay the dead-letter topic into the events topic: processing is idempotent.
+
+### Running several instances
+
+Every instance consumes a share of the events topic's partitions, runs the outbox relay and runs the overdue monitor.
+Step instances carry a `revision` and are saved with a version check, so when two instances change the same step,
+the second change fails instead of overwriting the first: the monitor skips such a step until its next check, and an
+event is retried.
 
 ## MongoDB collections
 
@@ -90,8 +113,10 @@ than they happened.
 | `processInstances`, `stepInstances`, `measurement-instance` | Runtime state |
 | `outbox` | Events waiting to be, or recently, published to Kafka |
 
-For large volumes, index `stepInstances` on `{ status: 1, lateAfter: 1 }` for the overdue monitor and `outbox` on
-`{ sentAt: 1, createdAt: 1 }` for the relay.
+Aktimetrix creates the indexes its queries need at startup, including a unique index on process instances by
+tenant, process, entity type and entity id. If existing data violates a unique index, the index is not created and
+the error is logged. Set `aktimetrix.storage.create-indexes=false` to manage indexes yourself. At startup it also adds
+a `revision` to step instances saved by earlier builds, which had none.
 
 ## Metrics
 
