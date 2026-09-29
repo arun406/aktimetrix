@@ -65,7 +65,7 @@ public abstract class AbstractMeter implements Meter {
 
     /**
      * Reads a date-time from the step's metadata, whether it is stored as a {@link LocalDateTime}, a
-     * {@link Date} (as read back from MongoDB) or an ISO-8601 string (as read back from JSON).
+     * {@link Date} (as read back from some stores) or an ISO-8601 string (as read back from JSON).
      *
      * @return the value, or {@code null} when the key is absent
      */

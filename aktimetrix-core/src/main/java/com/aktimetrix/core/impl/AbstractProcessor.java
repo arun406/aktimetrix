@@ -22,7 +22,6 @@ import com.aktimetrix.core.service.ProcessInstanceService;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.service.StepInstanceService;
 import com.aktimetrix.core.service.StepPlanner;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -233,7 +232,7 @@ public abstract class AbstractProcessor implements Processor {
     }
 
     private List<StepInstance> saveStepInstances(String tenant, List<StepDefinition> stepDefinitions,
-                                                 ObjectId processInstanceId, Map<String, Object> metadata) {
+                                                 String processInstanceId, Map<String, Object> metadata) {
         return this.stepInstanceService
                 .save(tenant, stepDefinitions, metadata, processInstanceId);
     }

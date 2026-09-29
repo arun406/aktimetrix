@@ -28,7 +28,7 @@ public class AktimetrixProperties {
     @Data
     public static class Events {
         /**
-         * Kafka topic of the inbound business events.
+         * Destination (topic, or exchange) of the inbound business events on the message broker.
          */
         private String topic = "business-events";
         /**
@@ -84,7 +84,7 @@ public class AktimetrixProperties {
     @Data
     public static class Outbox {
         /**
-         * How often the relay publishes pending events to Kafka, as an ISO-8601 duration such as {@code PT1S}.
+         * How often the relay publishes pending events to the broker, as an ISO-8601 duration such as {@code PT1S}.
          */
         private Duration relayInterval = Duration.ofSeconds(1);
         /**
@@ -104,13 +104,19 @@ public class AktimetrixProperties {
     @Data
     public static class Storage {
         /**
-         * Whether each business event, and each overdue step, is processed in a MongoDB transaction, so that state and
-         * outbound events are written together: {@code auto} uses transactions when MongoDB supports them (replica sets
-         * and sharded clusters), {@code always} requires them, {@code never} disables them.
+         * Which store module to use when more than one is on the classpath: {@code mongodb}, {@code jdbc} or
+         * {@code memory}. Not needed with a single store module.
+         */
+        private String type;
+        /**
+         * Whether each business event, and each overdue step or process, is processed in a transaction, so that state
+         * and outbound events are written together: {@code auto} uses transactions when the store supports them (with
+         * MongoDB, replica sets and sharded clusters; always with JDBC), {@code always} requires them, {@code never}
+         * disables them.
          */
         private TransactionMode transactions = TransactionMode.AUTO;
         /**
-         * Whether to create the indexes Aktimetrix relies on at startup.
+         * Whether to create the indexes, and with JDBC the tables, Aktimetrix relies on at startup.
          */
         private boolean createIndexes = true;
 

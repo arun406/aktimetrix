@@ -1,67 +1,47 @@
 package com.aktimetrix.core.referencedata.service;
 
 import com.aktimetrix.core.referencedata.model.StepDefinition;
-import com.aktimetrix.core.referencedata.repository.ProcessDefinitionRepository;
-import com.aktimetrix.core.referencedata.repository.StepDefinitionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.aktimetrix.core.store.DefinitionStore;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class StepDefinitionService {
 
-    @Autowired
-    StepDefinitionRepository repository;
-    @Autowired
-    ProcessDefinitionRepository processDefinitionRepository;
+    private final DefinitionStore store;
 
     /**
-     * Saves a new Step Definition
-     *
-     * @param stepDefinition
-     * @return
-     */
-    /**
-     * Saves the step definition, replacing an existing one with the same tenant and step code.
+     * Saves the definition, replacing the one with the same tenant and step code.
      */
     public StepDefinition add(StepDefinition stepDefinition) {
-        StepDefinition existing = repository.findByStepCode(stepDefinition.getTenant(), stepDefinition.getStepCode());
-        if (existing != null) {
-            stepDefinition.setId(existing.getId());
-        }
-        repository.save(stepDefinition);
-        return stepDefinition;
+        store.findStep(stepDefinition.getTenant(), stepDefinition.getStepCode())
+                .ifPresent(existing -> stepDefinition.setId(existing.getId()));
+        return store.saveStep(stepDefinition);
     }
 
-    /**
-     * Returns all Step Definitions
-     *
-     * @return
-     */
     public List<StepDefinition> list() {
-        return this.repository.findAll();
+        return store.findSteps();
     }
 
-    /**
-     * @return
-     */
     public StepDefinition findByStepCode(String tenant, String stepCode) {
-        return this.repository.findByStepCode(tenant, stepCode);
+        return store.findStep(tenant, stepCode).orElse(null);
     }
 
     /**
-     * The definition of a step as the process uses it: the tenant's shared step definition, with the fields set on
-     * the step in the process definition overriding it. A step may also be defined only in the process.
+     * The step as the process uses it: the tenant's shared definition, overridden by the fields the process's own
+     * {@code steps} entry sets. Either may be absent.
      *
-     * @return the definition, or {@code null} when the step is defined neither in the process nor for the tenant
+     * @param processCode the process, or {@code null} for the shared definition alone
      */
     public StepDefinition findStepDefinition(String tenant, String processCode, String stepCode) {
-        return resolve(repository.findByStepCode(tenant, stepCode), processStep(tenant, processCode, stepCode));
+        return resolve(findByStepCode(tenant, stepCode), processStep(tenant, processCode, stepCode));
     }
 
     /**
-     * Combines a shared step definition with the step as written in a process definition; either may be absent.
+     * {@code shared} overridden by {@code inProcess}; either may be {@code null}.
      */
     public static StepDefinition resolve(StepDefinition shared, StepDefinition inProcess) {
         if (shared == null) {
@@ -74,7 +54,7 @@ public class StepDefinitionService {
         if (processCode == null) {
             return null;
         }
-        return processDefinitionRepository.findByTenantAndProcessCode(tenant, processCode).stream()
+        return store.findProcess(tenant, processCode).stream()
                 .filter(process -> process.getSteps() != null)
                 .flatMap(process -> process.getSteps().stream())
                 .filter(step -> stepCode.equals(step.getStepCode()))

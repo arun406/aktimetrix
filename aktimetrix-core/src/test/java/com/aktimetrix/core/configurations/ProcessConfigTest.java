@@ -7,7 +7,7 @@ import com.aktimetrix.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.RegistryService;
-import com.aktimetrix.core.storage.AktimetrixTransactions;
+import com.aktimetrix.core.store.AktimetrixTransactions;
 import com.aktimetrix.core.transferobjects.Event;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

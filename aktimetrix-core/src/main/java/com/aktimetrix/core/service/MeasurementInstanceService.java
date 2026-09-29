@@ -1,7 +1,7 @@
 package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.model.MeasurementInstance;
-import com.aktimetrix.core.repository.MeasurementInstanceRepository;
+import com.aktimetrix.core.store.MeasurementInstanceStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,24 +10,13 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MeasurementInstanceService {
-    private final MeasurementInstanceRepository repository;
-
-    /**
-     * @param measurementInstance
-     * @return
-     */
+    private final MeasurementInstanceStore store;
 
     public MeasurementInstance saveMeasurementInstance(MeasurementInstance measurementInstance) {
-        this.repository.save(measurementInstance);
-        return measurementInstance;
+        return store.save(measurementInstance);
     }
 
-    /**
-     * @param measurementInstances
-     * @return
-     */
     public List<MeasurementInstance> saveMeasurementInstances(List<MeasurementInstance> measurementInstances) {
-        this.repository.saveAll(measurementInstances);
-        return measurementInstances;
+        return store.saveAll(measurementInstances);
     }
 }

@@ -113,7 +113,7 @@ public class AktimetrixMetrics {
 
     public void outboxPending(Supplier<Number> pending) {
         Gauge.builder("aktimetrix.outbox.pending", pending)
-                .description("Outbox messages not yet sent to Kafka").register(registry);
+                .description("Outbox messages not yet sent to the message broker").register(registry);
     }
 
     private Counter processCounter(String name, String description, ProcessInstance process) {

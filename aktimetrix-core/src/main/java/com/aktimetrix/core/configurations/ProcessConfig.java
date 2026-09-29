@@ -9,7 +9,7 @@ import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.RegistryService;
-import com.aktimetrix.core.storage.AktimetrixTransactions;
+import com.aktimetrix.core.store.AktimetrixTransactions;
 import com.aktimetrix.core.transferobjects.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
