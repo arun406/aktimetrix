@@ -1,5 +1,7 @@
 package com.aktimetrix.core.service;
 
+import java.util.UUID;
+
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.Timeliness;
@@ -7,13 +9,12 @@ import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
+import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
-import com.aktimetrix.core.referencedata.service.StepDefinitionService;
 import com.aktimetrix.core.transferobjects.Event;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -47,8 +49,6 @@ class StepProgressServiceTest {
     @Mock
     private StepInstanceService stepInstanceService;
     @Mock
-    private StepDefinitionService stepDefinitionService;
-    @Mock
     private ProcessInstanceService processInstanceService;
     @Mock
     private MeasurementInstanceService measurementInstanceService;
@@ -57,7 +57,9 @@ class StepProgressServiceTest {
     @Mock
     private StepInstancePublisherService stepInstancePublisherService;
     @Mock
+    private DefinitionStore definitionStore;
     private ProcessDefinitionService processDefinitionService;
+    private ProcessDefinition processDefinition;
     @Mock
     private ProcessInstancePublisherService processInstancePublisherService;
     @Mock
@@ -72,15 +74,26 @@ class StepProgressServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new StepProgressService(stepInstanceService, stepDefinitionService, processInstanceService,
+        processDefinitionService = new ProcessDefinitionService(definitionStore);
+        service = new StepProgressService(stepInstanceService, processInstanceService,
                 measurementInstanceService, measurementInstancePublisherService, stepInstancePublisherService,
                 new StepPlanner(), metrics(registry), Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC),
                 processDefinitionService, processInstancePublisherService, actualMeasurementService,
                 derivedMetricService);
         process = new ProcessInstance();
-        process.setId(new ObjectId());
+        process.setId(UUID.randomUUID().toString());
         process.setTenant(TENANT);
         process.setStatus(Constants.STATUS_CREATED);
+        useDefinition(new ProcessDefinition(TENANT, "ORDER_DELIVERY"));
+    }
+
+    /**
+     * The definition the process instance started with, keeping the steps defined so far.
+     */
+    private void useDefinition(ProcessDefinition definition) {
+        definition.setSteps(processDefinition == null ? new ArrayList<>() : processDefinition.getSteps());
+        processDefinition = definition;
+        process.setDefinition(definition);
     }
 
     @Test
@@ -184,7 +197,7 @@ class StepProgressServiceTest {
         ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
         definition.setCancelEventCodes(List.of("ORDER_CANCELLED_EVENT"));
         when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
-        when(processDefinitionService.findByCode(TENANT, "ORDER_DELIVERY")).thenReturn(definition);
+        useDefinition(definition);
         StepInstance place = step("PLACE", Constants.STATUS_COMPLETED);
         StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
         givenSteps(place, ship);
@@ -225,7 +238,7 @@ class StepProgressServiceTest {
         ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
         definition.setEndEventCodes(List.of("ORDER_CLOSED_EVENT"));
         when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
-        when(processDefinitionService.findByCode(TENANT, "ORDER_DELIVERY")).thenReturn(definition);
+        useDefinition(definition);
         StepInstance place = step("PLACE", Constants.STATUS_COMPLETED);
         StepInstance deliver = step("DELIVER", Constants.STATUS_CREATED);
         StepInstance rated = step("RATED", Constants.STATUS_CREATED);
@@ -249,7 +262,7 @@ class StepProgressServiceTest {
         process.setProcessCode("ORDER_DELIVERY");
         ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
         definition.setEndEventCodes(List.of("ORDER_CLOSED_EVENT"));
-        when(processDefinitionService.findByCode(TENANT, "ORDER_DELIVERY")).thenReturn(definition);
+        useDefinition(definition);
         givenSteps(step("DELIVER", Constants.STATUS_CREATED));
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
 
@@ -266,7 +279,7 @@ class StepProgressServiceTest {
         ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
         definition.setCancelEventCodes(List.of("ORDER_CANCELLED_EVENT"));
         when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
-        when(processDefinitionService.findByCode(TENANT, "ORDER_DELIVERY")).thenReturn(definition);
+        useDefinition(definition);
 
         service.recordMilestones(TENANT, "com.ecom.order", "1234", "ORDER_CANCELLED_EVENT", SHIPPED_AT);
 
@@ -326,7 +339,7 @@ class StepProgressServiceTest {
 
     @Test
     void occurredAtIsConvertedToTheConfiguredZone() {
-        StepProgressService inKolkata = new StepProgressService(stepInstanceService, stepDefinitionService,
+        StepProgressService inKolkata = new StepProgressService(stepInstanceService,
                 processInstanceService, measurementInstanceService, measurementInstancePublisherService,
                 stepInstancePublisherService, new StepPlanner(), metrics(registry),
                 Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneId.of("Asia/Kolkata")),
@@ -414,6 +427,8 @@ class StepProgressServiceTest {
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
 
+        when(processInstanceService.getProcessInstance(TENANT, process.getId())).thenReturn(process);
+
         service.markOverdue(ship, LocalDateTime.of(2022, 5, 23, 4, 0));
 
         assertThat(ship.getTimeliness()).isEqualTo(Timeliness.OVERDUE);
@@ -456,7 +471,7 @@ class StepProgressServiceTest {
     private StepInstance step(String code, String status) {
         StepInstance step = new StepInstance(TENANT, code, process.getId(), null, null, "1.0.0", status,
                 LocalDateTime.now());
-        step.setId(new ObjectId());
+        step.setId(UUID.randomUUID().toString());
         step.setSequence(nextSequence++);
         return step;
     }
@@ -471,7 +486,7 @@ class StepProgressServiceTest {
         definition.setStartEventCodes(startEvents);
         definition.setEndEventCodes(endEvents);
         definition.setOptionalInd("N");
-        when(stepDefinitionService.findStepDefinition(eq(TENANT), any(), eq(code))).thenReturn(definition);
+        processDefinition.getSteps().add(definition);
         return definition;
     }
 }

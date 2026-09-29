@@ -2,12 +2,23 @@
 
 [← Back to README](../README.md)
 
-> This guide describes the **reference implementation**, which binds the message broker to Apache Kafka and the
-> state store to MongoDB. The model itself is technology-neutral: see the [README](../README.md#52-infrastructure-contract).
+> This guide describes the **reference implementation**: its modules, their settings, and its API. The model itself
+> is technology-neutral: see the [README](../README.md#52-infrastructure-contract).
 
-## Configuration
+## Choosing a store and a broker
 
-An Aktimetrix application needs only its MongoDB and Kafka connection and the topic its events arrive on:
+An application depends on `aktimetrix-core`, one store module and one broker module, and supplies their connection
+settings with the standard Spring Boot properties.
+
+| Module | Connection settings | Notes |
+|---|---|---|
+| `aktimetrix-store-mongodb` | `spring.data.mongodb.uri` | Atomic units of work on a replica set or sharded cluster (a single-node replica set is enough). |
+| `aktimetrix-store-jdbc` | `spring.datasource.url`, `.username`, `.password`, and the database's JDBC driver | Written for PostgreSQL; atomic units of work. |
+| `aktimetrix-store-memory` | none | Not durable, not shared between instances, not atomic: for tests and demos. |
+| `aktimetrix-broker-kafka` | `spring.kafka.properties.bootstrap.servers` (or `spring.cloud.stream.kafka.binder.brokers`) | Events of one entity are processed in order through partitions keyed by entity id. |
+| `aktimetrix-broker-rabbitmq` | `spring.rabbitmq.host`, `.port`, `.username`, `.password` | Events are processed in order by a single active consumer; see [RabbitMQ](#rabbitmq). |
+
+For example, MongoDB and Kafka:
 
 ```yaml
 spring:
@@ -23,11 +34,27 @@ aktimetrix:
     topic: order-events
 ```
 
+or PostgreSQL and RabbitMQ:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aktimetrix
+    username: aktimetrix
+    password: ${DB_PASSWORD}
+  rabbitmq:
+    host: localhost
+
+aktimetrix:
+  events:
+    topic: order-events
+```
+
 ### `aktimetrix.*` properties
 
 | Property | Default | Purpose |
 |---|---|---|
-| `aktimetrix.events.topic` | `business-events` | Kafka topic of the inbound business events. |
+| `aktimetrix.events.topic` | `business-events` | Destination of the inbound business events: a Kafka topic, or a RabbitMQ exchange. |
 | `aktimetrix.events.group` | `aktimetrix` | Consumer group of the inbound business events. |
 | `aktimetrix.events.dead-letter.enabled` | `true` | Send events that cannot be processed to a dead-letter topic instead of dropping them. |
 | `aktimetrix.events.dead-letter.topic` | *events topic*`.dlq` | The dead-letter topic. |
@@ -41,20 +68,27 @@ aktimetrix:
 | `aktimetrix.outbox.batch-size` | `100` | Most events published per relay run. |
 | `aktimetrix.outbox.lease` | `PT30S` | How long a relay holds a claimed event before another instance may retry it. |
 | `aktimetrix.outbox.retention` | `P7D` | How long sent events stay in the outbox before being purged. |
-| `aktimetrix.storage.transactions` | `auto` | Process each event, and each overdue step or process, in a MongoDB transaction: `auto` when MongoDB supports it (replica set or sharded cluster), `always`, or `never`. |
-| `aktimetrix.storage.create-indexes` | `true` | Create the indexes Aktimetrix relies on at startup. |
+| `aktimetrix.storage.type` | none | The store module to use when several are on the classpath: `mongodb`, `jdbc` or `memory`. |
+| `aktimetrix.storage.transactions` | `auto` | Process each event, and each overdue step or process, in a transaction: `auto` when the store supports it (MongoDB as a replica set or sharded cluster; always with JDBC), `always`, or `never`. |
+| `aktimetrix.storage.create-indexes` | `true` | Create the indexes (MongoDB) or the tables and indexes (JDBC) Aktimetrix relies on at startup. |
 
 ### Defaults Aktimetrix provides
 
 These are set with the lowest precedence, so your own configuration always wins:
 
-| Property | Default |
-|---|---|
-| `spring.cloud.stream.function.definition` | `processor` |
-| `spring.cloud.stream.bindings.processor-in-0.destination` | `${aktimetrix.events.topic}` |
-| `spring.cloud.stream.bindings.processor-in-0.group` | `${aktimetrix.events.group}` |
-| `spring.cloud.stream.kafka.bindings.{process,step,measurement}-instance-out-0.producer.configuration.key.serializer` | `StringSerializer` |
-| `spring.jackson.serialization.write-dates-as-timestamps` | `false` |
+| Property | Default | Set by |
+|---|---|---|
+| `spring.cloud.stream.function.definition` | `processor` | core |
+| `spring.cloud.stream.bindings.processor-in-0.destination` | `${aktimetrix.events.topic}` | core |
+| `spring.cloud.stream.bindings.processor-in-0.group` | `${aktimetrix.events.group}` | core |
+| `spring.cloud.stream.bindings.dead-letter-out-0.destination` | `${aktimetrix.events.dead-letter.topic}` | core |
+| `spring.jackson.serialization.write-dates-as-timestamps` | `false` | core |
+| `spring.cloud.stream.kafka.bindings.processor-in-0.consumer.enableDlq`, `.dlqName` | `true`, the dead-letter topic | Kafka module |
+| `spring.cloud.stream.kafka.bindings.*-out-0.producer.messageKeyExpression` | `headers['aktimetrixKey']` | Kafka module |
+| `spring.cloud.stream.kafka.bindings.*-out-0.producer.configuration.key.serializer` | `StringSerializer` | Kafka module |
+| `spring.cloud.stream.rabbit.bindings.processor-in-0.consumer.singleActiveConsumer` | `true` | RabbitMQ module |
+| `spring.cloud.stream.rabbit.bindings.processor-in-0.consumer.republishToDlq`, `.deadLetterExchange`, `.deadLetterRoutingKey` | `true`, the dead-letter exchange and its name | RabbitMQ module |
+| `spring.cloud.stream.rabbit.bindings.*-out-0.producer.routingKeyExpression` | `headers['aktimetrixKey']`; for dead letters, the dead-letter queue's name | RabbitMQ module |
 
 If your application defines Spring Cloud Stream functions of its own, include `processor` in your
 `spring.cloud.stream.function.definition`, e.g. `processor;myFunction`.
@@ -65,45 +99,60 @@ The overdue monitor is a `@Scheduled` task, so Aktimetrix enables Spring's sched
 > `sasl.jaas.config` under `spring.kafka.properties`, and supply the credentials through environment variables or a
 > secret store. Never commit them to source control. The reference project's `confluent` profile shows how.
 
-## Kafka topics
+## Channels
 
-| Topic | Direction | Messages |
+| Binding | Direction | Messages |
 |---|---|---|
-| `aktimetrix.events.topic` | in | Your business events; see [the event format](getting-started.md#the-event-format). |
-| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps, `plannedAt`, `lateAfter`, `endedAt` and `timeliness`, keyed by process instance id. |
+| `processor-in-0` (`aktimetrix.events.topic`) | in | Your business events; see [the event format](getting-started.md#the-event-format). |
+| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps, `plannedAt`, `lateAfter`, `endedAt`, `timeliness` and `definitionRevision`, keyed by process instance id. |
 | `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED` (`AT_RISK` again whenever its forecast moves later): a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `CREATED`: a planned (`P`) or actual (`A`) measurement, keyed by measurement instance id. |
-| `aktimetrix.events.dead-letter.topic` | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
+| `dead-letter-out-0` (`aktimetrix.events.dead-letter.topic`) | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
-A dashboard or alerting service subscribes to `step-instance-out-0` and acts on `AT_RISK` and `OVERDUE`, or on
-`COMPLETED` with `timeliness` `LATE`.
+With Kafka, each binding is a topic of the same name, and the key is the record key. With RabbitMQ, each outbound
+binding is a topic exchange of the same name, and the key is the routing key: bind a queue to it with `#` to receive
+everything. A dashboard or alerting service subscribes to `step-instance-out-0` and acts on `AT_RISK` and `OVERDUE`,
+or on `COMPLETED` with `timeliness` `LATE`.
+
+### RabbitMQ
+
+- **Events exchange and queue.** Source systems publish to the topic exchange `aktimetrix.events.topic`; Aktimetrix
+  consumes from the queue `<topic>.<group>`, for example `order-events.aktimetrix`, bound to it with `#`.
+- **Order.** The queue has a single active consumer: whichever instance holds it processes the events in order, and
+  another takes over if it stops. To process in parallel while keeping each entity's events in order, use Spring
+  Cloud Stream partitioning on `processor-in-0`, keyed by the entity id.
+- **Dead letters.** The RabbitMQ module declares a durable direct exchange and a durable queue, both named
+  `aktimetrix.events.dead-letter.topic`, bound by that name. Failing events are republished there by the binder, and
+  invalid ones are published there by Aktimetrix. Only standard AMQP 0-9-1 features are used for this, not RabbitMQ's
+  dead-letter queue arguments.
 
 ### Delivery guarantees
 
-Outbound events are first written to the `outbox` collection, next to the state they describe, and a relay publishes
-them to Kafka in order. When MongoDB runs as a replica set or sharded cluster, each business event is processed in a
-transaction, so its state and its outbound events are saved together or not at all. A standalone MongoDB server has no
-transactions: Aktimetrix then logs a warning at startup, and a crash in the middle of an event can keep its state
-without its outbound events. A single-node replica set is enough for transactions. When Kafka is unavailable, events
-wait in the outbox and are sent once it is back, instead of being lost. Delivery is **at least once**: after a crash
-between sending and recording an event, it is sent again, so consumers should de-duplicate on the event's `eventId`.
-Relays in several application instances share the work safely. With more than one instance, events of different
-entities may be published in a slightly different order than they happened.
+Outbound events are first written to the outbox, in the state store next to the state they describe, and a relay
+publishes them to the broker in order. When the store supports transactions, each business event is processed in one,
+so its state and its outbound events are saved together or not at all. Without them (a standalone MongoDB server, or
+the in-memory store), Aktimetrix logs a warning at startup, and a crash in the middle of an event can keep its state
+without its outbound events. When the broker is unavailable, events wait in the outbox and are sent once it is back,
+instead of being lost. Delivery is **at least once**: after a crash between sending and recording an event, it is
+sent again, so consumers should de-duplicate on the event's `eventId`. Relays in several application instances share
+the work safely. With more than one instance, events of different entities may be published in a slightly different
+order than they happened.
 
 ### Failed events
 
 An inbound event that is not valid JSON, or has no `tenantKey`, `eventCode` or `entityId`, can never be processed: it
-is sent unchanged to the dead-letter topic at once, and counted in `aktimetrix.events` with outcome `invalid`. An
-event whose processing throws is retried by the Kafka binder (3 attempts by default,
-`spring.cloud.stream.bindings.processor-in-0.consumer.max-attempts`) and then sent to the same topic. Fix the cause,
-then replay the dead-letter topic into the events topic: processing is idempotent.
+is sent unchanged to the dead-letter channel at once, and counted in `aktimetrix.events` with outcome `invalid`. An
+event whose processing throws is retried by the binder (3 attempts by default,
+`spring.cloud.stream.bindings.processor-in-0.consumer.max-attempts`), counted with outcome `failed` on each attempt,
+and then sent to the same channel. Fix the cause, then replay the dead letters into the events topic: processing is
+idempotent.
 
 ### Running several instances
 
-Every instance consumes a share of the events topic's partitions, runs the outbox relay and runs the overdue monitor.
-Step and process instances carry a `revision` and are saved with a version check, so when two instances change the
-same step or process, the second change fails instead of overwriting the first: the monitor skips such a step until its next check, and an
-event is retried.
+Every instance consumes from the events topic, runs the outbox relay and runs the overdue monitor. Step and process
+instances carry a `revision` and are saved with a version check, so when two instances change the same step or
+process, the second change fails instead of overwriting the first: the monitor skips such a step until its next
+check, and an event is retried. The in-memory store is not shared between instances: run a single one.
 
 ## Published event payloads
 
@@ -122,6 +171,7 @@ that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventTy
 | `plannedAt`, `lateAfter` | Its own deadline, if the definition has `plannedWithin` or a planned `TIME` set by a meter: planned completion, and that plus the tolerance. |
 | `endedAt` | Business time of the event that completed or cancelled it. |
 | `timeliness` | `ON_TIME` or `LATE` at completion, or `OVERDUE`; empty without a deadline. |
+| `definitionRevision` | The revision of the process definition the instance follows: the one it started with. |
 | `metadata` | The process metadata. |
 | `steps` | Its steps, as in `Step_Event` (on `CREATED`). |
 
@@ -151,18 +201,42 @@ that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventTy
 
 Times inside `entity` are local date-times in `aktimetrix.time-zone`.
 
-## MongoDB collections
+## Storage
+
+Each store keeps the same objects: definitions, process, step and measurement instances, and the outbox. A process
+instance also keeps the definition it started with. Every store enforces at most one process instance per tenant,
+process, entity type and entity id.
+
+### MongoDB
 
 | Collection | Contents |
 |---|---|
-| `processDefinitions`, `stepDefinitions`, `eventTypeDefinitions`, `measurementTypeDefinitions` | Definitions |
+| `processDefinitions`, `stepDefinitions`, `measurementTypeDefinitions` | Definitions |
 | `processInstances`, `stepInstances`, `measurement-instance` | Runtime state |
-| `outbox` | Events waiting to be, or recently, published to Kafka |
+| `outbox` | Events waiting to be, or recently, published |
 
-Aktimetrix creates the indexes its queries need at startup, including a unique index on process instances by
+The store creates the indexes its queries need at startup, including a unique index on process instances by
 tenant, process, entity type and entity id. If existing data violates a unique index, the index is not created and
-the error is logged. Set `aktimetrix.storage.create-indexes=false` to manage indexes yourself. At startup it also adds
-a `revision` to step and process instances saved by earlier builds, which had none.
+the error is logged. Set `aktimetrix.storage.create-indexes=false` to manage indexes yourself. At startup it also
+upgrades data saved by earlier versions: it adds a `revision` to step and process instances that have none, and
+stores references to process and step instances as strings rather than object ids.
+
+### JDBC
+
+| Table | Contents |
+|---|---|
+| `aktimetrix_process_definition`, `aktimetrix_step_definition`, `aktimetrix_measurement_type` | Definitions |
+| `aktimetrix_process_instance`, `aktimetrix_step_instance`, `aktimetrix_measurement_instance` | Runtime state |
+| `aktimetrix_outbox` | Events waiting to be, or recently, published |
+
+Each row keeps its object as a JSON document, next to the columns its queries, constraints and version checks use.
+The store creates the tables and indexes that do not exist at startup, from `com/aktimetrix/store/jdbc/schema.sql`
+in the module; set `aktimetrix.storage.create-indexes=false` to manage the schema yourself from that file. The SQL is
+written for PostgreSQL.
+
+### In memory
+
+Nothing to configure. State is lost when the application stops.
 
 ## Metrics
 
@@ -179,13 +253,14 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `aktimetrix.steps.at.risk` / `.overdue` | counter | `tenant`, `step` |
 | `aktimetrix.measurements.actual` | counter | `tenant`, `measurement`, `conformance`: actual measurements recorded |
 | `aktimetrix.measurements.deviation` | distribution summary | `tenant`, `measurement`: actual minus planned, in the measurement's unit (not `TIME`) |
-| `aktimetrix.outbox.pending` | gauge | events not yet published to Kafka |
+| `aktimetrix.outbox.pending` | gauge | events not yet published to the broker |
 
 ## Process definition fields
 
 | Field | Purpose |
 |---|---|
 | `tenant`, `processCode`, `processName`, `status` | Identity; only `CONFIRMED` definitions are used. |
+| `revision` | Set by Aktimetrix: 1 for a new definition, incremented each time a saved definition differs from the stored one. A process instance keeps the definition, at the revision it started with. |
 | `processType` | Selects the process handler and pre- and post-processors; defaults to `processCode`. |
 | `entityType` | The type of business entity the process follows; must match the events' `entityType`. |
 | `startEventCodes` | The events that create a process instance: a business event such as *order created*, which can also complete the first step, or a dedicated start event. |

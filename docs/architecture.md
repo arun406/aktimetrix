@@ -28,7 +28,7 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
 | ③ Start and plan | `AbstractProcessor`, pre- and post-processors, `DefaultMeasurementProcessor`, meters | Create a process instance and its steps, and compute their planned measurements. |
 | ④ Record | `StepProgressService`, `ActualMeasurementService`, `DerivedMetricService`, `StepPlanner` | Advance steps, record actual values and interim readings, judge timeliness, forecast delays, complete, end or cancel processes, and compute their metrics. |
 | ⑤ Watch | `OverdueStepMonitor`, `OverdueProcessMonitor` | Find steps and processes past their deadline with no event. |
-| ⑥ Definitions and state | `DefinitionLoader`, `ProcessDefinitionService`, `StepDefinitionService`, instance services and repositories, `AktimetrixStorageInitializer` | Load and resolve definitions; read and save instances with version checks; prepare the database. |
+| ⑥ Definitions and state | `DefinitionLoader`, `ProcessDefinitionService`, `StepDefinitionService`, instance services, and the store contract (`core.store`) implemented by the store module | Load, version and resolve definitions; read and save instances with version checks; prepare the database. |
 | ⑦ Outbound | publishers, `Outbox`, `OutboxRelay` | Queue every result with the state it describes, and publish it to the broker. |
 | Cross-cutting | `AktimetrixAutoConfiguration`, `AktimetrixDefaultProperties`, `AktimetrixProperties`, `AktimetrixMetrics`, REST resources | Wiring, configuration, metrics and the query API. |
 
@@ -42,16 +42,18 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
    `@PreProcessor` or `@PostProcessor` and register it in `DefaultRegistry` under its codes. A misconfigured meter,
    for example one naming both a step and a process, stops the application here.
 3. Before any event is consumed:
-   - `AktimetrixStorageInitializer` adds a `revision` to instances saved by earlier builds and creates the indexes;
-   - `DefinitionLoader` upserts the process and step definitions from `aktimetrix/*.json`.
+   - the store module prepares its database before the stores are first used: the MongoDB store upgrades data
+     saved by earlier versions and creates its indexes, the JDBC store creates its tables;
+   - `DefinitionLoader` upserts the process and step definitions from `aktimetrix/*.json`; a process definition that
+     changed gets a new revision.
 
 ### When an event arrives
 
 1. **Consume.** `ProcessConfig.processor()` receives the message and asks the `EventMapper` for an event. A message the
    mapper cannot read, or an event without tenant, event code or entity id, goes to the dead-letter topic through the
    outbox; one it returns `null` for is ignored.
-2. **Unit of work.** The rest runs in `AktimetrixTransactions.run(…)`: in one MongoDB transaction when the deployment
-   supports it. If anything fails, nothing is kept, and the binder retries the message, then dead-letters it.
+2. **Unit of work.** The rest runs in `AktimetrixTransactions.run(…)`, which the store module implements: in one
+   transaction when the store supports it. If anything fails, nothing is kept, and the binder retries the message, then dead-letters it.
 3. **Route.** The registry supplies the `@EventHandler` for the event code, or `DefaultEventHandler`.
 4. **Start** (`AbstractEventHandler`). For every confirmed process definition the event code starts,
    `ProcessDefinitionService` resolves its steps: the tenant's shared step definitions, overridden by the fields the
@@ -98,7 +100,7 @@ keeps its lease until it expires, then any instance retries it. Sent entries are
 | Events of one entity processed in order | The broker's per-key ordering; producers key events by entity id. |
 | One process instance per entity | Unique index on tenant, process code, entity type and entity id. |
 | Two changes to the same step or process | `@Version revision` on step and process instances: the second save fails instead of overwriting. |
-| State and outbound events | One transaction per event, or per overdue step or process, when MongoDB supports transactions. |
+| State and outbound events | One transaction per event, or per overdue step or process, when the store supports transactions: MongoDB as a replica set, or a relational database. |
 | Outbox shared by several instances | Leases claimed with an atomic find-and-modify. |
 | Replayed events | A process that exists is not created again, and a completed step is not completed again. |
 
@@ -110,15 +112,21 @@ keeps its lease until it expires, then any instance retries it. Sent entries are
 | Change how an event is interpreted | Add an `@EventHandler` for its event code. | Your application. |
 | Choose metadata, validate or enrich | Add a `@ProcessHandler`, `@PreProcessor` or `@PostProcessor`. | Your application. |
 | Compute plans or actual values | Add a `@Measurement` meter. | Your application. |
-| Use another message broker | Replace the Kafka binder dependency with another Spring Cloud Stream binder, and adapt the binder-specific parts: the dead-letter and key-serializer defaults, and the message-key header the relay sets. | `pom.xml`, `AktimetrixDefaultProperties`, `OutboxRelay` |
-| Use another state store | Provide the repositories for definitions and instances, the outbox claim (an atomic conditional update), transactions, and index creation for that store. | `repository`, `referencedata.repository`, `OutboxRelay`, `AktimetrixTransactions`, `AktimetrixStorageInitializer`, and the queries in the definition services |
-
-The last two are not yet pluggable: they mean changing the framework rather than configuring it, and are on the
-[roadmap](../README.md#11-status-and-roadmap).
+| Use another store or broker that has a module | Depend on its module instead: `aktimetrix-store-mongodb`, `-jdbc` or `-memory`; `aktimetrix-broker-kafka` or `-rabbitmq`. | Your application's `pom.xml` |
+| Support another message broker | A broker module: the Spring Cloud Stream binder, and an `EnvironmentPostProcessor` with its defaults, which dead-letter failing events to `aktimetrix.events.dead-letter.topic` and map the `aktimetrixKey` header to the broker's message key. | A new module, like `aktimetrix-broker-kafka`; see [Adding a broker](extending.md#adding-a-message-broker) |
+| Support another state store | A store module: implementations of the interfaces in `com.aktimetrix.core.store`, and an auto-configuration that declares them. It must pass the store contract tests. | A new module, like `aktimetrix-store-jdbc`; see [Adding a state store](extending.md#adding-a-state-store) |
 
 ## Source layout
 
 ```
+aktimetrix-core/                   the runtime, independent of any broker or store
+aktimetrix-store-mongodb/          state store: MongoDB
+aktimetrix-store-jdbc/             state store: relational database through JDBC (PostgreSQL)
+aktimetrix-store-memory/           state store: in memory, for tests and demos
+aktimetrix-broker-kafka/           message broker: Apache Kafka
+aktimetrix-broker-rabbitmq/        message broker: RabbitMQ
+aktimetrix-tests/                  store contract tests, and end-to-end tests of every store with every broker
+
 aktimetrix-core/src/main/java/com/aktimetrix/
 ├── autoconfigure/             auto-configuration and default properties
 └── core/
@@ -128,12 +136,11 @@ aktimetrix-core/src/main/java/com/aktimetrix/
     ├── event/                 the default event mapper, and event handlers
     ├── impl/                  AbstractProcessor, DefaultProcessor, the registry, event generators
     ├── model/                 process, step and measurement instances
-    ├── referencedata/         definitions: model, loading, resolution, repositories, REST
+    ├── referencedata/         definitions: model, loading, versioning, resolution, REST
     ├── service/               progress, planning, actual measurements, monitors, publishers, metrics
     ├── outbox/                the outbox and its relay
-    ├── storage/               transactions, indexes and data upgrades
+    ├── store/                 the state-store contract, which store modules implement
     ├── configurations/        aktimetrix.* properties and the inbound consumer
-    ├── repository/            repositories of instances
     ├── resource/              the query API
     └── transferobjects/       the event envelope and outbound payloads
 ```

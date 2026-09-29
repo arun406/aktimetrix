@@ -71,7 +71,7 @@ public class LateEveningDeliveryWarning implements com.aktimetrix.core.api.PostP
 ```
 
 To react to steps becoming late or overdue, consume `step-instance-out-0` instead: see the
-[configuration reference](configuration.md#kafka-topics).
+[configuration reference](configuration.md#channels).
 
 ## Accepting your own event format
 
@@ -114,6 +114,7 @@ package's `package-info.java` says which it is.
 | `core.event.handler` | `AbstractEventHandler`, `AbstractMilestoneEventHandler` | Change how an event code is interpreted. |
 | `core.transferobjects` | `Event` | The event envelope, inbound and outbound. |
 | `core.model`, `core.referencedata.model` | `ProcessInstance`, `StepInstance`, `MeasurementInstance`, `ProcessDefinition`, `StepDefinition`, `MeasurementDefinition` | Read instances and definitions in your components. |
+| `core.store` | `ProcessInstanceStore`, `StepInstanceStore`, `MeasurementInstanceStore`, `DefinitionStore`, `OutboxStore`, `AktimetrixTransactions`, `StoreDocuments` | Implement a state store. |
 
 In a `Context`, read the event's data with the `Constants` context properties: `ENTITY`, `ENTITY_ID`,
 `ENTITY_TYPE`, `EVENT`, `EVENT_DATA`, `PROCESS_DEFINITION` and `OCCURRED_AT`.
@@ -134,6 +135,41 @@ In a `Context`, read the event's data with the `Constants` context properties: `
 | `ProcessInstancePublisherService`, `StepInstancePublisherService`, `MeasurementInstancePublisherService` | Queue events for the outbound topics in the outbox. |
 | `OutboxRelay` | Publishes queued events to the broker. |
 | `AktimetrixMetrics` | Records the Micrometer metrics. |
+
+## Adding a state store
+
+A store module keeps Aktimetrix's state in a database of its own. It implements the interfaces of `core.store` and
+declares them in a Spring Boot auto-configuration; the core uses nothing else.
+
+| Interface | Must provide |
+|---|---|
+| `ProcessInstanceStore`, `StepInstanceStore` | Insert with a new id; update with a version check on `revision`, throwing `OptimisticLockingFailureException` on a stale copy; at most one process instance per tenant, process and entity (`DuplicateKeyException`); the queries of the overdue monitors. |
+| `MeasurementInstanceStore` | Insert, and find by process, step, code and type. |
+| `DefinitionStore` | Save definitions, replacing the one with the same tenant and code; find them, and the confirmed processes an event starts. |
+| `OutboxStore` | An atomic claim of the oldest unsent message, with a lease: the one operation that needs a compare-and-set. |
+| `AktimetrixTransactions` | Run a unit of work atomically if the store can, and say whether it does. |
+
+`StoreDocuments` converts model objects to and from JSON, for stores that keep documents; the JDBC and in-memory
+stores use it. Follow `aktimetrix-store-jdbc`: its auto-configuration is conditional on
+`aktimetrix.storage.type` and on no other store being present, and prepares the database before the stores are used.
+
+A new store is correct when it passes the contract tests: add a subclass of `StoreContractTest` in `aktimetrix-tests`
+that starts it, as `JdbcStoreContractTest` does, and a subclass of the end-to-end scenarios that runs on it.
+
+## Adding a message broker
+
+A broker module connects Aktimetrix to a broker through a Spring Cloud Stream binder. It adds the binder dependency
+and an `EnvironmentPostProcessor`, registered in `META-INF/spring.factories`, with the lowest-precedence defaults the
+binder needs:
+
+- events that still fail after the binder's retries are dead-lettered to `aktimetrix.events.dead-letter.topic`,
+  where invalid events are sent through the `dead-letter-out-0` binding;
+- the `aktimetrixKey` header of each outbound message becomes the broker's message key, so the events of one instance
+  stay in order;
+- the inbound events are consumed in order per entity, which the broker contract of the white paper requires.
+
+`aktimetrix-broker-kafka` and `aktimetrix-broker-rabbitmq` show both. Add a `TestBroker` for the new broker in
+`aktimetrix-tests`, and subclasses of the end-to-end scenarios that run on it.
 
 ## Modelling your own process
 

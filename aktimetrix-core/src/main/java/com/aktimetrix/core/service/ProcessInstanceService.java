@@ -1,10 +1,9 @@
 package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.model.ProcessInstance;
-import com.aktimetrix.core.repository.ProcessInstanceRepository;
-import com.aktimetrix.core.repository.StepInstanceRepository;
+import com.aktimetrix.core.store.ProcessInstanceStore;
+import com.aktimetrix.core.store.StepInstanceStore;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,36 +17,27 @@ public class ProcessInstanceService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceService.class);
 
-    private final ProcessInstanceRepository repository;
-    private final StepInstanceRepository stepInstanceRepository;
+    private final ProcessInstanceStore store;
+    private final StepInstanceStore stepInstanceStore;
 
     /**
-     * saves the process instance object to database.
+     * Saves the process instance: inserts it, assigning its id, or updates it with a version check.
      *
      * @param processInstance process instance to be saved
      * @return saved process instance
      */
     public ProcessInstance saveProcessInstance(ProcessInstance processInstance) {
-        // Save Process Instance
-        this.repository.save(processInstance);
+        store.save(processInstance);
         logger.info("Process Instance Id :" + processInstance.getId());
         return processInstance;
     }
 
     /**
-     * Returns the process instance
-     *
-     * @param tenant      tenant
-     * @param processCode process code
-     * @param entityType  entity type
-     * @param entityId    entity id
-     * @return process instance
+     * Returns the process instance of the process for the entity, whatever its status, or {@code null}.
      */
     public ProcessInstance getProcessInstance(String tenant, String processCode, String entityType, String entityId) {
         // not filtered by status, so a completed process is not re-created when its start event is replayed
-        return this.repository
-                .findByTenantAndProcessCodeAndEntityTypeAndEntityId(tenant, processCode, entityType, entityId)
-                .stream().findFirst().orElse(null);
+        return store.findByEntity(tenant, processCode, entityType, entityId).orElse(null);
     }
 
     /**
@@ -56,29 +46,24 @@ public class ProcessInstanceService {
      * @param entityType entity type to match, or {@code null} for any
      */
     public List<ProcessInstance> getProcessInstancesWithSteps(String tenant, String entityType, String entityId) {
-        final List<ProcessInstance> instances = this.repository.findByTenantAndEntityId(tenant, entityId).stream()
+        final List<ProcessInstance> instances = store.findByEntityId(tenant, entityId).stream()
                 .filter(instance -> entityType == null || entityType.equals(instance.getEntityType()))
                 .collect(Collectors.toList());
-        instances.forEach(instance -> instance.setSteps(stepInstanceRepository.findByTenantAndProcessInstanceId(tenant, instance.getId())));
+        instances.forEach(instance -> instance.setSteps(stepInstanceStore.findByProcessInstance(tenant, instance.getId())));
         return instances;
     }
 
     /**
-     * Returns the process instances of the given business entity that are not complete yet.
+     * Returns the process instances of the given business entity that are not cancelled.
      */
     public List<ProcessInstance> getNotCancelledProcessInstances(String tenant, String entityType, String entityId) {
-        return this.repository.findNotCancelled(tenant, entityType, entityId);
+        return store.findNotCancelled(tenant, entityType, entityId);
     }
 
-
     /**
-     * Returns the ProcessInstance By id
-     *
-     * @param tenant            tenant
-     * @param processInstanceId process instance reference
-     * @return process instance
+     * Returns the process instance by id, or {@code null}.
      */
-    public ProcessInstance getProcessInstance(String tenant, ObjectId processInstanceId) {
-        return this.repository.findByTenantAndId(tenant, processInstanceId).stream().findFirst().orElse(null);
+    public ProcessInstance getProcessInstance(String tenant, String processInstanceId) {
+        return store.findById(tenant, processInstanceId).orElse(null);
     }
 }

@@ -2,28 +2,25 @@ package com.aktimetrix.core.outbox;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
 /**
- * An event waiting to be published to Kafka. Written in the same place as the state it describes, and sent by the
- * {@link OutboxRelay}, so a Kafka outage delays events instead of losing them.
+ * An event waiting to be published to the message broker. Written in the same place as the state it describes, and sent by the
+ * {@link OutboxRelay}, so a broker outage delays events instead of losing them.
  */
 @Data
 @NoArgsConstructor
-@Document(collection = "outbox")
 public class OutboxMessage {
     @Id
-    private ObjectId id;
+    private String id;
     /**
      * Spring Cloud Stream binding to publish to, e.g. {@code step-instance-out-0}.
      */
     private String destination;
     /**
-     * Kafka message key.
+     * Message key: the id of the instance the event is about.
      */
     private String messageKey;
     /**

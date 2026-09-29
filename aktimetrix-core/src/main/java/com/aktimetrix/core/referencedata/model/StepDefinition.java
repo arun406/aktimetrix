@@ -3,14 +3,12 @@ package com.aktimetrix.core.referencedata.model;
 import lombok.Data;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Duration;
 import java.util.List;
 
 @Data
 @ToString
-@Document(collection = "stepDefinitions")
 public class StepDefinition {
 
     private String tenant;

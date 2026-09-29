@@ -122,16 +122,18 @@
   <text x="60" y="676" text-anchor="start" class="h">⑤ PERSISTENCE</text>
   <text x="60" y="698" text-anchor="start" class="ts">stores state, publishes</text>
   <text x="60" y="715" text-anchor="start" class="ts">results, answers queries</text>
-  <rect x="260.0" y="657" width="225.0" height="66" rx="10" class="core"/>
-  <text x="372.5" y="686.0" text-anchor="middle" class="tb">Repositories</text>
-  <text x="372.5" y="704.0" text-anchor="middle" class="ts">version-checked saves</text>
+  <rect x="260.0" y="657" width="225.0" height="66" rx="10" class="you"/>
+  <text x="372.5" y="677.0" text-anchor="middle" class="tb">Store module</text>
+  <text x="372.5" y="695.0" text-anchor="middle" class="ts">MongoDB · JDBC · memory</text>
+  <text x="372.5" y="713.0" text-anchor="middle" class="ts">version-checked saves</text>
   <rect x="505.0" y="657" width="225.0" height="66" rx="10" class="core"/>
   <text x="617.5" y="677.0" text-anchor="middle" class="tb">Outbox</text>
   <text x="617.5" y="695.0" text-anchor="middle" class="ts">results saved</text>
   <text x="617.5" y="713.0" text-anchor="middle" class="ts">with the state</text>
   <rect x="750.0" y="657" width="225.0" height="66" rx="10" class="core"/>
-  <text x="862.5" y="686.0" text-anchor="middle" class="tb">Outbox relay</text>
-  <text x="862.5" y="704.0" text-anchor="middle" class="ts">leased, at least once</text>
+  <text x="862.5" y="677.0" text-anchor="middle" class="tb">Outbox relay</text>
+  <text x="862.5" y="695.0" text-anchor="middle" class="ts">through the broker module:</text>
+  <text x="862.5" y="713.0" text-anchor="middle" class="ts">Kafka · RabbitMQ</text>
   <rect x="995.0" y="657" width="225.0" height="66" rx="10" class="core"/>
   <text x="1107.5" y="677.0" text-anchor="middle" class="tb">Query API · metrics</text>
   <text x="1107.5" y="695.0" text-anchor="middle" class="ts">where is order 1234?</text>
@@ -160,7 +162,7 @@
   <path d="M862.5,723 L862.5,770 L1139.0,770 L1139.0,790" class="redge" marker-end="url(#arrR)"/>
   <text x="864.5" y="862" text-anchor="middle" class="ts">outbound channels of the message broker → dashboards, alerting, analytics</text>
   <rect x="60" y="810" width="18" height="14" rx="3" class="you"/>
-  <text x="86" y="822" text-anchor="start" class="ts">what you write</text>
+  <text x="86" y="822" text-anchor="start" class="ts">what you write or choose</text>
   <rect x="60" y="832" width="18" height="14" rx="3" class="core"/>
   <text x="86" y="844" text-anchor="start" class="ts">provided by Aktimetrix</text>
   <rect x="60" y="854" width="18" height="14" rx="3" class="topic"/>

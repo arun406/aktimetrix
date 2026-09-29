@@ -3,7 +3,7 @@ package com.aktimetrix.core.service;
 import com.aktimetrix.core.api.Conformance;
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.model.MeasurementInstance;
-import com.aktimetrix.core.repository.MeasurementInstanceRepository;
+import com.aktimetrix.core.store.MeasurementInstanceStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +20,7 @@ import java.math.RoundingMode;
 @RequiredArgsConstructor
 public class MeasurementComparison {
 
-    private final MeasurementInstanceRepository repository;
+    private final MeasurementInstanceStore store;
     private final AktimetrixMetrics metrics;
 
     /**
@@ -28,7 +28,7 @@ public class MeasurementComparison {
      * @param worseWhen {@code HIGHER} or {@code LOWER}, the direction of a bad deviation; may be {@code null} for both
      */
     public void compare(MeasurementInstance actual, String tolerance, String worseWhen) {
-        repository.findByOwnerAndCodeAndType(actual.getTenant(), actual.getProcessInstanceId(),
+        store.find(actual.getTenant(), actual.getProcessInstanceId(),
                         actual.getStepInstanceId(), actual.getCode(), Constants.PLAN_MEASUREMENT_TYPE).stream()
                 .findFirst()
                 .ifPresent(planned -> apply(actual, planned.getValue(), tolerance, worseWhen));

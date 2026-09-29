@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>aktimetrix</artifactId>
+        <groupId>com.aktimetrix</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>aktimetrix-broker-kafka</artifactId>
+    <name>Aktimetrix Kafka Broker</name>
+    <description>Connects Aktimetrix to Apache Kafka: the Spring Cloud Stream Kafka binder, with dead-letter topics and
+        record keys configured.</description>
+    <dependencies>
+        <dependency>
+            <groupId>com.aktimetrix</groupId>
+            <artifactId>aktimetrix-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream-binder-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
