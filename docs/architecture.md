@@ -9,13 +9,19 @@ The [white paper](../README.md) describes the model they implement.
 ## Components
 
 <p align="center">
-  <img src="../img/components.svg" alt="Internal components of Aktimetrix, by layer" width="100%">
+  <img src="../img/components.svg" alt="Internal components of Aktimetrix, by stage of an event's path" width="100%">
 </p>
+
+The figure groups the components by the stage of an event's path through them. The white paper's
+[five layers](../README.md#51-logical-architecture) group the same components by concern: *integration* is stage ①;
+*process* is stages ② and ⑤ and the lifecycle part of ④; *measurement* is stage ③'s meters and planning and stage ④'s
+actual values, comparison, forecasts and metrics; *model* and *persistence* are stages ⑥ and ⑦. How the stages run on
+several instances is described in [Runtime architecture](../README.md#53-runtime-architecture).
 
 Dashed orange boxes are **extension points**: you implement or replace them. Blue boxes are **built in**. The
 [public API](extending.md#public-api) lists which types you may use; everything else is internal and may change.
 
-| Layer | Components | Responsibility |
+| Stage | Components | Responsibility |
 |---|---|---|
 | ① Inbound | `ProcessConfig.processor()`, `EventMapper`, `AktimetrixTransactions` | Consume each message, turn it into an event, reject what cannot be processed, and run the rest as one unit of work. |
 | ② Routing | `RegistryService`, `DefaultRegistry`, `*PostBeanProcessor`, event handlers | Find the components registered for a code: event handlers by event code, process handlers by process code, meters by step or process and measurement code. |
