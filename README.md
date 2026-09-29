@@ -380,17 +380,27 @@ Delivery is at least once ([§6](#6-reliability-and-consistency)): consumers de-
 
 ### 5.1 Logical architecture
 
+The runtime is organised in five layers. Each layer uses only the layers below it, and each has a single concern, so
+a change of event format, of planning rule or of storage stays inside one layer. Extension points (dashed) sit in the
+layer whose concern they refine.
+
 <p align="center">
-  <img src="./img/architecture.svg" alt="Logical architecture of an Aktimetrix monitor" width="100%">
+  <img src="./img/architecture.svg" alt="The five layers of the Aktimetrix runtime, between the source systems and the infrastructure" width="100%">
 </p>
 
-Source systems publish business events, in their own format, to an **inbound channel** on the message broker. The
-runtime consumes each one as a single unit of work: an optional **event mapper** (the application's own code, shown
-dashed) translates it, and an **event router** starts the processes it starts and records the milestones it completes.
-**Process handlers** and **meters** decide an instance's metadata and planned values. Built-in components advance
-steps and processes, watch deadlines, and keep definitions, instances and pending results in the **state store**. An
-**outbox relay** publishes every result to the **outbound channels** for downstream consumers; events that cannot be
-processed go to a **dead-letter channel**. A query API serves the current state of any entity.
+| Layer | Concern | Components | Extension points |
+|---|---|---|---|
+| ① **Integration** | Turn each inbound message into a valid business event, and process it as one unit of work. | Event consumer, validation, unit of work (transaction) | Event mapper |
+| ② **Process** | Decide what the event means for the entity: which processes it starts, and which steps it starts, completes or reports progress on; end or cancel processes; watch deadlines on a clock. | Event router, lifecycle, deadline monitors | Process handler, event handler, pre- and post-processors |
+| ③ **Measurement** | Give every measurement its plan, record its actuals, compare the two, forecast delays and compute metrics. | Planning, comparison, forecasting, metrics | Meters |
+| ④ **Model** | Describe what is monitored, and hold where each entity stands. | Definitions; process, step and measurement instances | Definitions, which are data |
+| ⑤ **Persistence** | Store state safely, publish results reliably, and answer queries. | Repositories, outbox, outbox relay, query API, operational metrics | None: bound to the infrastructure (§5.2) |
+
+An event travels down the layers: the integration layer hands it to the process layer, which asks the measurement
+layer for plans, actuals and comparisons, which read and change the model, which the persistence layer saves together
+with the resulting events. The **deadline monitors** are the one component driven by the clock instead of an event:
+they enter at the process layer and follow the same path down. Nothing reaches the outbound channels except through
+the outbox, so a result is never published for a change that was not saved.
 
 The internal components of the reference implementation, and how an event flows through them, are described in
 [Architecture](./docs/architecture.md).
@@ -406,6 +416,34 @@ The runtime is written against two capabilities rather than two products.
 
 Any broker and store with these properties can host the model. The technologies used by the reference
 implementation are listed in [§9.1](#91-technology-bindings).
+
+### 5.3 Runtime architecture
+
+A deployment is a set of identical, stateless **runtime instances** between the message broker and the state store.
+
+<p align="center">
+  <img src="./img/runtime.svg" alt="Runtime instances in one consumer group, between the message broker and a shared state store" width="100%">
+</p>
+
+Each instance runs four activities:
+
+| Activity | Triggered by | Does |
+|---|---|---|
+| **Consumer** | each inbound event, from the partitions the broker assigns to this instance | the whole of layers ① to ⑤ for that event, in one unit of work |
+| **Deadline monitors** | the clock (every minute by default) | find steps and processes past their deadline with no event, and mark them overdue, each in its own unit of work |
+| **Outbox relay** | the clock (every second by default) | claim unsent results with a lease, publish them, and mark them sent |
+| **Query API** | a request | read the current state of an entity; also exposes the operational metrics |
+
+The instances form one **consumer group** on the inbound channel. Producers key each event by its entity id, so all
+events of one entity fall in the same partition and are processed by one instance, in order, while different
+entities are processed in parallel across instances. The monitors and the relay run on every instance: version-checked
+saves and leased outbox entries let them do so without coordinating.
+
+Because an instance keeps no state of its own, it can be added, restarted or lost at any time. Adding one makes the
+broker rebalance the partitions; losing one hands its partitions to the others, which resume from the last committed
+position, and its leased outbox entries to any instance once the lease expires. Throughput therefore scales with the
+number of instances, up to the number of partitions of the inbound channel; the state store is the shared resource to
+size. [§6](#6-reliability-and-consistency) sets out the guarantees this arrangement provides.
 
 ## 6. Reliability and consistency
 
