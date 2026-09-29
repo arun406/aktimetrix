@@ -254,13 +254,19 @@ which the [reference project](#92-running-the-example) implements.
 1. **Start.** If the event's code is one of a process's start events, a process instance and its step instances
    are created for the entity, unless one already exists. The same event may also complete the first step.
 2. **Plan.** The new process and its steps receive their planned measurements; a planned time also sets a
-   **deadline**: the planned time plus its tolerance.
+   **deadline**: the planned time plus its tolerance, and an **alarm** at that deadline.
 3. **Record.** The event is applied to every process instance of the entity that is not cancelled. Steps that list it
    are started or completed; a completed step records its actual measurements, starting with its time, and each is
    compared with its plan; an event that reports progress records interim readings of the step it concerns. When the
    process completes, implicitly or by an end event, it records its own measurements and computes its metrics.
-4. **Watch.** Independently of events, monitors look for steps and processes whose deadline has passed without the
-   event that completes them.
+4. **Watch.** Independently of events, when an alarm fires, the runtime checks whether the event that completes its
+   step or process has arrived. If it has not, the step or process is marked `OVERDUE`; when the event arrives
+   later, it is compared with the plan as usual, and the deviation says how late it was.
+
+An alarm is set, moved or cancelled whenever its step or process is saved: moved when a forecast or a re-plan moves
+the deadline, cancelled when the event arrives in time or the process is cancelled. Alarms are kept in the state store
+with an index on their due time, so firing them costs a lookup of the alarms now due, whatever the number of
+entities watched; and they survive a restart of the runtime.
 
 ### 4.1 Lifecycle
 
@@ -427,14 +433,14 @@ layer whose concern they refine.
 | Layer | Concern | Components | Extension points |
 |---|---|---|---|
 | ① **Integration** | Turn each inbound message into a valid business event, and process it as one unit of work. | Event consumer, validation, unit of work (transaction) | Event mapper |
-| ② **Process** | Decide what the event means for the entity: which processes it starts, and which steps it starts, completes or reports progress on; end or cancel processes; watch deadlines on a clock. | Event router, lifecycle, deadline monitors | Process handler, event handler, pre- and post-processors |
+| ② **Process** | Decide what the event means for the entity: which processes it starts, and which steps it starts, completes or reports progress on; end or cancel processes; watch deadlines on a clock. | Event router, lifecycle, deadline alarms | Process handler, event handler, pre- and post-processors |
 | ③ **Measurement** | Give every measurement its plan, record its actuals, compare the two, forecast delays and compute metrics. | Planning, comparison, forecasting, metrics | Meters |
 | ④ **Model** | Describe what is monitored, and hold where each entity stands. | Definitions; process, step and measurement instances | Definitions, which are data |
 | ⑤ **Persistence** | Store state safely, publish results reliably, and answer queries. | State-store contract, outbox, outbox relay, query API, operational metrics | A store module and a broker module, which bind the layer to the infrastructure (§5.2) |
 
 An event travels down the layers: the integration layer hands it to the process layer, which asks the measurement
 layer for plans, actuals and comparisons, which read and change the model, which the persistence layer saves together
-with the resulting events. The **deadline monitors** are the one component driven by the clock instead of an event:
+with the resulting events. The **deadline alarms** are the one component driven by the clock instead of an event:
 they enter at the process layer and follow the same path down. Nothing reaches the outbound channels except through
 the outbox, so a result is never published for a change that was not saved.
 
@@ -469,18 +475,18 @@ Each instance runs four activities:
 | Activity | Triggered by | Does |
 |---|---|---|
 | **Consumer** | each inbound event, from the partitions the broker assigns to this instance | the whole of layers ① to ⑤ for that event, in one unit of work |
-| **Deadline monitors** | the clock (every minute by default) | find steps and processes past their deadline with no event, and mark them overdue, each in its own unit of work |
+| **Alarm scheduler** | the clock (every 5 seconds by default) | claim the alarms now due, in leased batches, and mark each step or process still without its event overdue, each in its own unit of work; a sweep every 10 minutes catches any deadline without an alarm |
 | **Outbox relay** | the clock (every second by default) | claim unsent results with a lease, publish them, and mark them sent |
 | **Query API** | a request | read the current state of an entity; also exposes the operational metrics |
 
 The instances form one **consumer group** on the inbound channel. Producers key each event by its entity id, so all
 events of one entity fall in the same partition and are processed by one instance, in order, while different
-entities are processed in parallel across instances. The monitors and the relay run on every instance: version-checked
-saves and leased outbox entries let them do so without coordinating.
+entities are processed in parallel across instances. The alarm scheduler and the relay run on every instance:
+version-checked saves, leased alarms and leased outbox entries let them do so without coordinating.
 
 Because an instance keeps no state of its own, it can be added, restarted or lost at any time. Adding one makes the
 broker rebalance the partitions; losing one hands its partitions to the others, which resume from the last committed
-position, and its leased outbox entries to any instance once the lease expires. Throughput therefore scales with the
+position, and its leased alarms and outbox entries to any instance once the lease expires. Throughput therefore scales with the
 number of instances, up to the number of partitions of the inbound channel; the state store is the shared resource to
 size. [§6](#6-reliability-and-consistency) sets out the guarantees this arrangement provides.
 
@@ -498,9 +504,9 @@ standalone MongoDB server rather than a replica set, or the in-memory store) sti
 of a unit of work can then keep its state without its results. The runtime detects this and says so at startup.
 
 **Concurrency.** Every step and process instance carries a revision, and a save based on a stale copy is rejected
-rather than overwriting a newer state. The deadline monitors can therefore run on every runtime instance: when two
-instances find the same overdue step, or the step's event arrives at the same moment, only one change wins and only it
-is published.
+rather than overwriting a newer state. Alarms can therefore fire on every runtime instance: each alarm is claimed by
+one instance at a time, and when its step's event arrives at the same moment, only one change wins and only it is
+published.
 
 **Delivery guarantee.** Delivery is *at least once*. A failure between sending a result and recording it as sent
 causes it to be sent again, so consumers de-duplicate on the event id.
@@ -547,6 +553,7 @@ The runtime reports its own behaviour and the health of the monitored processes 
 | `aktimetrix.steps.at.risk` / `.overdue` | Steps forecast to be late, and steps past their deadline. |
 | `aktimetrix.measurements.actual` | Actual measurements recorded, by measurement and conformance. |
 | `aktimetrix.measurements.deviation` | Distribution of actual minus planned, by measurement. |
+| `aktimetrix.alarms.pending` / `.fired` / `.delay` | Alarms set and not yet fired; alarms that marked a step or process overdue, by kind; how long after its due time each fired. |
 | `aktimetrix.outbox.pending` | Results not yet published. |
 
 Together they answer operational questions directly, without a separate analytics pipeline: *what share of
@@ -814,6 +821,7 @@ published events feed dashboards, process-mining datasets or stream jobs.
 | **Meter** | Application code that computes a planned or actual measurement, typically a planning rule. |
 | **Metadata** | Domain data kept on an instance, such as an order's customer, used by meters and passed to consumers. |
 | **Deadline** | The planned time plus the tolerance: the moment after which a step or process is late. |
+| **Alarm** | A durable timer at the deadline of a step or process, set when it is planned; when it fires and the event has not arrived, the step or process becomes `OVERDUE`. |
 | **Timeliness** | How a step or process compares with its planned time: `ON_TIME`, `LATE`, `AT_RISK` (steps only) or `OVERDUE`. |
 | **Forecast** | The expected time of a later step, shifted by the delay of an earlier one; the basis of `AT_RISK`. |
 | **Tenant** | An independent set of definitions and instances, such as one business unit or customer. |

@@ -130,7 +130,8 @@ In a `Context`, read the event's data with the `Constants` context properties: `
 | `StepProgressService` | Moves steps through their lifecycle, records actual times, judges `ON_TIME` / `LATE`, and completes, ends or cancels processes. |
 | `ActualMeasurementService` | Records the actual measurements of a step or process, and interim readings on progress events, each compared with its plan. |
 | `DerivedMetricService` | Computes a process's declared metrics when it completes, from the plan and from the actuals. |
-| `OverdueStepMonitor`, `OverdueProcessMonitor` | Mark steps and processes past their deadline as `OVERDUE`; an overdue step puts later steps at risk. |
+| `DeadlineAlarms`, `AlarmScheduler` | Keep an alarm at the deadline of each open step and process, and when it fires without the event, mark the step or process `OVERDUE`; an overdue step puts later steps at risk. |
+| `OverdueStepMonitor`, `OverdueProcessMonitor` | A slower sweep for steps and processes past their deadline without an alarm. |
 | `DefinitionLoader` | Loads `aktimetrix/*.json` definitions at startup. |
 | `ProcessInstancePublisherService`, `StepInstancePublisherService`, `MeasurementInstancePublisherService` | Queue events for the outbound topics in the outbox. |
 | `OutboxRelay` | Publishes queued events to the broker. |
@@ -143,10 +144,11 @@ declares them in a Spring Boot auto-configuration; the core uses nothing else.
 
 | Interface | Must provide |
 |---|---|
-| `ProcessInstanceStore`, `StepInstanceStore` | Insert with a new id; update with a version check on `revision`, throwing `OptimisticLockingFailureException` on a stale copy; at most one process instance per tenant, process and entity (`DuplicateKeyException`); the queries of the overdue monitors. |
+| `ProcessInstanceStore`, `StepInstanceStore` | Insert with a new id; update with a version check on `revision`, throwing `OptimisticLockingFailureException` on a stale copy; at most one process instance per tenant, process and entity (`DuplicateKeyException`); the queries of the overdue sweep. |
 | `MeasurementInstanceStore` | Insert, and find by process, step, code and type. |
 | `DefinitionStore` | Save definitions, replacing the one with the same tenant and code; find them, and the confirmed processes an event starts. |
-| `OutboxStore` | An atomic claim of the oldest unsent message, with a lease: the one operation that needs a compare-and-set. |
+| `OutboxStore` | An atomic claim of the oldest unsent message, with a lease. |
+| `AlarmStore` | Set (insert or replace by id, releasing any claim) and cancel alarms; an atomic claim of the due alarms, earliest first, with a lease; an index on the due time. With the outbox, the only operations that need a compare-and-set. |
 | `AktimetrixTransactions` | Run a unit of work atomically if the store can, and say whether it does. |
 
 `StoreDocuments` converts model objects to and from JSON, for stores that keep documents; the JDBC and in-memory

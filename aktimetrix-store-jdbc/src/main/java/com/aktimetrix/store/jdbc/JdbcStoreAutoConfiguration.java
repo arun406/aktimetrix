@@ -2,6 +2,7 @@ package com.aktimetrix.store.jdbc;
 
 import com.aktimetrix.core.configurations.AktimetrixProperties;
 import com.aktimetrix.core.store.AktimetrixTransactions;
+import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
@@ -52,6 +53,11 @@ public class JdbcStoreAutoConfiguration {
     @Bean
     public OutboxStore aktimetrixOutboxStore(DataSource dataSource, JdbcStoreInitializer schema) {
         return new JdbcOutboxStore(new JdbcTemplate(dataSource));
+    }
+
+    @Bean
+    public AlarmStore aktimetrixAlarmStore(DataSource dataSource, JdbcStoreInitializer schema) {
+        return new JdbcAlarmStore(new JdbcTemplate(dataSource));
     }
 
     @Bean

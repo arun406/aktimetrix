@@ -18,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
+import static com.aktimetrix.store.mongodb.MongoCollections.ALARMS;
 import static com.aktimetrix.store.mongodb.MongoCollections.MEASUREMENT_INSTANCES;
 import static com.aktimetrix.store.mongodb.MongoCollections.OUTBOX;
 import static com.aktimetrix.store.mongodb.MongoCollections.PROCESS_DEFINITIONS;
@@ -96,6 +97,7 @@ public class MongoStoreInitializer implements InitializingBean {
         ensure(STEP_INSTANCES, index("aktimetrix_deadlines", "lateAfter", "status"));
         ensure(MEASUREMENT_INSTANCES, index("aktimetrix_process_measurements", "tenant", "processInstanceId"));
         ensure(OUTBOX, index("aktimetrix_pending", "sentAt", "createdAt"));
+        ensure(ALARMS, index("aktimetrix_due", "dueAt"));
         ensure(PROCESS_DEFINITIONS, index("aktimetrix_process_code", "tenant", "processCode").unique());
         ensure(PROCESS_DEFINITIONS, index("aktimetrix_start_events", "tenant", "startEventCodes"));
         ensure(STEP_DEFINITIONS, index("aktimetrix_step_code", "tenant", "stepCode").unique());

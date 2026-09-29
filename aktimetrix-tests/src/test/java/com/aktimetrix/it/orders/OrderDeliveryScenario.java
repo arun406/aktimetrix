@@ -7,6 +7,8 @@ import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
+import com.aktimetrix.core.service.AlarmScheduler;
+import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.it.ParcelMonitor;
 import com.aktimetrix.it.support.EventSchemas;
 import com.aktimetrix.it.support.TestBroker;
@@ -157,6 +159,40 @@ public abstract class OrderDeliveryScenario {
         // the order's measurement events say what kind they are
         assertThat(order.stream().filter(e -> "Measurement_Event".equals(e.path("eventType").asText()))
                 .map(e -> e.path("eventCode").asText())).contains("PLANNED", "RECORDED", "READING", "METRIC");
+    }
+
+    /**
+     * An alarm is set at each step's deadline when the order is planned. The payment does not arrive in time: when the
+     * alarms fire, the open steps and the order are marked overdue. The payment then arrives late, and is compared
+     * with its plan as usual: late, by how much.
+     */
+    @Test
+    void anAlarmMarksAStepOverdueAndItsLateEventIsComparedWithThePlan() {
+        send("3456", "ORDER_CREATED", "2024-03-01 09:00:00", "{\"priority\":true,\"createdAt\":\"2024-03-01 09:00:00\"}");
+        awaitTrue(() -> monitor.steps("3456").size() == 7, "the order's seven steps being created");
+        send("3456", "ORDER_CONFIRMED", "2024-03-01 09:03:00", null);
+        await(() -> monitor.step("3456", "CONFIRM"), s -> "Completed".equals(s.getStatus()), "CONFIRM completed");
+        assertThat(monitor.bean(AlarmStore.class).countPending()).as("alarms at the open steps' deadlines").isPositive();
+
+        // the business clock is long past every deadline of the order
+        assertThat(monitor.bean(AlarmScheduler.class).fireDueAlarms()).isPositive();
+        assertThat(monitor.step("3456", "PAY").orElseThrow().getTimeliness()).isEqualTo(Timeliness.OVERDUE);
+        assertThat(monitor.step("3456", "HANDOVER").orElseThrow().getTimeliness()).isEqualTo(Timeliness.OVERDUE);
+        assertThat(monitor.step("3456", "CONFIRM").orElseThrow().getTimeliness()).as("done in time")
+                .isEqualTo(Timeliness.ON_TIME);
+        assertThat(process("3456", p -> true).getTimeliness()).isEqualTo(Timeliness.OVERDUE);
+        assertThat(monitor.meters().find("aktimetrix.alarms.fired").counters()).isNotEmpty();
+        assertThat(monitor.bean(AlarmScheduler.class).fireDueAlarms()).as("each alarm fires once").isZero();
+
+        send("3456", "PAYMENT_CONFIRMED", "2024-03-01 10:00:00", null);
+        final StepInstance paid = await(() -> monitor.step("3456", "PAY"), s -> "Completed".equals(s.getStatus()),
+                "PAY completed");
+        assertThat(paid.getTimeliness()).isEqualTo(Timeliness.LATE);
+        final MeasurementInstance time = await(() -> monitor.measurements("3456").stream()
+                        .filter(m -> "PAY".equals(m.getStepCode()) && "TIME".equals(m.getCode()) && "A".equals(m.getType()))
+                        .findFirst(), m -> true, "the actual TIME of PAY");
+        assertThat(time.getDeviation()).startsWith("PT");
+        assertThat(time.getConformance()).isEqualTo(Conformance.OUT_OF_TOLERANCE);
     }
 
     /**

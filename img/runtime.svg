@@ -45,7 +45,7 @@
   <text x="457.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
   <text x="457.0" y="268.0" text-anchor="middle" class="ts">every second</text>
   <rect x="262" y="298" width="122.0" height="64" rx="10" class="core"/>
-  <text x="323.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="323.0" y="326.0" text-anchor="middle" class="tb">Alarms</text>
   <text x="323.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
   <rect x="396.0" y="298" width="122.0" height="64" rx="10" class="core"/>
   <text x="457.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
@@ -68,7 +68,7 @@
   <text x="767.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
   <text x="767.0" y="268.0" text-anchor="middle" class="ts">every second</text>
   <rect x="572" y="298" width="122.0" height="64" rx="10" class="core"/>
-  <text x="633.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="633.0" y="326.0" text-anchor="middle" class="tb">Alarms</text>
   <text x="633.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
   <rect x="706.0" y="298" width="122.0" height="64" rx="10" class="core"/>
   <text x="767.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
@@ -91,7 +91,7 @@
   <text x="1077.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
   <text x="1077.0" y="268.0" text-anchor="middle" class="ts">every second</text>
   <rect x="882" y="298" width="122.0" height="64" rx="10" class="core"/>
-  <text x="943.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="943.0" y="326.0" text-anchor="middle" class="tb">Alarms</text>
   <text x="943.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
   <rect x="1016.0" y="298" width="122.0" height="64" rx="10" class="core"/>
   <text x="1077.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
@@ -122,7 +122,7 @@
   <text x="457.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
   <text x="457.0" y="268.0" text-anchor="middle" class="ts">every second</text>
   <rect x="262" y="298" width="122.0" height="64" rx="10" class="core"/>
-  <text x="323.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="323.0" y="326.0" text-anchor="middle" class="tb">Alarms</text>
   <text x="323.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
   <rect x="396.0" y="298" width="122.0" height="64" rx="10" class="core"/>
   <text x="457.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
@@ -145,7 +145,7 @@
   <text x="767.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
   <text x="767.0" y="268.0" text-anchor="middle" class="ts">every second</text>
   <rect x="572" y="298" width="122.0" height="64" rx="10" class="core"/>
-  <text x="633.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="633.0" y="326.0" text-anchor="middle" class="tb">Alarms</text>
   <text x="633.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
   <rect x="706.0" y="298" width="122.0" height="64" rx="10" class="core"/>
   <text x="767.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
@@ -168,7 +168,7 @@
   <text x="1077.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
   <text x="1077.0" y="268.0" text-anchor="middle" class="ts">every second</text>
   <rect x="882" y="298" width="122.0" height="64" rx="10" class="core"/>
-  <text x="943.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="943.0" y="326.0" text-anchor="middle" class="tb">Alarms</text>
   <text x="943.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
   <rect x="1016.0" y="298" width="122.0" height="64" rx="10" class="core"/>
   <text x="1077.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
@@ -216,5 +216,5 @@
   <text x="450" y="686" text-anchor="start" class="t">state and results are written in one transaction per event; saves are version-checked</text>
   <text x="250" y="716" text-anchor="start" class="tb">④</text>
   <text x="278" y="716" text-anchor="start" class="tb">Safe everywhere</text>
-  <text x="450" y="716" text-anchor="start" class="t">monitors and relays run on every instance: version checks and leases stop double work</text>
+  <text x="450" y="716" text-anchor="start" class="t">alarms and relays run on every instance: version checks and leases stop double work</text>
 </svg>

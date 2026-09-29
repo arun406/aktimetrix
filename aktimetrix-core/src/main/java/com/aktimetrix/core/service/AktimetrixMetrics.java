@@ -1,6 +1,7 @@
 package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.api.Constants;
+import com.aktimetrix.core.model.Alarm;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
@@ -109,6 +110,20 @@ public class AktimetrixMetrics {
                 // not a number: nothing to record
             }
         }
+    }
+
+    public void alarmsPending(Supplier<Number> pending) {
+        Gauge.builder("aktimetrix.alarms.pending", pending)
+                .description("Alarms set at deadlines, not fired yet").register(registry);
+    }
+
+    public void alarmFired(Alarm alarm, Duration delay) {
+        Counter.builder("aktimetrix.alarms.fired").description("Alarms fired on a step or process still open")
+                .tag("tenant", value(alarm.getTenant())).tag("kind", value(alarm.getKind()))
+                .register(registry).increment();
+        Timer.builder("aktimetrix.alarms.delay").description("How long after its due time an alarm fired")
+                .tag("kind", value(alarm.getKind()))
+                .register(registry).record(delay.isNegative() ? Duration.ZERO : delay);
     }
 
     public void outboxPending(Supplier<Number> pending) {
