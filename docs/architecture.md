@@ -113,8 +113,8 @@ keeps its lease until it expires, then any instance retries it. Sent entries are
 | Use another message broker | Replace the Kafka binder dependency with another Spring Cloud Stream binder, and adapt the binder-specific parts: the dead-letter and key-serializer defaults, and the message-key header the relay sets. | `pom.xml`, `AktimetrixDefaultProperties`, `OutboxRelay` |
 | Use another state store | Provide the repositories for definitions and instances, the outbox claim (an atomic conditional update), transactions, and index creation for that store. | `repository`, `referencedata.repository`, `OutboxRelay`, `AktimetrixTransactions`, `AktimetrixStorageInitializer`, and the queries in the definition services |
 
-The last two are not yet pluggable: they mean changing the framework rather than configuring it, and are on the
-[roadmap](../README.md#11-status-and-roadmap).
+The last two are not yet pluggable: they mean changing the framework rather than configuring it (see the
+[known limitations](../README.md#103-known-limitations)).
 
 ## Source layout
 

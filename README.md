@@ -6,7 +6,7 @@
   <a href="https://github.com/arun406/aktimetrix/actions/workflows/ci.yml"><img src="https://github.com/arun406/aktimetrix/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI"></a>
   <a href="#9-reference-implementation"><img src="https://img.shields.io/badge/java-11%2B-0F4C5C?logo=openjdk&logoColor=white" alt="Java 11+"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License: Apache 2.0"></a>
-  <a href="#11-status-and-roadmap"><img src="https://img.shields.io/badge/status-alpha-F5A524" alt="Status: alpha"></a>
+  <a href="#9-reference-implementation"><img src="https://img.shields.io/badge/status-alpha-F5A524" alt="Status: alpha"></a>
 </p>
 
 <h1 align="center">Aktimetrix</h1>
@@ -60,8 +60,7 @@ document describes the model, its execution semantics and its reliability guaran
 8. [Observability](#8-observability)
 9. [Reference implementation](#9-reference-implementation)
 10. [Positioning and limitations](#10-positioning-and-limitations)
-11. [Status and roadmap](#11-status-and-roadmap)
-12. [Further reading](#12-further-reading)
+11. [Further reading](#11-further-reading)
 
 [Appendix A. Glossary](#appendix-a-glossary) · [Contributing](#contributing) · [License](#license)
 
@@ -518,7 +517,8 @@ carry the plan, the actual and the deviation together.
 
 This repository contains `aktimetrix-core`, a reference implementation of the model for the JVM, released under the
 Apache License 2.0. It is packaged as a library: an application adds the dependency, supplies its definitions and
-meters, and receives the complete runtime described above through auto-configuration.
+meters, and receives the complete runtime described above through auto-configuration. It is **alpha**
+(`0.0.1-SNAPSHOT`): it is tested on JDK 11, 17 and 21, and its APIs may still change.
 
 ### 9.1 Technology bindings
 
@@ -531,8 +531,8 @@ meters, and receives the complete runtime described above through auto-configura
 | Query API | HTTP/JSON |
 
 These choices belong to the implementation, not the model. The broker is reached through Spring Cloud Stream, whose
-binder abstraction also targets other brokers; the state store is currently bound to MongoDB. Broadening both
-bindings is part of the [roadmap](#11-status-and-roadmap).
+binder abstraction also targets other brokers; the state store is currently bound to MongoDB (see the
+[known limitations](#103-known-limitations)).
 
 ### 9.2 Running the example
 
@@ -723,33 +723,7 @@ published events feed dashboards, process-mining datasets or stream jobs.
 - **Reference implementation.** The broker binding is Kafka and the state store is MongoDB; atomic writes need
   MongoDB transactions (a replica set). The REST API has no authentication of its own.
 
-## 11. Status and roadmap
-
-The reference implementation is **alpha** (`0.0.1-SNAPSHOT`). The complete loop of plan, actual, comparison, at risk
-and overdue works end to end, including the example of §1.1, and is verified by tests on JDK 11, 17 and 21. APIs may
-still change.
-
-- [x] Plan-versus-actual timeliness (`ON_TIME`, `LATE`)
-- [x] Overdue detection for events that never arrive
-- [x] At-risk forecasting from the delays of earlier steps
-- [x] Planned durations and tolerances in step definitions
-- [x] Steps defined or adapted per process
-- [x] Process cancellation, implicit or explicit end, and a deadline for the whole process, set by duration or rule
-- [x] Planned and actual values in any user-defined dimension, at process and step level, compared with deviation and tolerance
-- [x] Source systems keep their own event format, through an event mapper
-- [x] Interim readings while a step is in progress, and metrics declared from several measurements
-- [x] Query API for the state of an entity
-- [x] Reliable publication through a transactional outbox, with atomic writes on transactional stores
-- [x] Safe concurrency across instances, a dead-letter channel, and indexes created at startup
-- [x] Metrics
-- [x] Definitions as code, and auto-configuration
-- [ ] First release to Maven Central: the pipeline is ready ([RELEASING.md](./RELEASING.md)); the release waits on
-  the namespace and signing key
-- [ ] Verified bindings for further message brokers
-- [ ] A state-store abstraction, with implementations beyond MongoDB
-- [ ] Versioned definitions, so that running instances keep the definition they started with
-
-## 12. Further reading
+## 11. Further reading
 
 | Document | Contents |
 |---|---|
