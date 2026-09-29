@@ -1,67 +1,64 @@
 package com.aktimetrix.core.impl;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.EventGenerator;
+import com.aktimetrix.core.api.PublishedEvents;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.transferobjects.Event;
+import com.aktimetrix.core.transferobjects.EventContext;
 import com.aktimetrix.core.transferobjects.Measurement;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.UUID;
-
+/**
+ * Generates a {@code Measurement_Event}: the measurement, and its {@link EventContext}. Its code says what kind of
+ * measurement it is: {@code PLANNED}, {@code RECORDED}, {@code READING} or {@code METRIC}.
+ */
 public class MeasurementEventGenerator implements EventGenerator {
 
     private final MeasurementInstance instance;
+    private final EventContext context;
 
-    public MeasurementEventGenerator(MeasurementInstance instance) {
+    public MeasurementEventGenerator(MeasurementInstance instance, EventContext context) {
         this.instance = instance;
+        this.context = context;
     }
 
     /**
-     * Generate the Events
-     *
-     * @return Event
+     * The event code for the measurement.
      */
+    public static String codeOf(MeasurementInstance measurement) {
+        if (measurement.getDerivedFrom() != null) {
+            return PublishedEvents.Measurement.METRIC;
+        }
+        if (Constants.PLAN_MEASUREMENT_TYPE.equals(measurement.getType())) {
+            return PublishedEvents.Measurement.PLANNED;
+        }
+        return measurement.isInterim() ? PublishedEvents.Measurement.READING : PublishedEvents.Measurement.RECORDED;
+    }
+
     @Override
-    public Event<Measurement, Void> generate() {
-        return getMeasurementEvent(this.instance);
+    public Event<Measurement, EventContext> generate() {
+        return EventEnvelopes.envelope(instance.getTenant(), PublishedEvents.Measurement.TYPE,
+                PublishedEvents.Measurement.ENTITY_TYPE, codeOf(instance), "Measurement", instance.getId(),
+                dto(instance), context);
     }
 
-    private Event<Measurement, Void> getMeasurementEvent(MeasurementInstance instance) {
-        Event<Measurement, Void> event = new Event<>();
-        event.setEventId(UUID.randomUUID().toString());
-        event.setEventType("Measurement_Event");
-        event.setEventCode("CREATED");
-        event.setEventName("Measurement Instance Created Event");
-        event.setEventTime(ZonedDateTime.now());
-        event.setEventUTCTime(LocalDateTime.now(ZoneOffset.UTC));
-        event.setEntityId(String.valueOf(instance.getId()));
-        event.setEntityType("com.aktimetrix.measurement.instance");
-        event.setSource("Meter");
-        event.setTenantKey(instance.getTenant());
-        event.setEntity(getMeasurement(instance));
-        return event;
-    }
-
-    private Measurement getMeasurement(MeasurementInstance instance) {
+    private static Measurement dto(MeasurementInstance instance) {
         return Measurement.builder()
-                .id(instance.getId().toString())
+                .id(instance.getId())
                 .tenant(instance.getTenant())
+                .processInstanceId(instance.getProcessInstanceId())
+                .stepInstanceId(instance.getStepInstanceId())
                 .stepCode(instance.getStepCode())
-                .stepInstanceId(instance.getStepInstanceId() == null ? null : instance.getStepInstanceId().toString())
-                .measuredAt(instance.getMeasuredAt())
                 .code(instance.getCode())
-                .unit(instance.getUnit())
-                .createdOn(instance.getCreatedOn())
                 .type(instance.getType())
                 .value(instance.getValue())
+                .unit(instance.getUnit())
+                .measuredAt(instance.getMeasuredAt())
                 .plannedValue(instance.getPlannedValue())
                 .deviation(instance.getDeviation())
                 .conformance(instance.getConformance())
                 .interim(instance.isInterim())
                 .derivedFrom(instance.getDerivedFrom())
-                .processInstanceId(instance.getProcessInstanceId().toString())
                 .createdOn(instance.getCreatedOn())
                 .build();
     }

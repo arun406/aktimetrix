@@ -22,6 +22,14 @@ public class ProcessInstanceDTO implements Serializable {
     private String entityType;
     private String tenant;
     private String processCode;
+    /**
+     * Name of the process, from its definition.
+     */
+    private String processName;
+    /**
+     * Revision of the process definition the instance follows: the one it started with.
+     */
+    private Long definitionRevision;
     private String categoryCode;
     private String subCategoryCode;
     private String status;

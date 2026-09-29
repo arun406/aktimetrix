@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.store.AktimetrixTransactions;
 import com.aktimetrix.core.store.ProcessInstanceStore;
+import com.aktimetrix.core.transferobjects.EventContext.Cause;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ public class OverdueProcessMonitor {
     private final StepProgressService stepProgressService;
     private final Clock clock;
     private final AktimetrixTransactions transactions;
+    private static final Cause DEADLINE = new Cause(Cause.DEADLINE, null, null);
 
     /**
      * @return the processes marked overdue by this check
@@ -43,7 +45,8 @@ public class OverdueProcessMonitor {
         final List<ProcessInstance> overdue = new ArrayList<>();
         for (ProcessInstance process : processInstanceStore.findOverdue(now)) {
             try {
-                transactions.run(() -> stepProgressService.markProcessOverdue(process));
+                ProcessingContext.run(DEADLINE, now,
+                        () -> transactions.run(() -> stepProgressService.markProcessOverdue(process)));
                 overdue.add(process);
             } catch (OptimisticLockingFailureException e) {
                 logger.debug("Process {} changed while being marked overdue; skipped", process.getId());

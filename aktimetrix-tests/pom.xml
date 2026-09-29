@@ -92,6 +92,13 @@
             <version>${qpid-broker.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- validates published events against the schemas in aktimetrix-core -->
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>1.0.72</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
