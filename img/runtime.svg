@@ -1,0 +1,220 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="770" viewBox="0 0 1360 770" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4A5B63"/>
+    </marker>
+    <marker id="arrK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C77C02"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B3261E"/>
+    </marker>
+    <style>
+      .t  { font-size: 14px; fill: #1F2D33; }
+      .tb { font-size: 15px; font-weight: 700; fill: #1F2D33; }
+      .ts { font-size: 12px; fill: #5B6B72; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 11.5px; fill: #0F4C5C; }
+      .h  { font-size: 12.5px; font-weight: 700; letter-spacing: 1.5px; fill: #5B6B72; }
+      .box { fill: #FFFFFF; stroke: #B7C7CD; stroke-width: 1.5; }
+      .core { fill: #E8F4F7; stroke: #0F4C5C; stroke-width: 1.5; }
+      .you { fill: #FFF8EC; stroke: #C77C02; stroke-width: 1.5; stroke-dasharray: 5 3; }
+      .topic { fill: #FFF4DE; stroke: #C77C02; stroke-width: 1.5; }
+      .db { fill: #E9F5EC; stroke: #2E8B47; stroke-width: 1.5; }
+      .dead { fill: #FCEBEA; stroke: #B3261E; stroke-width: 1.5; }
+      .band { fill: #FFFFFF; stroke: #DCE5E8; stroke-width: 1.2; }
+      .edge { stroke: #4A5B63; stroke-width: 1.7; fill: none; }
+      .kedge { stroke: #C77C02; stroke-width: 1.7; fill: none; }
+      .redge { stroke: #B3261E; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+    </style>
+  </defs>
+  <rect width="1360" height="770" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="250" y="56" text-anchor="start" class="h">MESSAGE BROKER</text>
+  <rect x="250" y="78" width="900" height="70" rx="14" fill="#FFFBF2" stroke="#C77C02" stroke-width="1.5"/>
+  <rect x="262" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="323.0" y="109.0" text-anchor="middle" class="tb">inbound</text>
+  <text x="323.0" y="127.0" text-anchor="middle" class="ts">partitions P0 · P1</text>
+  <rect x="396.0" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="457.0" y="109.0" text-anchor="middle" class="tb">outbound</text>
+  <text x="457.0" y="127.0" text-anchor="middle" class="ts">results · dead letters</text>
+  <rect x="250" y="200" width="280" height="222" rx="14" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="390.0" y="406" text-anchor="middle" class="tb">Runtime instance 1</text>
+  <rect x="262" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="323.0" y="250.0" text-anchor="middle" class="tb">Consumer</text>
+  <text x="323.0" y="268.0" text-anchor="middle" class="ts">on each event</text>
+  <rect x="396.0" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="457.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
+  <text x="457.0" y="268.0" text-anchor="middle" class="ts">every second</text>
+  <rect x="262" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="323.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="323.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
+  <rect x="396.0" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="457.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
+  <text x="457.0" y="344.0" text-anchor="middle" class="ts">and metrics</text>
+  <path d="M323.0,136 L323.0,220" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M457.0,222 L457.0,138" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M390.0,422 L390.0,476" class="edge" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <rect x="572" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="633.0" y="109.0" text-anchor="middle" class="tb">inbound</text>
+  <text x="633.0" y="127.0" text-anchor="middle" class="ts">partitions P2 · P3</text>
+  <rect x="706.0" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="767.0" y="109.0" text-anchor="middle" class="tb">outbound</text>
+  <text x="767.0" y="127.0" text-anchor="middle" class="ts">results · dead letters</text>
+  <rect x="560" y="200" width="280" height="222" rx="14" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="700.0" y="406" text-anchor="middle" class="tb">Runtime instance 2</text>
+  <rect x="572" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="633.0" y="250.0" text-anchor="middle" class="tb">Consumer</text>
+  <text x="633.0" y="268.0" text-anchor="middle" class="ts">on each event</text>
+  <rect x="706.0" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="767.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
+  <text x="767.0" y="268.0" text-anchor="middle" class="ts">every second</text>
+  <rect x="572" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="633.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="633.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
+  <rect x="706.0" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="767.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
+  <text x="767.0" y="344.0" text-anchor="middle" class="ts">and metrics</text>
+  <path d="M633.0,136 L633.0,220" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M767.0,222 L767.0,138" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M700.0,422 L700.0,476" class="edge" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <rect x="882" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="943.0" y="109.0" text-anchor="middle" class="tb">inbound</text>
+  <text x="943.0" y="127.0" text-anchor="middle" class="ts">partitions P4 · P5</text>
+  <rect x="1016.0" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="1077.0" y="109.0" text-anchor="middle" class="tb">outbound</text>
+  <text x="1077.0" y="127.0" text-anchor="middle" class="ts">results · dead letters</text>
+  <rect x="870" y="200" width="280" height="222" rx="14" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="1010.0" y="406" text-anchor="middle" class="tb">Runtime instance N</text>
+  <rect x="882" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="943.0" y="250.0" text-anchor="middle" class="tb">Consumer</text>
+  <text x="943.0" y="268.0" text-anchor="middle" class="ts">on each event</text>
+  <rect x="1016.0" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="1077.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
+  <text x="1077.0" y="268.0" text-anchor="middle" class="ts">every second</text>
+  <rect x="882" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="943.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="943.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
+  <rect x="1016.0" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="1077.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
+  <text x="1077.0" y="344.0" text-anchor="middle" class="ts">and metrics</text>
+  <path d="M943.0,136 L943.0,220" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M1077.0,222 L1077.0,138" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M1010.0,422 L1010.0,476" class="edge" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <rect x="332.7" y="166" width="20.6" height="20" rx="10" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="343.0" y="180" text-anchor="middle" class="ts">①</text>
+  <rect x="466.7" y="166" width="20.6" height="20" rx="10" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="477.0" y="180" text-anchor="middle" class="ts">④</text>
+  <rect x="399.7" y="442" width="20.6" height="20" rx="10" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <text x="410.0" y="456" text-anchor="middle" class="ts">③</text>
+  <text x="250" y="56" text-anchor="start" class="h">MESSAGE BROKER</text>
+  <rect x="250" y="78" width="900" height="70" rx="14" fill="#FFFBF2" stroke="#C77C02" stroke-width="1.5"/>
+  <rect x="262" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="323.0" y="109.0" text-anchor="middle" class="tb">inbound</text>
+  <text x="323.0" y="127.0" text-anchor="middle" class="ts">partitions P0 · P1</text>
+  <rect x="396.0" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="457.0" y="109.0" text-anchor="middle" class="tb">outbound</text>
+  <text x="457.0" y="127.0" text-anchor="middle" class="ts">results · dead letters</text>
+  <rect x="250" y="200" width="280" height="222" rx="14" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="390.0" y="406" text-anchor="middle" class="tb">Runtime instance 1</text>
+  <rect x="262" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="323.0" y="250.0" text-anchor="middle" class="tb">Consumer</text>
+  <text x="323.0" y="268.0" text-anchor="middle" class="ts">on each event</text>
+  <rect x="396.0" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="457.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
+  <text x="457.0" y="268.0" text-anchor="middle" class="ts">every second</text>
+  <rect x="262" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="323.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="323.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
+  <rect x="396.0" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="457.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
+  <text x="457.0" y="344.0" text-anchor="middle" class="ts">and metrics</text>
+  <path d="M323.0,136 L323.0,220" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M457.0,222 L457.0,138" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M390.0,422 L390.0,476" class="edge" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <rect x="572" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="633.0" y="109.0" text-anchor="middle" class="tb">inbound</text>
+  <text x="633.0" y="127.0" text-anchor="middle" class="ts">partitions P2 · P3</text>
+  <rect x="706.0" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="767.0" y="109.0" text-anchor="middle" class="tb">outbound</text>
+  <text x="767.0" y="127.0" text-anchor="middle" class="ts">results · dead letters</text>
+  <rect x="560" y="200" width="280" height="222" rx="14" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="700.0" y="406" text-anchor="middle" class="tb">Runtime instance 2</text>
+  <rect x="572" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="633.0" y="250.0" text-anchor="middle" class="tb">Consumer</text>
+  <text x="633.0" y="268.0" text-anchor="middle" class="ts">on each event</text>
+  <rect x="706.0" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="767.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
+  <text x="767.0" y="268.0" text-anchor="middle" class="ts">every second</text>
+  <rect x="572" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="633.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="633.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
+  <rect x="706.0" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="767.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
+  <text x="767.0" y="344.0" text-anchor="middle" class="ts">and metrics</text>
+  <path d="M633.0,136 L633.0,220" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M767.0,222 L767.0,138" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M700.0,422 L700.0,476" class="edge" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <rect x="882" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="943.0" y="109.0" text-anchor="middle" class="tb">inbound</text>
+  <text x="943.0" y="127.0" text-anchor="middle" class="ts">partitions P4 · P5</text>
+  <rect x="1016.0" y="90" width="122.0" height="46" rx="8" class="topic"/>
+  <text x="1077.0" y="109.0" text-anchor="middle" class="tb">outbound</text>
+  <text x="1077.0" y="127.0" text-anchor="middle" class="ts">results · dead letters</text>
+  <rect x="870" y="200" width="280" height="222" rx="14" fill="#FFFFFF" stroke="#0F4C5C" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="1010.0" y="406" text-anchor="middle" class="tb">Runtime instance N</text>
+  <rect x="882" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="943.0" y="250.0" text-anchor="middle" class="tb">Consumer</text>
+  <text x="943.0" y="268.0" text-anchor="middle" class="ts">on each event</text>
+  <rect x="1016.0" y="222" width="122.0" height="64" rx="10" class="core"/>
+  <text x="1077.0" y="250.0" text-anchor="middle" class="tb">Outbox relay</text>
+  <text x="1077.0" y="268.0" text-anchor="middle" class="ts">every second</text>
+  <rect x="882" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="943.0" y="326.0" text-anchor="middle" class="tb">Monitors</text>
+  <text x="943.0" y="344.0" text-anchor="middle" class="ts">every minute</text>
+  <rect x="1016.0" y="298" width="122.0" height="64" rx="10" class="core"/>
+  <text x="1077.0" y="326.0" text-anchor="middle" class="tb">Query API</text>
+  <text x="1077.0" y="344.0" text-anchor="middle" class="ts">and metrics</text>
+  <path d="M943.0,136 L943.0,220" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M1077.0,222 L1077.0,138" class="kedge" marker-end="url(#arrK)"/>
+  <path d="M1010.0,422 L1010.0,476" class="edge" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <path d="M250,492 L250,570 A450.0,14 0 0 0 1150,570 L1150,492" class="db"/>
+  <ellipse cx="700.0" cy="492" rx="450.0" ry="14" class="db"/>
+  <text x="700.0" y="534.0" text-anchor="middle" class="tb">State store (shared)</text>
+  <text x="700.0" y="552.0" text-anchor="middle" class="ts">definitions · process, step and measurement instances with revisions · outbox with leases · one process per entity</text>
+  <text x="40" y="218" text-anchor="start" class="h">RUNTIME INSTANCES</text>
+  <text x="40" y="238" text-anchor="start" class="ts">one consumer group; any number</text>
+  <rect x="40" y="78" width="180" height="70" rx="10" class="box"/>
+  <text x="130.0" y="109.0" text-anchor="middle" class="tb">Source systems</text>
+  <text x="130.0" y="127.0" text-anchor="middle" class="ts">events keyed by entity id</text>
+  <path d="M220,113.0 L248,113.0" class="kedge" marker-end="url(#arrK)"/>
+  <rect x="40" y="262" width="180" height="64" rx="10" class="box"/>
+  <text x="130.0" y="290.0" text-anchor="middle" class="tb">Load balancer</text>
+  <text x="130.0" y="308.0" text-anchor="middle" class="ts">queries: where is 1234?</text>
+  <path d="M220,294 L248,294" class="edge" marker-end="url(#arr)"/>
+  <rect x="40" y="338" width="180" height="64" rx="10" class="box"/>
+  <text x="130.0" y="366.0" text-anchor="middle" class="tb">Metrics scraper</text>
+  <text x="130.0" y="384.0" text-anchor="middle" class="ts">e.g. Prometheus</text>
+  <path d="M220,370 L248,370" class="edge" marker-end="url(#arr)"/>
+  <rect x="1180" y="78" width="140" height="70" rx="10" class="box"/>
+  <text x="1250.0" y="100.0" text-anchor="middle" class="tb">Consumers</text>
+  <text x="1250.0" y="118.0" text-anchor="middle" class="ts">dashboards · alerting</text>
+  <text x="1250.0" y="136.0" text-anchor="middle" class="ts">analytics</text>
+  <path d="M1150,113.0 L1178,113.0" class="kedge" marker-end="url(#arrK)"/>
+  <rect x="1180" y="222" width="140" height="140" rx="10" class="box"/>
+  <text x="1250.0" y="261.0" text-anchor="middle" class="tb">② Scale out</text>
+  <text x="1250.0" y="279.0" text-anchor="middle" class="ts">add an instance: the</text>
+  <text x="1250.0" y="297.0" text-anchor="middle" class="ts">broker rebalances the</text>
+  <text x="1250.0" y="315.0" text-anchor="middle" class="ts">partitions; no state is</text>
+  <text x="1250.0" y="333.0" text-anchor="middle" class="ts">held in an instance</text>
+  <text x="250" y="626" text-anchor="start" class="tb">①</text>
+  <text x="278" y="626" text-anchor="start" class="tb">Ordering</text>
+  <text x="450" y="626" text-anchor="start" class="t">events of one entity share a partition, so exactly one instance processes them, in order</text>
+  <text x="250" y="656" text-anchor="start" class="tb">②</text>
+  <text x="278" y="656" text-anchor="start" class="tb">Stateless instances</text>
+  <text x="450" y="656" text-anchor="start" class="t">all state is in the store: an instance can be added, restarted or lost at any time</text>
+  <text x="250" y="686" text-anchor="start" class="tb">③</text>
+  <text x="278" y="686" text-anchor="start" class="tb">Consistency</text>
+  <text x="450" y="686" text-anchor="start" class="t">state and results are written in one transaction per event; saves are version-checked</text>
+  <text x="250" y="716" text-anchor="start" class="tb">④</text>
+  <text x="278" y="716" text-anchor="start" class="tb">Safe everywhere</text>
+  <text x="450" y="716" text-anchor="start" class="t">monitors and relays run on every instance: version checks and leases stop double work</text>
+</svg>
