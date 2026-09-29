@@ -51,11 +51,52 @@
     </properties>
     <modules>
         <module>aktimetrix-core</module>
+        <module>aktimetrix-store-mongodb</module>
+        <module>aktimetrix-store-jdbc</module>
+        <module>aktimetrix-store-memory</module>
+        <module>aktimetrix-broker-kafka</module>
+        <module>aktimetrix-broker-rabbitmq</module>
+        <module>aktimetrix-tests</module>
     </modules>
 
     <!-- all other versions are managed by spring-boot-starter-parent -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.aktimetrix</groupId>
+                <artifactId>aktimetrix-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aktimetrix</groupId>
+                <artifactId>aktimetrix-store-mongodb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aktimetrix</groupId>
+                <artifactId>aktimetrix-store-jdbc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aktimetrix</groupId>
+                <artifactId>aktimetrix-store-memory</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aktimetrix</groupId>
+                <artifactId>aktimetrix-broker-kafka</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aktimetrix</groupId>
+                <artifactId>aktimetrix-broker-rabbitmq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.bwaldvogel</groupId>
+                <artifactId>mongo-java-server</artifactId>
+                <version>1.44.0</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>

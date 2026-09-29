@@ -5,7 +5,7 @@ import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.referencedata.model.MetricDefinition;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
-import com.aktimetrix.core.repository.MeasurementInstanceRepository;
+import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.util.Expression;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ import java.util.Map;
 public class DerivedMetricService {
     private static final Logger logger = LoggerFactory.getLogger(DerivedMetricService.class);
 
-    private final MeasurementInstanceRepository repository;
+    private final MeasurementInstanceStore store;
     private final AktimetrixMetrics metrics;
     private final Clock clock;
 
@@ -44,7 +44,7 @@ public class DerivedMetricService {
         }
         final Map<String, BigDecimal> actual = new HashMap<>();
         final Map<String, BigDecimal> planned = new HashMap<>();
-        for (MeasurementInstance measurement : repository.findByProcessInstanceId(process.getTenant(), process.getId())) {
+        for (MeasurementInstance measurement : store.findByProcessInstance(process.getTenant(), process.getId())) {
             if (measurement.isInterim() || measurement.getDerivedFrom() != null) {
                 continue;
             }

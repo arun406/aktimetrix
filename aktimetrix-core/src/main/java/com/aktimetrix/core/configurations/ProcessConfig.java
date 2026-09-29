@@ -9,7 +9,7 @@ import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.service.RegistryService;
-import com.aktimetrix.core.storage.AktimetrixTransactions;
+import com.aktimetrix.core.store.AktimetrixTransactions;
 import com.aktimetrix.core.transferobjects.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 /**
@@ -44,9 +45,9 @@ public class ProcessConfig {
     private AktimetrixProperties properties;
 
     @Bean
-    public Consumer<Message<String>> processor() {
+    public Consumer<Message<?>> processor() {
         return message -> {
-            final String payload = message.getPayload();
+            final String payload = text(message.getPayload());
             logger.debug("payload: {}", payload);
             final Event<?, ?> event;
             try {
@@ -72,6 +73,13 @@ public class ProcessConfig {
                 throw e;
             }
         };
+    }
+
+    /**
+     * The payload as text: brokers deliver bytes, which are read as UTF-8.
+     */
+    private static String text(Object payload) {
+        return payload instanceof byte[] ? new String((byte[]) payload, StandardCharsets.UTF_8) : String.valueOf(payload);
     }
 
     private EventHandler eventHandler(String eventCode) {
