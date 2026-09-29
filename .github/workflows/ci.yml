@@ -20,5 +20,6 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      # unit tests and end-to-end tests on an embedded Kafka and an in-memory MongoDB: no services needed
+      # unit tests, the store contract tests, and end-to-end tests of every store with every broker, on embedded
+      # brokers (Kafka, and Qpid for RabbitMQ) and databases (in-memory MongoDB, H2): no services needed
       - run: ./mvnw -B verify

@@ -30,27 +30,27 @@ import javax.sql.DataSource;
 public class JdbcStoreAutoConfiguration {
 
     @Bean
-    public ProcessInstanceStore aktimetrixProcessInstanceStore(DataSource dataSource) {
+    public ProcessInstanceStore aktimetrixProcessInstanceStore(DataSource dataSource, JdbcStoreInitializer schema) {
         return new JdbcInstanceStores.Processes(new JdbcTemplate(dataSource));
     }
 
     @Bean
-    public StepInstanceStore aktimetrixStepInstanceStore(DataSource dataSource) {
+    public StepInstanceStore aktimetrixStepInstanceStore(DataSource dataSource, JdbcStoreInitializer schema) {
         return new JdbcInstanceStores.Steps(new JdbcTemplate(dataSource));
     }
 
     @Bean
-    public MeasurementInstanceStore aktimetrixMeasurementInstanceStore(DataSource dataSource) {
+    public MeasurementInstanceStore aktimetrixMeasurementInstanceStore(DataSource dataSource, JdbcStoreInitializer schema) {
         return new JdbcInstanceStores.Measurements(new JdbcTemplate(dataSource));
     }
 
     @Bean
-    public DefinitionStore aktimetrixDefinitionStore(DataSource dataSource) {
+    public DefinitionStore aktimetrixDefinitionStore(DataSource dataSource, JdbcStoreInitializer schema) {
         return new JdbcDefinitionStore(new JdbcTemplate(dataSource));
     }
 
     @Bean
-    public OutboxStore aktimetrixOutboxStore(DataSource dataSource) {
+    public OutboxStore aktimetrixOutboxStore(DataSource dataSource, JdbcStoreInitializer schema) {
         return new JdbcOutboxStore(new JdbcTemplate(dataSource));
     }
 
@@ -59,6 +59,9 @@ public class JdbcStoreAutoConfiguration {
         return new JdbcTransactions(dataSource, properties);
     }
 
+    /**
+     * The stores depend on it, so the tables exist before they are first used.
+     */
     @Bean
     public JdbcStoreInitializer aktimetrixJdbcStoreInitializer(DataSource dataSource, AktimetrixProperties properties) {
         return new JdbcStoreInitializer(dataSource, properties);
