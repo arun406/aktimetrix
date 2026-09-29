@@ -45,27 +45,27 @@ public class MongoStoreAutoConfiguration {
     }
 
     @Bean
-    public ProcessInstanceStore aktimetrixProcessInstanceStore(MongoTemplate mongoTemplate) {
+    public ProcessInstanceStore aktimetrixProcessInstanceStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
         return new MongoInstanceStores.Processes(mongoTemplate);
     }
 
     @Bean
-    public StepInstanceStore aktimetrixStepInstanceStore(MongoTemplate mongoTemplate) {
+    public StepInstanceStore aktimetrixStepInstanceStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
         return new MongoInstanceStores.Steps(mongoTemplate);
     }
 
     @Bean
-    public MeasurementInstanceStore aktimetrixMeasurementInstanceStore(MongoTemplate mongoTemplate) {
+    public MeasurementInstanceStore aktimetrixMeasurementInstanceStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
         return new MongoInstanceStores.Measurements(mongoTemplate);
     }
 
     @Bean
-    public DefinitionStore aktimetrixDefinitionStore(MongoTemplate mongoTemplate) {
+    public DefinitionStore aktimetrixDefinitionStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
         return new MongoDefinitionStore(mongoTemplate);
     }
 
     @Bean
-    public OutboxStore aktimetrixOutboxStore(MongoTemplate mongoTemplate) {
+    public OutboxStore aktimetrixOutboxStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
         return new MongoOutboxStore(mongoTemplate);
     }
 
@@ -75,6 +75,9 @@ public class MongoStoreAutoConfiguration {
         return new MongoTransactions(databaseFactory, mongoTemplate, properties);
     }
 
+    /**
+     * The stores depend on it, so the database is upgraded and indexed before they are first used.
+     */
     @Bean
     public MongoStoreInitializer aktimetrixMongoStoreInitializer(MongoTemplate mongoTemplate,
                                                                  AktimetrixProperties properties) {

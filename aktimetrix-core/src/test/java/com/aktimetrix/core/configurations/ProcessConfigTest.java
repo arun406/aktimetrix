@@ -20,7 +20,10 @@ import org.mockito.quality.Strictness;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +58,18 @@ class ProcessConfigTest {
             return null;
         }).when(transactions).run(any());
         when(registryService.getEventHandler(anyString())).thenThrow(new EventHandlerNotFoundException("none"));
+    }
+
+    @Test
+    void readsPayloadsDeliveredAsBytes() {
+        // brokers deliver bytes: the mapper receives them as text
+        List<String> read = new ArrayList<>();
+        processor((payload, headers) -> {
+            read.add(payload);
+            return null;
+        }).accept(MessageBuilder.withPayload("{\"status\":\"VIEWED\"}".getBytes(StandardCharsets.UTF_8)).build());
+
+        assertThat(read).containsExactly("{\"status\":\"VIEWED\"}");
     }
 
     @Test
@@ -93,7 +108,7 @@ class ProcessConfigTest {
         verify(metrics).eventReceived(null, null, "invalid");
     }
 
-    private Consumer<org.springframework.messaging.Message<String>> processor(EventMapper mapper) {
+    private Consumer<org.springframework.messaging.Message<?>> processor(EventMapper mapper) {
         ProcessConfig config = new ProcessConfig();
         ReflectionTestUtils.setField(config, "eventMapper", mapper);
         ReflectionTestUtils.setField(config, "registryService", registryService);

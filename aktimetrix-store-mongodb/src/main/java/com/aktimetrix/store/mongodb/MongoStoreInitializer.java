@@ -9,7 +9,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -26,7 +26,7 @@ import static com.aktimetrix.store.mongodb.MongoCollections.STEP_DEFINITIONS;
 import static com.aktimetrix.store.mongodb.MongoCollections.STEP_INSTANCES;
 
 /**
- * Prepares the database before events are consumed.
+ * Prepares the database before the stores are used.
  * <ul>
  *     <li>Upgrades instances saved by earlier versions: adds a {@code revision} to process and step instances that
  *     have none (without one, a save would be taken for an insert), and stores references to process and step
@@ -38,7 +38,7 @@ import static com.aktimetrix.store.mongodb.MongoCollections.STEP_INSTANCES;
  * The process instance index is unique: at most one instance per tenant, process and entity, even when two events
  * start the same process at the same time.
  */
-public class MongoStoreInitializer implements SmartInitializingSingleton {
+public class MongoStoreInitializer implements InitializingBean {
     private static final Logger logger = LoggerFactory.getLogger(MongoStoreInitializer.class);
 
     private final MongoTemplate mongoTemplate;
@@ -50,7 +50,7 @@ public class MongoStoreInitializer implements SmartInitializingSingleton {
     }
 
     @Override
-    public void afterSingletonsInstantiated() {
+    public void afterPropertiesSet() {
         try {
             upgrade();
             if (properties.getStorage().isCreateIndexes()) {
