@@ -197,6 +197,75 @@ metadata whether it is stored as a `LocalDateTime`, a `Date`, or a string.
 That is a working monitor: events start the process, meters plan it, milestone events complete its steps, and the
 alarms at the deadlines mark any step whose event does not arrive in time as overdue.
 
+#### The same monitor, in Java or YAML
+
+JSON is one of three equivalent forms. With the **Java DSL**, the definitions and their rules are one bean, and the
+meter above becomes a lambda:
+
+```java
+import static com.aktimetrix.core.definitions.Planning.metadataTime;
+
+@Configuration
+public class OrderDefinitions {
+
+    @Bean
+    Definitions orderDelivery() {
+        return Definitions.tenant("AA")
+                .process("ORDER_DELIVERY", order -> order
+                        .name("Order delivery")
+                        .entityType("com.ecom.order")
+                        .startsOn("ORDER_CREATED_EVENT")
+                        .step("CONFIRM", step -> step.on("ORDER_CONFIRMED_EVENT"))
+                        .step("PAY", step -> step.on("PAYMENT_CONFIRMED_EVENT")
+                                .after("CONFIRM").within("PT15M").tolerance("PT5M"))
+                        .step("DELIVERED", step -> step.on("ORDER_DELIVERED_EVENT")
+                                .planTime(s -> Boolean.TRUE.equals(s.getMetadata().get("priority"))
+                                        ? metadataTime(s, "createdAt").plusHours(3).plusMinutes(15)
+                                        : metadataTime(s, "createdAt").plusDays(2)))
+                        .step("RATED", step -> step.on("ORDER_RATED_EVENT").optional()
+                                .measure("RATING", "review.stars", r -> r.value(5).tolerance("1"))))
+                .build();
+    }
+}
+```
+
+| DSL | Definition field |
+|---|---|
+| `startsOn`, `endsOn`, `cancelledOn` on a process | `startEventCodes`, `endEventCodes`, `cancelEventCodes` |
+| `on` on a step (a milestone); `startsOn` and `endsOn` (a step with a duration); `progressOn` | `startEventCodes`; `startEventCodes` and `endEventCodes`; `progressEventCodes` |
+| `after`, `within`, `tolerance`, `optional()` | `plannedAfter`, `plannedWithin`, `tolerance`, `"optionalInd": "Y"` |
+| `plan(code, m -> ...)`, `actual(code, valueFrom, unit)`, `measure(code, valueFrom, m -> ...)` | a planned (`P`) measurement; an actual (`A`) one; both |
+| `planTime(rule)`, `plan(code, unit, rule)` | a planned measurement without a value, and a meter that computes it |
+| `metric(code, expression, m -> ...)` | an entry of `metrics` |
+| `.step(code)` with no body | a reference to the tenant's shared step, defined with `Definitions.tenant(...).step(...)` |
+
+Definitions built by the DSL default to status `CONFIRMED`. A rule plans one measurement of one step or process, like
+a meter; declaring two for the same one fails at startup.
+
+As **YAML**, any file `src/main/resources/aktimetrix/*.yaml` (or `*.yml`) holds one tenant's steps and processes,
+with the fields of the JSON files:
+
+```yaml
+tenant: AA
+processes:
+  - processCode: ORDER_DELIVERY
+    processName: Order delivery
+    entityType: com.ecom.order
+    status: CONFIRMED
+    startEventCodes: [ORDER_CREATED_EVENT]
+    steps:
+      - { stepCode: CONFIRM, startEventCodes: [ORDER_CONFIRMED_EVENT] }
+      - { stepCode: PAY, startEventCodes: [PAYMENT_CONFIRMED_EVENT], plannedAfter: CONFIRM, plannedWithin: PT15M, tolerance: PT5M }
+      - stepCode: DELIVERED
+        startEventCodes: [ORDER_DELIVERED_EVENT]
+        measurements:
+          - { measurementCode: TIME, type: P }   # planned by DeliveryPlanMeter
+steps: []                                      # the tenant's shared steps, if any
+```
+
+The forms can be mixed: a process in YAML may list shared steps defined in JSON, and a rule can be a lambda or a
+meter. All are loaded at startup and saved by tenant and code.
+
 ### 5. Optional: choose the metadata
 
 By default, the event's entity becomes the metadata of the process and of every step. To keep only what you need,

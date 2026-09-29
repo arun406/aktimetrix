@@ -107,6 +107,7 @@ package's `package-info.java` says which it is.
 
 | Package | Types | Use |
 |---|---|---|
+| `core.definitions` | `Definitions`, `DefinitionsBuilder`, `ProcessBuilder`, `StepBuilder`, `PlanBuilder`, `Planning` | Declare processes and steps in Java, with their planning rules; the shape of a YAML definition file. |
 | `core.stereotypes` | `@Measurement`, `@ProcessHandler`, `@EventHandler`, `@PreProcessor`, `@PostProcessor` | Register your components. |
 | `core.meter.impl`, `core.meter.api` | `AbstractMeter`, `AbstractProcessMeter`, `Meter`, `ProcessMeter` | Compute planned and actual measurements. |
 | `core.api` | `EventMapper`, `PreProcessor`, `PostProcessor`, `Context`, `Timeliness`, `Constants`, `PublishedEvents` | Read your own event format; hook into process creation; read the processing context. |
@@ -132,7 +133,7 @@ In a `Context`, read the event's data with the `Constants` context properties: `
 | `DerivedMetricService` | Computes a process's declared metrics when it completes, from the plan and from the actuals. |
 | `DeadlineAlarms`, `AlarmScheduler` | Keep an alarm at the deadline of each open step and process, and when it fires without the event, mark the step or process `OVERDUE`; an overdue step puts later steps at risk. |
 | `OverdueStepMonitor`, `OverdueProcessMonitor` | A slower sweep for steps and processes past their deadline without an alarm. |
-| `DefinitionLoader` | Loads `aktimetrix/*.json` definitions at startup. |
+| `DefinitionLoader` | Loads definitions at startup: JSON and YAML files under `aktimetrix/`, and `Definitions` beans built with the Java DSL, whose rules it registers as meters. |
 | `ProcessInstancePublisherService`, `StepInstancePublisherService`, `MeasurementInstancePublisherService` | Queue events for the outbound topics in the outbox. |
 | `OutboxRelay` | Publishes queued events to the broker. |
 | `AktimetrixMetrics` | Records the Micrometer metrics. |

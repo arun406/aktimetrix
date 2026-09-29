@@ -529,7 +529,8 @@ discovered at startup.
 
 | Extension point | Purpose | Default when absent |
 |---|---|---|
-| **Meter** | Computes a planned value by a rule, or an actual value, of a measurement in any dimension, for a process or for a step. | Fixed values and durations from the definitions; actual values read from the completing event (`valueFrom`). |
+| **Definitions** | Declare processes, steps, measurements and plans: with the Java DSL, in YAML or in JSON. | None: a monitor needs at least one process. |
+| **Meter** | Computes a planned value by a rule, in a DSL lambda or a component, or an actual value, of a measurement in any dimension, for a process or for a step. | Fixed values and durations from the definitions; actual values read from the completing event (`valueFrom`). |
 | **Process handler** | Chooses the metadata of a process and its steps. | The event's entity becomes the metadata. |
 | **Event mapper** | Reads the source systems' own event format. | Messages are expected in the Aktimetrix envelope. |
 | **Event handler** | Changes how an event is interpreted, such as where its business time is read from. | Generic handling of the envelope. |
@@ -632,47 +633,89 @@ reference project's.
 </dependency>
 ```
 
-**Process definition** in `src/main/resources/aktimetrix/process-definitions.json`: the order, the events that start
-and cancel it, its own measurements and metric, and its steps (abridged):
+**Definitions.** A process is declared as data: the events that start and cancel it, its steps in order, and the
+plans and tolerances of its measurements. The Java DSL declares it in code, with the rules that compute plans next to
+it. Two of the seven steps are shown:
 
-```json
-[{
-  "tenant": "AA", "processCode": "ORDER_DELIVERY", "entityType": "com.ecom.order", "status": "CONFIRMED",
-  "startEventCodes": ["ORDER_CREATED_EVENT"], "cancelEventCodes": ["ORDER_CANCELLED_EVENT"],
-  "measurements": [
-    { "measurementCode": "TIME", "type": "P" },
-    { "measurementCode": "COST", "type": "P", "value": "8", "unit": "EUR", "tolerance": "10%", "worseWhen": "HIGHER" },
-    { "measurementCode": "COST", "type": "A", "valueFrom": "deliveryCost", "unit": "EUR" }
-  ],
-  "metrics": [ { "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" } ],
-  "steps": [ { "stepCode": "CONFIRM" }, { "stepCode": "PAY" }, { "stepCode": "HANDOVER" }, { "stepCode": "ACCEPT" },
-             { "stepCode": "TRAVEL" }, { "stepCode": "DELIVERED" }, { "stepCode": "RATED" } ]
-}]
+```java
+@Configuration
+public class OrderDefinitions {
+
+    @Bean
+    Definitions orderDelivery() {
+        return Definitions.tenant("AA")
+                .process("ORDER_DELIVERY", order -> order
+                        .entityType("com.ecom.order")
+                        .startsOn("ORDER_CREATED_EVENT")
+                        .cancelledOn("ORDER_CANCELLED_EVENT")
+                        // priority customers within one day, others within three: the order's deadline
+                        .planTime(o -> metadataTime(o, "createdAt").plusDays(priority(o.getMetadata()) ? 1 : 3))
+                        .measure("COST", "deliveryCost", cost -> cost.value(8).unit("EUR").tolerance("10%")
+                                .worseWhenHigher())
+                        .metric("FUEL_PER_KM", "FUEL / DISTANCE", m -> m.unit("L/KM").tolerance("10%")
+                                .worseWhenHigher())
+                        // ... CONFIRM, PAY, HANDOVER, ACCEPT
+                        .step("TRAVEL", step -> step
+                                .startsOn("TRAVEL_STARTED_EVENT").endsOn("ARRIVED_EVENT")
+                                .progressOn("LOCATION_UPDATED_EVENT")
+                                .after("ACCEPT").within("PT30M")
+                                .measure("DISTANCE", "route.distanceKm", km -> km.value(5).unit("KM")
+                                        .tolerance("20%").worseWhenHigher())
+                                .measure("FUEL", "fuelLitres", l -> l.value(0.4).unit("L")
+                                        .tolerance("25%").worseWhenHigher()))
+                        .step("DELIVERED", step -> step
+                                .on("DELIVERED_EVENT")
+                                // priority customers within 3 h 15 min of the order, others within 2 days
+                                .planTime(d -> priority(d.getMetadata())
+                                        ? metadataTime(d, "createdAt").plusHours(3).plusMinutes(15)
+                                        : metadataTime(d, "createdAt").plusDays(2)))
+                        // ... RATED
+                )
+                .build();
+    }
+
+    private static boolean priority(Map<String, Object> metadata) {
+        return Boolean.TRUE.equals(metadata.get("priority"));
+    }
+}
 ```
 
-**Step definitions** in `src/main/resources/aktimetrix/step-definitions.json`: the events that complete each step or
-report its progress, and its plans. Fixed values and durations need no code; two of the seven steps:
+`measure` declares a planned value with its tolerance, and where the actual value is read in the event that completes
+the step. `on` names the event of a milestone; `startsOn` and `endsOn` those of a step that takes time;
+`after` and `within` plan a step by duration; `planTime` and `plan` plan it by a rule instead.
 
-```json
-[
-  { "tenant": "AA", "stepCode": "TRAVEL", "status": "CONFIRMED",
-    "startEventCodes": ["TRAVEL_STARTED_EVENT"], "endEventCodes": ["ARRIVED_EVENT"],
-    "progressEventCodes": ["LOCATION_UPDATED_EVENT"], "plannedWithin": "PT3H",
-    "measurements": [
-      { "measurementCode": "DISTANCE", "type": "P", "value": "5", "unit": "KM", "tolerance": "20%", "worseWhen": "HIGHER" },
-      { "measurementCode": "DISTANCE", "type": "A", "valueFrom": "route.distanceKm", "unit": "KM" },
-      { "measurementCode": "FUEL", "type": "P", "value": "0.4", "unit": "L", "tolerance": "25%", "worseWhen": "HIGHER" },
-      { "measurementCode": "FUEL", "type": "A", "valueFrom": "fuelLitres", "unit": "L" } ] },
-  { "tenant": "AA", "stepCode": "RATED", "status": "CONFIRMED", "startEventCodes": ["ORDER_RATED_EVENT"],
-    "optionalInd": "Y",
-    "measurements": [
-      { "measurementCode": "RATING", "type": "P", "value": "5", "unit": "STARS", "tolerance": "1", "worseWhen": "LOWER" },
-      { "measurementCode": "RATING", "type": "A", "valueFrom": "review.stars", "unit": "STARS" } ] }
-]
+The same definitions can be kept as a **YAML file**, `src/main/resources/aktimetrix/order-delivery.yaml`, when they
+are maintained apart from the code; a rule is then a **meter** (below):
+
+```yaml
+tenant: AA
+processes:
+  - processCode: ORDER_DELIVERY
+    entityType: com.ecom.order
+    status: CONFIRMED
+    startEventCodes: [ORDER_CREATED_EVENT]
+    cancelEventCodes: [ORDER_CANCELLED_EVENT]
+    measurements:
+      - { measurementCode: TIME, type: P }                 # planned by a meter
+      - { measurementCode: COST, type: P, value: "8", unit: EUR, tolerance: 10%, worseWhen: HIGHER }
+      - { measurementCode: COST, type: A, valueFrom: deliveryCost, unit: EUR }
+    steps:
+      - stepCode: TRAVEL
+        startEventCodes: [TRAVEL_STARTED_EVENT]
+        endEventCodes: [ARRIVED_EVENT]
+        progressEventCodes: [LOCATION_UPDATED_EVENT]
+        plannedAfter: ACCEPT
+        plannedWithin: PT30M
+        measurements:
+          - { measurementCode: DISTANCE, type: P, value: "5", unit: KM, tolerance: 20%, worseWhen: HIGHER }
+          - { measurementCode: DISTANCE, type: A, valueFrom: route.distanceKm, unit: KM }
 ```
 
-**Meter**, for a step's plan that follows a rule rather than a fixed duration: the delivery step's planned time,
-declared as `{ "measurementCode": "TIME", "type": "P" }` on `DELIVERED`:
+JSON arrays, `aktimetrix/process-definitions.json` and `aktimetrix/step-definitions.json`, hold the same fields.
+Whatever the form, definitions are saved by tenant and code at startup, and a change makes a new revision.
+
+**Meter**, for a rule that needs more than a lambda, such as a call to another service, or for definitions kept in
+YAML or JSON: a component that computes one measurement of a step or of a process.
 
 ```java
 @Component
@@ -686,7 +729,6 @@ public class DeliveryPlanMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        // priority customers within 3 h 15 min of the order, others within 2 days
         boolean priority = Boolean.TRUE.equals(step.getMetadata().get("priority"));
         return String.valueOf(priority
                 ? metadataTime(step, "createdAt").plusHours(3).plusMinutes(15)
@@ -695,28 +737,8 @@ public class DeliveryPlanMeter extends AbstractMeter {
 }
 ```
 
-A **process-level meter** plans the process as a whole. For the rule of §1.1, *priority customers within one day,
-others within three*, declare a planned `TIME` on the process definition,
-`"measurements": [{ "measurementCode": "TIME", "type": "P" }]`, and name the process instead of a step; the planned
-time becomes the process's deadline:
-
-```java
-@Component
-@Measurement(code = "TIME", processCode = "ORDER_DELIVERY")
-public class OrderDeadlineMeter extends AbstractProcessMeter {
-
-    @Override
-    protected String getMeasurementUnit(String tenant, ProcessInstance process) {
-        return "TIMESTAMP";
-    }
-
-    @Override
-    protected String getMeasurementValue(String tenant, ProcessInstance process) {
-        boolean priority = Boolean.TRUE.equals(process.getMetadata().get("priority"));
-        return String.valueOf(metadataTime(process, "createdAt").plusDays(priority ? 1 : 3));
-    }
-}
-```
+A process-level meter extends `AbstractProcessMeter` and names the process instead of a step,
+`@Measurement(code = "TIME", processCode = "ORDER_DELIVERY")`; its planned time becomes the process's deadline.
 
 **Configuration.** The application names its inbound channel and supplies the connection settings of its broker and
 state store: the standard Spring Boot properties of the chosen broker and store, such as Kafka's bootstrap servers and
