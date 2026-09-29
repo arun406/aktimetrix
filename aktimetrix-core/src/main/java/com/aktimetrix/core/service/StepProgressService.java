@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,6 +57,7 @@ public class StepProgressService {
     private final ProcessDefinitionService processDefinitionService;
     private final ProcessInstancePublisherService processInstancePublisherService;
     private final ActualMeasurementService actualMeasurementService;
+    private final DerivedMetricService derivedMetricService;
 
     /**
      * Applies the event to the business entity's process instances that are not cancelled: running ones, and completed
@@ -125,7 +127,9 @@ public class StepProgressService {
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(tenant, processInstance.getId());
         final Map<String, StepDefinition> definitions = definitions(tenant, processInstance.getProcessCode(), steps);
         final List<MeasurementInstance> actuals = new ArrayList<>();
+        final List<MeasurementInstance> readings = new ArrayList<>();
         final List<StepInstance> completed = new ArrayList<>();
+        final boolean wasComplete = processInstance.isComplete();
 
         for (StepInstance step : steps) {
             final StepDefinition definition = definitions.get(step.getStepCode());
@@ -135,6 +139,9 @@ public class StepProgressService {
             }
             final String nextStatus = nextStatus(definition, step.getStatus(), eventCode);
             if (nextStatus == null) {
+                if (isOpen(step) && contains(definition.getProgressEventCodes(), eventCode)) {
+                    readings.addAll(actualMeasurementService.readings(step, definition.getMeasurements(), event));
+                }
                 continue;
             }
             logger.info("Step {} of process instance {}: {} -> {}", step.getStepCode(), processInstance.getId(),
@@ -157,17 +164,21 @@ public class StepProgressService {
                 stepInstanceService.save(planned);
                 stepInstancePublisherService.publish(planned, "PLANNED");
             });
-            forecast(step, step.getPlannedAt() == null ? null : Duration.between(step.getPlannedAt(), occurredAt),
-                    steps, definitions);
+            if (step.getTimeliness() == Timeliness.LATE) {
+                // a step completed within its tolerance delays nothing; a late one delays the steps after it
+                forecast(step, Duration.between(step.getPlannedAt(), occurredAt), steps, definitions);
+            }
         }
 
         if (!actuals.isEmpty()) {
             actuals.addAll(completeProcessIfDone(processInstance, steps, definitions, occurredAt, event));
-            measurementInstanceService.saveMeasurementInstances(actuals);
-            DefaultContext context = new DefaultContext();
-            context.setTenant(tenant);
-            context.setMeasurementInstances(actuals);
-            measurementInstancePublisherService.postProcess(context);
+        }
+        actuals.addAll(readings);
+        if (!actuals.isEmpty()) {
+            saveAndPublish(tenant, actuals);
+        }
+        if (!wasComplete && processInstance.isComplete()) {
+            actuals.addAll(recordMetrics(processInstance));
         }
         return actuals;
     }
@@ -194,13 +205,24 @@ public class StepProgressService {
 
     private void forecast(StepInstance source, Duration delay, List<StepInstance> steps,
                           Map<String, StepDefinition> definitions) {
-        stepPlanner.forecast(source, delay, steps, definitions).forEach(atRisk -> {
+        final Map<StepInstance, LocalDateTime> expectedBefore = new IdentityHashMap<>();
+        steps.forEach(step -> expectedBefore.put(step, step.getExpectedAt()));
+        final List<StepInstance> newlyAtRisk = stepPlanner.forecast(source, delay, steps, definitions);
+        newlyAtRisk.forEach(atRisk -> {
             logger.warn("Step {} of process instance {} is at risk: expected at {}, after its deadline {}",
                     atRisk.getStepCode(), atRisk.getProcessInstanceId(), atRisk.getExpectedAt(), atRisk.getLateAfter());
             stepInstanceService.save(atRisk);
             stepInstancePublisherService.publish(atRisk, Timeliness.AT_RISK.name());
             metrics.stepAtRisk(atRisk);
         });
+        // a step already at risk whose forecast moved later: keep and republish the new expected time
+        steps.stream()
+                .filter(step -> !newlyAtRisk.contains(step) && step.getTimeliness() == Timeliness.AT_RISK)
+                .filter(step -> !Objects.equals(expectedBefore.get(step), step.getExpectedAt()))
+                .forEach(step -> {
+                    stepInstanceService.save(step);
+                    stepInstancePublisherService.publish(step, Timeliness.AT_RISK.name());
+                });
     }
 
     /**
@@ -338,22 +360,17 @@ public class StepProgressService {
         final Map<String, StepDefinition> definitions = definitions(processInstance.getTenant(),
                 processInstance.getProcessCode(), steps);
         for (StepInstance step : steps) {
-            final boolean open = Constants.STATUS_CREATED.equals(step.getStatus())
-                    || Constants.STATUS_STARTED.equals(step.getStatus());
-            if (open && !isOptional(definitions.get(step.getStepCode()))) {
+            if (isOpen(step) && !isOptional(definitions.get(step.getStepCode()))) {
                 step.setStatus(Constants.STATUS_SKIPPED);
                 stepInstanceService.save(step);
                 stepInstancePublisherService.publish(step, "SKIPPED");
             }
         }
-        final List<MeasurementInstance> actuals = complete(processInstance, definition, occurredAt, event);
+        final List<MeasurementInstance> actuals = new ArrayList<>(complete(processInstance, definition, occurredAt, event));
         if (!actuals.isEmpty()) {
-            measurementInstanceService.saveMeasurementInstances(actuals);
-            final DefaultContext context = new DefaultContext();
-            context.setTenant(processInstance.getTenant());
-            context.setMeasurementInstances(actuals);
-            measurementInstancePublisherService.postProcess(context);
+            saveAndPublish(processInstance.getTenant(), actuals);
         }
+        actuals.addAll(recordMetrics(processInstance));
         return actuals;
     }
 
@@ -375,6 +392,30 @@ public class StepProgressService {
         metrics.processCompleted(processInstance);
         return definition == null ? List.of()
                 : actualMeasurementService.forProcess(processInstance, definition.getMeasurements(), event);
+    }
+
+    /**
+     * The metrics of a process that has just completed, computed from all its measurements, saved and published.
+     */
+    private List<MeasurementInstance> recordMetrics(ProcessInstance processInstance) {
+        final List<MeasurementInstance> results = derivedMetricService.compute(processInstance,
+                processDefinitionService.findByCode(processInstance.getTenant(), processInstance.getProcessCode()));
+        if (!results.isEmpty()) {
+            saveAndPublish(processInstance.getTenant(), results);
+        }
+        return results;
+    }
+
+    private void saveAndPublish(String tenant, List<MeasurementInstance> measurements) {
+        measurementInstanceService.saveMeasurementInstances(measurements);
+        final DefaultContext context = new DefaultContext();
+        context.setTenant(tenant);
+        context.setMeasurementInstances(measurements);
+        measurementInstancePublisherService.postProcess(context);
+    }
+
+    private static boolean isOpen(StepInstance step) {
+        return Constants.STATUS_CREATED.equals(step.getStatus()) || Constants.STATUS_STARTED.equals(step.getStatus());
     }
 
     private static boolean isOptional(StepDefinition definition) {

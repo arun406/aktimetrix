@@ -8,8 +8,9 @@
 ## Run the reference project
 
 The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) is a complete Aktimetrix
-application: it monitors order delivery (placed → shipped within 2 hours → delivered within 10 hours). You need
-**JDK 11+** and **Docker**.
+application: it monitors the order delivery process of the [worked example](../README.md#11-a-worked-example-order-delivery),
+seven steps from order confirmation to the customer's rating, in time, distance, fuel, temperature, cost and rating.
+You need **JDK 11+** and **Docker**.
 
 ```bash
 # 1. Build and install the framework (it is not on Maven Central yet)
@@ -23,20 +24,18 @@ docker compose up -d
 ./mvnw spring-boot:run
 ```
 
-In a second terminal, send order `1234`'s events and check on it after each one:
+In a second terminal, send order `1234`'s ten events one at a time, and check on it after each one:
 
 ```bash
 send() { docker compose exec -T kafka /opt/kafka/bin/kafka-console-producer.sh \
            --bootstrap-server localhost:9092 --topic order-events < "events/$1"; }
+where() { curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'; }
 
-send order-placed.json
-curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'   # SHIP planned 01:46, DELIVER 09:46
-
-send order-shipped.json
-curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'   # SHIP ON_TIME
-
-send order-delivered.json
-curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'   # DELIVER LATE, process Completed
+send 01-order-created.json; where      # seven steps planned; DELIVERED by 12:15, the order by tomorrow 09:00
+send 02-order-confirmed.json; where    # CONFIRM ON_TIME
+# … and so on, up to
+send 09-delivered.json; where          # DELIVERED LATE, 40 °C instead of 30; the order Completed, ON_TIME
+send 10-rated.json; where              # 4 stars instead of 5, within tolerance
 ```
 
 The reference project's README explains each result, and `./mvnw test` runs the same story against an embedded
@@ -44,7 +43,9 @@ Kafka and an in-memory MongoDB, with no Docker needed.
 
 ## Build a monitor step by step
 
-This section builds the order monitor from scratch.
+This section builds a smaller version of the same order monitor from scratch: an order is created, confirmed, paid
+and delivered, and a priority customer's order must be delivered sooner. The reference project adds the other steps
+and measurements the same way.
 
 ### 1. Add the dependency
 
@@ -92,9 +93,9 @@ order:
     "processCode": "ORDER_DELIVERY",
     "processName": "Order delivery",
     "entityType": "com.ecom.order",
-    "startEventCodes": ["ORDER_PLACED_EVENT"],
+    "startEventCodes": ["ORDER_CREATED_EVENT"],
     "status": "CONFIRMED",
-    "steps": [ { "stepCode": "PLACE" }, { "stepCode": "SHIP" }, { "stepCode": "DELIVER" } ]
+    "steps": [ { "stepCode": "CONFIRM" }, { "stepCode": "PAY" }, { "stepCode": "DELIVERED" } ]
   }
 ]
 ```
@@ -103,12 +104,11 @@ order:
 
 ```json
 [
-  { "tenant": "AA", "stepCode": "PLACE", "status": "CONFIRMED",
-    "startEventCodes": ["ORDER_PLACED_EVENT"] },
-  { "tenant": "AA", "stepCode": "SHIP", "status": "CONFIRMED",
-    "startEventCodes": ["ORDER_SHIPPED_EVENT"],
-    "measurements": [ { "measurementCode": "TIME", "type": "P" } ] },
-  { "tenant": "AA", "stepCode": "DELIVER", "status": "CONFIRMED",
+  { "tenant": "AA", "stepCode": "CONFIRM", "status": "CONFIRMED",
+    "startEventCodes": ["ORDER_CONFIRMED_EVENT"] },
+  { "tenant": "AA", "stepCode": "PAY", "status": "CONFIRMED",
+    "startEventCodes": ["PAYMENT_CONFIRMED_EVENT"] },
+  { "tenant": "AA", "stepCode": "DELIVERED", "status": "CONFIRMED",
     "startEventCodes": ["ORDER_DELIVERED_EVENT"],
     "measurements": [ { "measurementCode": "TIME", "type": "P" } ] }
 ]
@@ -128,12 +128,12 @@ The simplest plans need no code. Give a step a duration, from the process start 
 and optionally a tolerance:
 
 ```json
-{ "tenant": "AA", "stepCode": "DELIVER", "status": "CONFIRMED",
-  "startEventCodes": ["ORDER_DELIVERED_EVENT"],
-  "plannedAfter": "SHIP", "plannedWithin": "PT8H", "tolerance": "PT30M" }
+{ "tenant": "AA", "stepCode": "PAY", "status": "CONFIRMED",
+  "startEventCodes": ["PAYMENT_CONFIRMED_EVENT"],
+  "plannedAfter": "CONFIRM", "plannedWithin": "PT15M", "tolerance": "PT5M" }
 ```
 
-`DELIVER` is then planned 8 hours after the order actually ships, and counts as late 30 minutes after that.
+`PAY` is then planned 15 minutes after the order is actually confirmed, and counts as late 5 minutes after that.
 
 Time is only one measurement. A fixed plan for any other one needs no code either, for example a planned rating
 with a tolerance, compared with the actual rating read from the event that completes the step:
@@ -149,13 +149,14 @@ For plans computed by rules, such as a shorter delivery for priority customers, 
 
 #### Meters
 
-A meter computes a step's planned time in code, for example from business hours or a customer's service level.
-`@Measurement(code, stepCode)` must match a planned measurement in the step's definition. The step's metadata holds what you need, here the order time:
+A meter computes a plan in code, for example from business hours or a customer's service level.
+`@Measurement(code, stepCode)` must match a planned measurement in the step's definition. The step's metadata holds
+what you need, here when the order was created and whether the customer is a priority customer:
 
 ```java
 @Component
-@Measurement(code = "TIME", stepCode = "SHIP")
-public class OrderShippedPlanTimeMeter extends AbstractMeter {
+@Measurement(code = "TIME", stepCode = "DELIVERED")
+public class DeliveryPlanMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementUnit(String tenant, StepInstance step) {
@@ -164,13 +165,17 @@ public class OrderShippedPlanTimeMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        // orders should ship within 2 hours of being placed
-        return String.valueOf(metadataTime(step, "orderedOn").plusHours(2));
+        // priority customers within 3 h 15 min of the order, others within 2 days
+        boolean priority = Boolean.TRUE.equals(step.getMetadata().get("priority"));
+        return String.valueOf(priority
+                ? metadataTime(step, "createdAt").plusHours(3).plusMinutes(15)
+                : metadataTime(step, "createdAt").plusDays(2));
     }
 }
 ```
 
-Write one meter per planned step (`OrderDeliveredPlanTimeMeter` returns *ordered + 10 h*). A planned `TIME` must be an
+Write one meter per plan that follows a rule; for the order as a whole, extend `AbstractProcessMeter` and name
+`processCode` instead of `stepCode`. A planned `TIME` must be an
 ISO-8601 local date-time, which `String.valueOf(LocalDateTime)` produces. `metadataTime` reads a date-time from the
 metadata whether it is stored as a `LocalDateTime`, a `Date`, or a string.
 
@@ -202,7 +207,7 @@ public class OrderProcessor extends AbstractProcessor {
     @Override
     protected Map<String, Object> getStepMetadata(Context context) {
         Order order = objectMapper.convertValue(context.getProperty(Constants.ENTITY), Order.class);
-        return Map.of("orderId", order.getOrderId(), "orderedOn", order.getOrderedOn());
+        return Map.of("orderId", order.getOrderId(), "priority", order.isPriority(), "createdAt", order.getCreatedAt());
     }
 }
 ```
@@ -210,18 +215,18 @@ public class OrderProcessor extends AbstractProcessor {
 ### 6. Optional: read the event time from the entity
 
 A step's actual time is when its event *happened*. Aktimetrix reads it from the event envelope. If your events carry
-it inside the entity instead, for example `"shippedAt"`, add an event handler for that event code and override
+it inside the entity instead, for example `"deliveredAt"`, add an event handler for that event code and override
 `occurredAt`:
 
 ```java
 @Component
-@EventHandler(eventType = "ORDER_SHIPPED_EVENT")
-public class OrderShippedEventHandler extends AbstractMilestoneEventHandler {
+@EventHandler(eventType = "ORDER_DELIVERED_EVENT")
+public class OrderDeliveredEventHandler extends AbstractMilestoneEventHandler {
 
     @Override
     protected LocalDateTime occurredAt(Event<?, ?> event) {
         Map<?, ?> order = (Map<?, ?>) event.getEntity();
-        return LocalDateTime.parse(order.get("shippedAt").toString(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return LocalDateTime.parse(order.get("deliveredAt").toString(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 }
 ```
@@ -238,16 +243,16 @@ publish events in another format, keep it and declare an `EventMapper` instead: 
 ```json
 {
   "tenantKey": "AA",
-  "eventId": "51541182-81fa-4727-afd5-114acdf086b1",
+  "eventId": "00000000-0000-0000-0000-000012340000",
   "eventType": "ORDER",
-  "eventCode": "ORDER_PLACED_EVENT",
-  "eventName": "Order placed",
-  "eventTime": "2022-05-22T23:46:00.000+0000",
-  "eventUTCTime": "2022-05-22 23:46:00",
+  "eventCode": "ORDER_CREATED_EVENT",
+  "eventName": "Order created",
+  "eventTime": "2024-03-01T09:00:00.000+0000",
+  "eventUTCTime": "2024-03-01 09:00:00",
   "source": "shop",
   "entityType": "com.ecom.order",
   "entityId": "1234",
-  "entity": { "orderId": "1234", "orderedOn": "2022-05-22 23:46:00", "customerId": "1" },
+  "entity": { "orderId": "1234", "createdAt": "2024-03-01 09:00:00", "customerId": "C-42", "priority": true },
   "eventDetails": {}
 }
 ```

@@ -67,10 +67,10 @@ document describes the model, its execution semantics and its reliability guaran
 
 ## 1. Introduction
 
-A long-running business process is a sequence of milestones that happen in different systems, often owned by
-different teams or organisations. An e-commerce order is placed in a shop, shipped by a warehouse and delivered by
-a carrier. A loan is submitted in a portal, checked by a credit bureau, approved by an underwriter and disbursed by
-core banking.
+A long-running business process is a sequence of milestones that happen in different systems, often owned by different
+teams or organisations. An e-commerce order is created in a shop, paid through a payment provider, handed over by a
+warehouse and delivered by a courier. A loan is submitted in a portal, checked by a credit bureau, approved by an
+underwriter and disbursed by core banking.
 
 Each of these systems already announces what it did, as a business event. What is missing is the layer that joins
 those events into a single account of each entity and compares it with what was supposed to happen. Without it,
@@ -116,13 +116,14 @@ Every actual value is compared with its plan. At step level, the route was 12 km
 instead of 0.4 and kept the parcel at 40 °C instead of 30, all outside their tolerances; the customer gave four stars
 instead of five, within tolerance; four steps ran late. At process level, the order was still delivered well within
 its one-day promise, but cost €9.50 instead of €8: the two levels answer different questions. From these
-measurements follow the **metrics** a business steers by: the share of steps on time, distance over plan, fuel per
-kilometre, the average rating, per order and across all orders. Time is one measurement among these, with one extra
+measurements follow the **metrics** a business steers by: per order, such as its fuel per kilometre, and across all
+orders, such as the share of steps on time or how far routes run over plan. Time is one measurement among these, with one extra
 role: because a plan says *when* a step should happen, the runtime can also raise an alarm while a step is **at risk**
 or **overdue**, before anyone has measured anything.
 
 The rest of this paper describes the model behind this example (§3), how the runtime executes it (§4), how it is built
-and kept reliable (§5–§6), and how an application adapts and observes it (§7–§8).
+and kept reliable (§5–§6), how an application adapts and observes it (§7–§8), and the reference implementation that
+realises it (§9).
 
 ## 2. Design goals
 
@@ -173,6 +174,9 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `F
 - **Actual.** An **actual** (`A`) value is recorded when the step or process completes: read from the event that
   completed it (the distance on the delivery confirmation, the rating on the review) or computed by a meter. The
   actual time of a step is always recorded: it is when its event happened.
+- **Readings in progress.** A step that takes time, such as the journey to the customer, can also report
+  **interim readings** while it is open, on progress events (*location updated: 8 km so far*). Each is compared with
+  the plan at once, so a deviation shows before the step ends; the final actual is recorded when it completes.
 - **Comparison.** Each actual value is compared with the planned value of the same measurement: the **deviation**
   is actual minus planned (+7 km), and, when the measurement declares a **tolerance** (2 km, or 20 %), the actual is
   **within** or **outside** tolerance. Plan, actual and comparison are stored and published together.
@@ -181,9 +185,12 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `F
   `OVERDUE` when the deadline passes without its event. A process with a deadline of its own is watched the same way
   ([§4.3](#43-comparing-plan-and-actual)).
 
-**Metrics** are computed from the measurements: by the runtime for the whole population (how many actuals were
-within tolerance, the distribution of deviations, the lateness of steps, [§8](#8-observability)), and by consumers of
-the published measurement events for anything domain-specific, such as fuel per kilometre.
+**Metrics** are computed from the measurements. A process declares its own, as arithmetic over measurement codes,
+such as *fuel per kilometre = FUEL / DISTANCE*: when the process completes, each code stands for the sum of that
+measurement's final values across the process and its steps, and the metric is computed from the plan and from the
+actuals and compared like any measurement. The runtime also reports metrics for the whole population, such as how
+many actuals were within tolerance and the distribution of deviations ([§8](#8-observability)); anything else can
+be computed by consumers of the published measurement events.
 
 ### 3.3 Plans at two levels: process and step
 
@@ -199,10 +206,10 @@ and are measured at different moments:
 | **Time** | the process's own deadline, e.g. *within 1 day*: judged `ON_TIME` or `LATE` at completion, `OVERDUE` if it passes first | the step's planned time: `ON_TIME` or `LATE`, and `AT_RISK` or `OVERDUE` before it happens |
 | **Example** | delivered within 1 day; cost €8 | journey of 5 km using 0.4 litres; parcel at 30 °C at most; five-star rating |
 
-The two levels are **independent**. A process-level measurement is not computed from its steps: the order's total
-distance is not the sum of its steps' distances, and a late step does not make the order late (in the example, four
-steps ran late but the order was on time). When a value at process level should follow from the steps, it is
-reported on the event that completes the process, or computed by a meter from the metadata.
+The two levels are **independent**. A process-level measurement is not derived from its steps: a late step does not
+make the order late (in the example, four steps ran late but the order was on time), and the order's cost is its own
+figure. When a value at process level should follow from the steps, declare it as a **metric** of the process: the
+order's total distance is `DISTANCE`, the sum over its steps; its fuel per kilometre is `FUEL / DISTANCE`.
 
 Choosing the level follows from *when the value is known*. The order's cost is reported with the delivery, which
 completes the order, so it belongs to the process. The customer's rating arrives after the order has completed, so it
@@ -210,8 +217,9 @@ belongs to an optional step: a completed process still records its optional step
 
 ### 3.4 Metadata
 
-Instances carry **metadata**: key/value pairs taken from the domain, such as an order's id, customer and order time.
-Metadata is the input to planning (a meter reads the order time to compute the delivery deadline) and travels with
+Instances carry **metadata**: key/value pairs taken from the domain, such as an order's id, when it was created and
+whether its customer is a priority customer. Metadata is the input to planning (a meter reads the creation time and
+the priority to compute the delivery deadline) and travels with
 every published result, so consumers do not need to query the source systems.
 
 ### 3.5 Business events
@@ -232,12 +240,12 @@ need to adopt it: an **event mapper** translates each system's own messages into
 
 ## 4. Execution semantics
 
-Every business event passes through the same four stages. The figures in this section follow the order of the
-[reference project](#92-running-the-example), a shorter version of the example in §1.1: *placed → shipped →
-delivered*.
+The runtime works in four stages: the first three are driven by each business event, the fourth by the clock. The
+figures in this section follow order 1234 of §1.1,
+which the [reference project](#92-running-the-example) implements.
 
 <p align="center">
-  <img src="./img/sequence.svg" alt="Sequence of an order being placed and then shipped" width="100%">
+  <img src="./img/sequence.svg" alt="Sequence of order 1234 being created and planned, then arriving at the customer" width="100%">
 </p>
 
 1. **Start.** If the event's code is one of a process's start events, a process instance and its step instances
@@ -246,7 +254,8 @@ delivered*.
    **deadline**: the planned time plus its tolerance.
 3. **Record.** The event is applied to every process instance of the entity that is not cancelled. Steps that list it
    are started or completed; a completed step records its actual measurements, starting with its time, and each is
-   compared with its plan. When the process completes, implicitly or by an end event, it records its own.
+   compared with its plan; an event that reports progress records interim readings of the step it concerns. When the
+   process completes, implicitly or by an end event, it records its own measurements and computes its metrics.
 4. **Watch.** Independently of events, monitors look for steps and processes whose deadline has passed without the
    event that completes them.
 
@@ -256,7 +265,7 @@ delivered*.
 
 | | Implicit | Explicit |
 |---|---|---|
-| **Start** | a business event that is also the first milestone, e.g. *order booked*: it starts the process and completes its first step | a dedicated event, e.g. *order fulfilment started*, raised by whichever system decides that monitoring begins |
+| **Start** | a business event with its own meaning, e.g. *order created*; it can also complete the first step | a dedicated event, e.g. *order fulfilment started*, raised by whichever system decides that monitoring begins |
 | **End** | the last mandatory step completes, e.g. *order delivered* | a dedicated event, e.g. *order closed* after the returns window: the process completes on it, whatever its steps |
 
 A process definition lists its start events and, optionally, its end and cancel events. Without end events, a process
@@ -326,10 +335,12 @@ The distinction between `LATE` and `OVERDUE` matters in practice. `LATE` is know
 
 When a step completes late, the delay is propagated: each later step receives an **expected time**, its planned time
 shifted by the same delay. A step whose expected time falls after its deadline becomes `AT_RISK` and is published as
-such before its own deadline passes, which gives operators time to intervene.
+such before its own deadline passes, which gives operators time to intervene. A step that is already overdue delays
+the later steps in the same way, by as long as it has been overdue; each time a further delay moves a forecast later,
+the step is published again with its new expected time.
 
 <p align="center">
-  <img src="./img/order-timeline.svg" alt="Planned and actual timeline of order 1234" width="100%">
+  <img src="./img/order-timeline.svg" alt="Planned, forecast and actual times of the steps of order 1234" width="100%">
 </p>
 
 ### 4.5 Published events
@@ -344,18 +355,20 @@ querying the state store.
 | `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
 | `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, the process and step it belongs to, and for an actual its `plannedValue`, `deviation` and `conformance` | measurement instance id |
 
-A step becoming overdue, for example, is published as:
+When order 1234 is finally handed to the delivery agent at 11:40, 40 minutes late, the forecast of its delivery step
+moves to 12:55, after its 12:15 deadline, and the step is published as at risk:
 
 ```json
 {
-  "eventId": "7f0c2a52-…", "eventType": "Step_Event", "eventCode": "OVERDUE",
-  "eventTime": "2022-05-23T10:47:00.000+0000", "tenantKey": "AA",
-  "entityType": "com.aktimetrix.step.instance", "entityId": "628b0f3c9d2a4e1f5c3b7a91",
+  "eventId": "7f0c2a52-…", "eventType": "Step_Event", "eventCode": "AT_RISK",
+  "eventTime": "2024-03-01T11:40:00.000+0000", "tenantKey": "AA",
+  "entityType": "com.aktimetrix.step.instance", "entityId": "65e1a8c09d2a4e1f5c3b7a91",
   "entity": {
-    "id": "628b0f3c9d2a4e1f5c3b7a91", "processInstanceId": "628b0f3c9d2a4e1f5c3b7a8e", "tenant": "AA",
-    "stepCode": "DELIVER", "sequence": 2, "status": "Created",
-    "plannedAt": "2022-05-23T09:46:00", "lateAfter": "2022-05-23T10:46:00", "actualAt": null,
-    "timeliness": "OVERDUE", "metadata": { "orderId": "1234", "orderedOn": "2022-05-22T23:46:00" }
+    "id": "65e1a8c09d2a4e1f5c3b7a91", "processInstanceId": "65e1a8c09d2a4e1f5c3b7a8a", "tenant": "AA",
+    "stepCode": "DELIVERED", "sequence": 5, "status": "Created",
+    "plannedAt": "2024-03-01T12:15:00", "lateAfter": "2024-03-01T12:15:00", "expectedAt": "2024-03-01T12:55:00",
+    "actualAt": null, "timeliness": "AT_RISK",
+    "metadata": { "orderId": "1234", "priority": true, "createdAt": "2024-03-01T09:00:00" }
   }
 }
 ```
@@ -459,8 +472,9 @@ The runtime reports its own behaviour and the health of the monitored processes 
 
 Together they answer operational questions directly, without a separate analytics pipeline: *what share of
 deliveries were late this week? How often was the route longer than planned, and by how much?* Metrics specific to a
-domain, such as fuel per kilometre or the average rating per region, are computed by consumers of the published
-measurement events, which carry the plan, the actual and the deviation together.
+domain, such as fuel per kilometre, are declared on the process and published with each order; aggregations beyond
+these, such as the average rating per region, are computed by consumers of the published measurement events, which
+carry the plan, the actual and the deviation together.
 
 ## 9. Reference implementation
 
@@ -484,10 +498,9 @@ bindings is part of the [roadmap](#11-status-and-roadmap).
 
 ### 9.2 Running the example
 
-The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) reference project monitors
-a shorter version of the order of §1.1, *placed → shipped → delivered*, against the rule *"an order ships within 2
-hours of being placed and is delivered within 10 hours"*. It needs **JDK 11+**
-and **Docker**, which starts a local message broker and state store.
+The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) reference project implements
+the order of §1.1 end to end, with ten sample events from *order created* to *rated*; its test checks every figure of
+§1.1. It needs **JDK 11+** and **Docker**, which starts a local message broker and state store.
 
 ```bash
 git clone https://github.com/arun406/aktimetrix.git
@@ -499,8 +512,8 @@ docker compose up -d                               # local message broker and st
 ./mvnw spring-boot:run
 ```
 
-The project's README shows how to send the sample events for order `1234` and follow the order through the query
-API:
+The project's README shows how to send the sample events for order `1234`, one at a time, and follow the order
+through the query API:
 
 ```bash
 curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'
@@ -521,35 +534,52 @@ reference project's.
 </dependency>
 ```
 
-**Process definition** in `src/main/resources/aktimetrix/process-definitions.json`:
+**Process definition** in `src/main/resources/aktimetrix/process-definitions.json`: the order, the events that start
+and cancel it, its own measurements and metric, and its steps (abridged):
 
 ```json
 [{
   "tenant": "AA", "processCode": "ORDER_DELIVERY", "entityType": "com.ecom.order", "status": "CONFIRMED",
-  "startEventCodes": ["ORDER_PLACED_EVENT"],
-  "steps": [{ "stepCode": "PLACE" }, { "stepCode": "SHIP" }, { "stepCode": "DELIVER" }]
+  "startEventCodes": ["ORDER_CREATED_EVENT"], "cancelEventCodes": ["ORDER_CANCELLED_EVENT"],
+  "measurements": [
+    { "measurementCode": "TIME", "type": "P" },
+    { "measurementCode": "COST", "type": "P", "value": "8", "unit": "EUR", "tolerance": "10%", "worseWhen": "HIGHER" },
+    { "measurementCode": "COST", "type": "A", "valueFrom": "deliveryCost", "unit": "EUR" }
+  ],
+  "metrics": [ { "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" } ],
+  "steps": [ { "stepCode": "CONFIRM" }, { "stepCode": "PAY" }, { "stepCode": "HANDOVER" }, { "stepCode": "ACCEPT" },
+             { "stepCode": "TRAVEL" }, { "stepCode": "DELIVERED" }, { "stepCode": "RATED" } ]
 }]
 ```
 
-**Step definitions** in `src/main/resources/aktimetrix/step-definitions.json`: the event that completes each step,
-and its plan. A fixed duration needs no code.
+**Step definitions** in `src/main/resources/aktimetrix/step-definitions.json`: the events that complete each step or
+report its progress, and its plans. Fixed values and durations need no code; two of the seven steps:
 
 ```json
 [
-  { "tenant": "AA", "stepCode": "PLACE",   "status": "CONFIRMED", "startEventCodes": ["ORDER_PLACED_EVENT"] },
-  { "tenant": "AA", "stepCode": "SHIP",    "status": "CONFIRMED", "startEventCodes": ["ORDER_SHIPPED_EVENT"],
-    "plannedWithin": "PT2H", "tolerance": "PT15M" },
-  { "tenant": "AA", "stepCode": "DELIVER", "status": "CONFIRMED", "startEventCodes": ["ORDER_DELIVERED_EVENT"],
-    "measurements": [{ "measurementCode": "TIME", "type": "P" }] }
+  { "tenant": "AA", "stepCode": "TRAVEL", "status": "CONFIRMED",
+    "startEventCodes": ["TRAVEL_STARTED_EVENT"], "endEventCodes": ["ARRIVED_EVENT"],
+    "progressEventCodes": ["LOCATION_UPDATED_EVENT"], "plannedWithin": "PT3H",
+    "measurements": [
+      { "measurementCode": "DISTANCE", "type": "P", "value": "5", "unit": "KM", "tolerance": "20%", "worseWhen": "HIGHER" },
+      { "measurementCode": "DISTANCE", "type": "A", "valueFrom": "route.distanceKm", "unit": "KM" },
+      { "measurementCode": "FUEL", "type": "P", "value": "0.4", "unit": "L", "tolerance": "25%", "worseWhen": "HIGHER" },
+      { "measurementCode": "FUEL", "type": "A", "valueFrom": "fuelLitres", "unit": "L" } ] },
+  { "tenant": "AA", "stepCode": "RATED", "status": "CONFIRMED", "startEventCodes": ["ORDER_RATED_EVENT"],
+    "optionalInd": "Y",
+    "measurements": [
+      { "measurementCode": "RATING", "type": "P", "value": "5", "unit": "STARS", "tolerance": "1", "worseWhen": "LOWER" },
+      { "measurementCode": "RATING", "type": "A", "valueFrom": "review.stars", "unit": "STARS" } ] }
 ]
 ```
 
-**Meter**, for a step's plan computed by a rule rather than fixed:
+**Meter**, for a step's plan that follows a rule rather than a fixed duration: the delivery step's planned time,
+declared as `{ "measurementCode": "TIME", "type": "P" }` on `DELIVERED`:
 
 ```java
 @Component
-@Measurement(code = "TIME", stepCode = "DELIVER")
-public class DeliveryPlanTimeMeter extends AbstractMeter {
+@Measurement(code = "TIME", stepCode = "DELIVERED")
+public class DeliveryPlanMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementUnit(String tenant, StepInstance step) {
@@ -558,8 +588,11 @@ public class DeliveryPlanTimeMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        // orders are delivered within 10 hours of being placed
-        return String.valueOf(metadataTime(step, "orderedOn").plusHours(10));
+        // priority customers within 3 h 15 min of the order, others within 2 days
+        boolean priority = Boolean.TRUE.equals(step.getMetadata().get("priority"));
+        return String.valueOf(priority
+                ? metadataTime(step, "createdAt").plusHours(3).plusMinutes(15)
+                : metadataTime(step, "createdAt").plusDays(2));
     }
 }
 ```
@@ -608,7 +641,7 @@ expectations about them: when they happen, and what they measure.
 
 | Domain | Entity | Milestones |
 |---|---|---|
-| E-commerce | Order | placed → shipped → delivered |
+| E-commerce | Order | created → paid → handed over → delivered → rated |
 | Retail banking | Loan application | submitted → KYC → credit check → approved → disbursed |
 | Air cargo | Air waybill | booked → accepted → departed → arrived → delivered |
 | Customer service | Ticket | opened → acknowledged → resolved |
@@ -641,9 +674,9 @@ published events feed dashboards, process-mining datasets or stream jobs.
   attempts of a step are not modelled.
 - **One run per entity.** There is one instance of a process per tenant, process and entity. A second run for the
   same entity, for example a re-delivery, needs a different entity id or process.
-- **No roll-up between levels.** Process-level values are not computed from step-level values, such as a total
-  distance from the distances of each step; they are reported by the event that completes the process, or computed
-  by a meter.
+- **Metrics at completion.** A process's metrics are computed once, when it completes, from sums of its
+  measurements; values recorded afterwards, such as a later rating, are not included, and the expressions are plain
+  arithmetic.
 - **Definitions are not versioned.** Changing a definition affects instances that are already running.
 - **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
 - **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
@@ -666,6 +699,7 @@ still change.
 - [x] Process cancellation, implicit or explicit end, and a deadline for the whole process, set by duration or rule
 - [x] Planned and actual values in any user-defined dimension, at process and step level, compared with deviation and tolerance
 - [x] Source systems keep their own event format, through an event mapper
+- [x] Interim readings while a step is in progress, and metrics declared from several measurements
 - [x] Query API for the state of an entity
 - [x] Reliable publication through a transactional outbox, with atomic writes on transactional stores
 - [x] Safe concurrency across instances, a dead-letter channel, and indexes created at startup
@@ -693,15 +727,16 @@ still change.
 | Term | Meaning |
 |---|---|
 | **Business entity** | The real-world object followed, such as an order; identified by entity type and entity id. |
-| **Business event** | A message from a source system saying something happened to an entity, such as *order shipped*. |
+| **Business event** | A message from a source system saying something happened to an entity, such as *order delivered*. |
 | **Process definition** | The declaration of a business process: its steps in order, the events that start, end and cancel it, and optionally its own deadline and measurements. |
 | **Step definition** | The declaration of a milestone: the events that start and complete it, its plan, tolerance and measurements. Shared by a tenant's processes, and adaptable per process. |
 | **Process instance** / **step instance** | A process, or one of its steps, for one business entity. |
 | **Measurement** | A user-defined dimension observed at a process or step, such as time, distance or rating. |
-| **Planned** / **actual** (`P` / `A`) | What a measurement should be, set when the instance is created; and what it was, recorded when it completes. |
+| **Planned** / **actual** (`P` / `A`) | What a measurement should be, set when the instance is created; and what it was, recorded when it completes, or read as an interim reading while it is in progress. |
 | **Deviation** | Actual minus planned value of a measurement. |
 | **Tolerance** / **conformance** | How far an actual may deviate from its plan; and whether it did (`WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`). |
-| **Metric** | A figure computed from measurements, for one entity or across all of them, such as the share of steps on time or fuel per kilometre. |
+| **Metric** | A figure computed from measurements: declared on a process as arithmetic over its measurements, such as fuel per kilometre, and compared with the same figure computed from the plan; or reported by the runtime across all entities, such as the share within tolerance. |
+| **Interim reading** | A value of a step's measurement reported while the step is still in progress, compared with the plan at once. |
 | **Meter** | Application code that computes a planned or actual measurement, typically a planning rule. |
 | **Metadata** | Domain data kept on an instance, such as an order's customer, used by meters and passed to consumers. |
 | **Deadline** | The planned time plus the tolerance: the moment after which a step or process is late. |

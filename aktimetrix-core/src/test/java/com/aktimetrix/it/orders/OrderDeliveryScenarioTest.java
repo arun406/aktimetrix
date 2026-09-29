@@ -26,6 +26,7 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.util.function.BooleanSupplier;
@@ -70,7 +71,8 @@ class OrderDeliveryScenarioTest {
 
     /**
      * A priority customer's order, created at 09:00. Rules plan it: the order within 1 day, the delivery step within
-     * 4 hours. Time is compared on every step; distance and fuel while travelling, the parcel's temperature on
+     * 4 hours. A location update reports the distance half-way through the journey, and the order's fuel per km is
+     * computed from its steps' measurements when it completes. Time is compared on every step; distance and fuel while travelling, the parcel's temperature on
      * delivery, and the customer's rating the next morning, after the order completed, are compared with their plans.
      */
     @Test
@@ -82,6 +84,7 @@ class OrderDeliveryScenarioTest {
         send("HANDED_TO_AGENT", "2024-03-01 11:40:00", null);
         send("AGENT_ACCEPTED", "2024-03-01 11:50:00", null);
         send("TRAVEL_STARTED", "2024-03-01 11:55:00", null);
+        send("LOCATION_UPDATED", "2024-03-01 12:20:00", "{\"route\":{\"distanceKm\":8}}");
         send("ARRIVED", "2024-03-01 12:45:00", "{\"route\":{\"distanceKm\":12},\"fuelLitres\":1.0}");
         send("DELIVERED", "2024-03-01 12:55:00", "{\"parcelTemperatureC\":40,\"deliveryCost\":9.5}");
 
@@ -111,6 +114,20 @@ class OrderDeliveryScenarioTest {
         assertThat(cost.getStepInstanceId()).as("process level").isNull();
         assertThat(cost.getDeviation()).isEqualTo("1.5");
         assertThat(cost.getConformance()).isEqualTo(Conformance.OUT_OF_TOLERANCE);
+        // half-way through the journey, a location update already showed the route over plan
+        MeasurementInstance reading = mongo.findAll(MeasurementInstance.class).stream()
+                .filter(MeasurementInstance::isInterim).findFirst().orElseThrow();
+        assertThat(reading.getCode()).isEqualTo("DISTANCE");
+        assertThat(reading.getValue()).isEqualTo("8");
+        assertThat(reading.getDeviation()).isEqualTo("3");
+        assertThat(reading.getConformance()).isEqualTo(Conformance.OUT_OF_TOLERANCE);
+        // the order's fuel per km, computed from the step measurements: 1.0 L / 12 km against 0.4 L / 5 km
+        MeasurementInstance fuelPerKm = mongo.findAll(MeasurementInstance.class).stream()
+                .filter(m -> "FUEL_PER_KM".equals(m.getCode())).findFirst().orElseThrow();
+        assertThat(fuelPerKm.getDerivedFrom()).isEqualTo("FUEL / DISTANCE");
+        assertThat(new BigDecimal(fuelPerKm.getValue())).isEqualByComparingTo("0.08333333333333333");
+        assertThat(fuelPerKm.getPlannedValue()).isEqualTo("0.08");
+        assertThat(fuelPerKm.getConformance()).isEqualTo(Conformance.WITHIN_TOLERANCE);
         // rated the next morning, after the order completed: one star below plan, within tolerance
         assertActual("RATED", "RATING", "-1", Conformance.WITHIN_TOLERANCE);
     }
@@ -125,7 +142,8 @@ class OrderDeliveryScenarioTest {
 
     private void assertActual(String step, String code, String deviation, Conformance conformance) {
         MeasurementInstance actual = mongo.findAll(MeasurementInstance.class).stream()
-                .filter(m -> step.equals(m.getStepCode()) && code.equals(m.getCode()) && "A".equals(m.getType()))
+                .filter(m -> step.equals(m.getStepCode()) && code.equals(m.getCode()) && "A".equals(m.getType())
+                        && !m.isInterim())
                 .findFirst().orElseThrow(() -> new AssertionError("no actual " + code + " for " + step));
         assertThat(actual.getDeviation()).as(step + " " + code).isEqualTo(deviation);
         assertThat(actual.getConformance()).as(step + " " + code).isEqualTo(conformance);
