@@ -1,0 +1,259 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/arun406/aktimetrix/schemas/measurement-event.schema.json",
+  "title": "Measurement_Event",
+  "description": "A measurement was recorded: published on measurement-instance-out-0, keyed by process instance id.",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "eventCode",
+    "eventName",
+    "eventTime",
+    "source",
+    "tenantKey",
+    "entityType",
+    "entityId",
+    "entity",
+    "eventDetails"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "description": "Unique; consumers de-duplicate on it."
+    },
+    "eventType": {
+      "const": "Measurement_Event"
+    },
+    "eventCode": {
+      "enum": [
+        "PLANNED",
+        "RECORDED",
+        "READING",
+        "METRIC"
+      ]
+    },
+    "eventName": {
+      "type": "string"
+    },
+    "eventTime": {
+      "type": "string",
+      "description": "When Aktimetrix published the event (yyyy-MM-dd'T'HH:mm:ss.SSSZ)."
+    },
+    "eventUTCTime": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The same, in UTC (yyyy-MM-dd HH:mm:ss)."
+    },
+    "source": {
+      "const": "aktimetrix"
+    },
+    "tenantKey": {
+      "type": "string"
+    },
+    "entityType": {
+      "const": "com.aktimetrix.measurement.instance"
+    },
+    "entityId": {
+      "type": "string",
+      "description": "Id of the instance the event is about."
+    },
+    "entity": {
+      "type": "object",
+      "required": [
+        "id",
+        "tenant",
+        "processInstanceId",
+        "code",
+        "type",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "tenant": {
+          "type": "string"
+        },
+        "processInstanceId": {
+          "type": "string"
+        },
+        "stepInstanceId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stepCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "P",
+            "A"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "measuredAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "plannedValue": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deviation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conformance": {
+          "enum": [
+            "WITHIN_TOLERANCE",
+            "OUT_OF_TOLERANCE",
+            null
+          ]
+        },
+        "interim": {
+          "type": "boolean"
+        },
+        "derivedFrom": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "measuredOn": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "metadata": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Domain data kept on the instance, chosen by the process handler."
+        }
+      }
+    },
+    "eventDetails": {
+      "type": "object",
+      "description": "Where the event belongs and why it happened.",
+      "required": [
+        "schemaVersion",
+        "occurredAt",
+        "processInstanceId"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1"
+        },
+        "businessEntity": {
+          "type": "object",
+          "required": [
+            "entityId"
+          ],
+          "properties": {
+            "entityType": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "entityId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "description": "The business entity the process follows, e.g. an order."
+        },
+        "processCode": {
+          "type": "string"
+        },
+        "processInstanceId": {
+          "type": "string"
+        },
+        "definitionRevision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Revision of the process definition the instance follows."
+        },
+        "stepCode": {
+          "type": "string"
+        },
+        "stepInstanceId": {
+          "type": "string"
+        },
+        "revision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Revision of the process or step instance after the change; higher is more recent."
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+          "description": "When the change happened in the business."
+        },
+        "cause": {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "EVENT",
+                "DEADLINE"
+              ]
+            },
+            "eventId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "eventCode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "description": "The business event, by id and code, or the deadline check that caused the change."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

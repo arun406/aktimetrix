@@ -8,9 +8,11 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
 import com.aktimetrix.it.ParcelMonitor;
+import com.aktimetrix.it.support.EventSchemas;
 import com.aktimetrix.it.support.TestBroker;
 import com.aktimetrix.it.support.TestMonitor;
 import com.aktimetrix.it.support.TestStore;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -114,6 +117,46 @@ public abstract class OrderDeliveryScenario {
         assertThat(fuelPerKm.getConformance()).isEqualTo(Conformance.WITHIN_TOLERANCE);
         // rated the next morning, after the order completed: one star below plan, within tolerance
         assertActual("RATED", "RATING", "-1", Conformance.WITHIN_TOLERANCE);
+
+        assertPublishedEventsAreStructured();
+    }
+
+    /**
+     * Every published event is valid against its schema, and tells which order and process it belongs to, and which
+     * business event caused it.
+     */
+    private void assertPublishedEventsAreStructured() {
+        final List<JsonNode> events = new ArrayList<>();
+        // wait for the last event of each channel: the order completed, then rated
+        for (String[] channel : new String[][]{{"process-instance-out-0", "\"eventCode\":\"COMPLETED\"", ""},
+                {"step-instance-out-0", "\"eventCode\":\"COMPLETED\"", "\"stepCode\":\"RATED\""},
+                {"measurement-instance-out-0", "\"eventCode\":\"RECORDED\"", "\"code\":\"RATING\""}}) {
+            broker.received(channel[0], messages -> messages.stream().anyMatch(m -> m.contains(channel[1])
+                            && m.contains(channel[2]) && m.contains("\"entityId\":\"1234\"")))
+                    .forEach(message -> events.add(EventSchemas.assertValid(message)));
+        }
+        final List<JsonNode> order = new ArrayList<>();
+        events.forEach(e -> {
+            if ("1234".equals(e.at("/eventDetails/businessEntity/entityId").asText())) {
+                order.add(e);
+            }
+        });
+        assertThat(order).extracting(e -> e.path("eventType").asText())
+                .contains("Process_Event", "Step_Event", "Measurement_Event");
+        order.forEach(e -> {
+            assertThat(e.at("/eventDetails/processCode").asText()).isEqualTo("ORDER_DELIVERY");
+            assertThat(e.at("/eventDetails/definitionRevision").isIntegralNumber()).isTrue();
+        });
+        // the TRAVEL step completed on ARRIVED, at 12:45 in the business
+        final JsonNode travelled = order.stream()
+                .filter(e -> "Step_Event".equals(e.path("eventType").asText()) && "COMPLETED".equals(e.path("eventCode").asText())
+                        && "TRAVEL".equals(e.at("/entity/stepCode").asText()))
+                .findFirst().orElseThrow();
+        assertThat(travelled.at("/eventDetails/cause/eventCode").asText()).isEqualTo("ARRIVED");
+        assertThat(travelled.at("/eventDetails/occurredAt").asText()).isEqualTo("2024-03-01T12:45:00");
+        // the order's measurement events say what kind they are
+        assertThat(order.stream().filter(e -> "Measurement_Event".equals(e.path("eventType").asText()))
+                .map(e -> e.path("eventCode").asText())).contains("PLANNED", "RECORDED", "READING", "METRIC");
     }
 
     /**

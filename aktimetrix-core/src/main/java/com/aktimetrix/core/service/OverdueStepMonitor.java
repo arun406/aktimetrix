@@ -4,6 +4,7 @@ import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.store.StepInstanceStore;
+import com.aktimetrix.core.transferobjects.EventContext.Cause;
 import com.aktimetrix.core.store.AktimetrixTransactions;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ public class OverdueStepMonitor {
     private final StepProgressService stepProgressService;
     private final Clock clock;
     private final AktimetrixTransactions transactions;
+    private static final Cause DEADLINE = new Cause(Cause.DEADLINE, null, null);
 
     /**
      * @return the steps marked overdue by this check
@@ -52,12 +54,12 @@ public class OverdueStepMonitor {
             try {
                 // read the step again: marking an earlier step overdue may have changed it, e.g. put it at risk
                 final AtomicReference<StepInstance> marked = new AtomicReference<>();
-                transactions.run(() -> stepInstanceStore.findById(found.getId())
+                ProcessingContext.run(DEADLINE, now, () -> transactions.run(() -> stepInstanceStore.findById(found.getId())
                         .filter(current -> isStillOverdue(current, now))
                         .ifPresent(current -> {
                             stepProgressService.markOverdue(current, now);
                             marked.set(current);
-                        }));
+                        })));
                 if (marked.get() != null) {
                     overdue.add(marked.get());
                 }

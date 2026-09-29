@@ -1,77 +1,73 @@
 package com.aktimetrix.core.impl;
 
 import com.aktimetrix.core.api.EventGenerator;
+import com.aktimetrix.core.api.PublishedEvents;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.referencedata.model.ProcessDefinition;
+import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.transferobjects.Event;
+import com.aktimetrix.core.transferobjects.EventContext;
 import com.aktimetrix.core.transferobjects.StepInstanceDTO;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.UUID;
-
+/**
+ * Generates a {@code Step_Event}: the step instance, and its {@link EventContext}.
+ */
 public class StepEventGenerator implements EventGenerator {
 
     private final StepInstance stepInstance;
     private final String eventCode;
-
-    public StepEventGenerator(StepInstance stepInstance) {
-        this(stepInstance, "CREATED");
-    }
+    private final EventContext context;
+    private final ProcessDefinition definition;
 
     /**
-     * @param eventCode what happened to the step: CREATED, STARTED, COMPLETED or OVERDUE
+     * @param eventCode  what happened to the step; see {@link PublishedEvents.Step}
+     * @param definition the definition the step's process follows, for the step's name; may be {@code null}
      */
-    public StepEventGenerator(StepInstance stepInstance, String eventCode) {
+    public StepEventGenerator(StepInstance stepInstance, String eventCode, EventContext context,
+                              ProcessDefinition definition) {
         this.stepInstance = stepInstance;
         this.eventCode = eventCode;
+        this.context = context;
+        this.definition = definition;
     }
 
-    /**
-     * Generate the Events
-     *
-     * @return Event
-     */
     @Override
-    public Event<StepInstanceDTO, Void> generate() {
-        return getStepEvent(this.stepInstance);
+    public Event<StepInstanceDTO, EventContext> generate() {
+        return EventEnvelopes.envelope(stepInstance.getTenant(), PublishedEvents.Step.TYPE,
+                PublishedEvents.Step.ENTITY_TYPE, eventCode, "Step", stepInstance.getId(),
+                dto(stepInstance, definition), context);
     }
 
-    private Event<StepInstanceDTO, Void> getStepEvent(StepInstance instance) {
-        Event<StepInstanceDTO, Void> event = new Event<>();
-        event.setEventId(UUID.randomUUID().toString());
-        event.setEventType("Step_Event");
-        event.setEventCode(eventCode);
-        event.setEventName("Step Instance " + eventCode + " Event");
-        event.setEventTime(ZonedDateTime.now());
-        event.setEventUTCTime(LocalDateTime.now(ZoneOffset.UTC));
-        event.setEntityId(String.valueOf(instance.getId()));
-        event.setEntityType("com.aktimetrix.step.instance");
-        event.setSource("ProcessManager");
-        event.setTenantKey(instance.getTenant());
-        event.setEntity(getStepInstanceDTO(instance));
-        return event;
-    }
-
-    static StepInstanceDTO getStepInstanceDTO(StepInstance instance) {
+    static StepInstanceDTO dto(StepInstance instance, ProcessDefinition definition) {
+        final StepDefinition step = stepDefinition(definition, instance.getStepCode());
         return StepInstanceDTO.builder()
-                .id(instance.getId().toString())
+                .id(instance.getId())
                 .tenant(instance.getTenant())
+                .processInstanceId(instance.getProcessInstanceId())
+                .stepCode(instance.getStepCode())
+                .stepName(step == null ? null : step.getStepName())
+                .optional(step != null && "Y".equalsIgnoreCase(step.getOptionalInd()))
+                .sequence(instance.getSequence())
                 .status(instance.getStatus())
                 .functionalCtx(instance.getFunctionalCtx())
                 .groupCode(instance.getGroupCode())
                 .version(instance.getVersion())
-                .stepCode(instance.getStepCode())
                 .locationCode(instance.getLocationCode())
                 .metadata(instance.getMetadata())
-                .processInstanceId(instance.getProcessInstanceId().toString())
                 .createdOn(instance.getCreatedOn())
                 .plannedAt(instance.getPlannedAt())
                 .lateAfter(instance.getLateAfter())
                 .expectedAt(instance.getExpectedAt())
-                .sequence(instance.getSequence())
                 .actualAt(instance.getActualAt())
                 .timeliness(instance.getTimeliness())
                 .build();
+    }
+
+    private static StepDefinition stepDefinition(ProcessDefinition definition, String stepCode) {
+        if (definition == null || definition.getSteps() == null) {
+            return null;
+        }
+        return definition.getSteps().stream().filter(s -> s != null && stepCode.equals(s.getStepCode()))
+                .findFirst().orElse(null);
     }
 }

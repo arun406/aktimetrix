@@ -1,0 +1,408 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/arun406/aktimetrix/schemas/process-event.schema.json",
+  "title": "Process_Event",
+  "description": "Something happened to a process instance: published on process-instance-out-0, keyed by process instance id.",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "eventCode",
+    "eventName",
+    "eventTime",
+    "source",
+    "tenantKey",
+    "entityType",
+    "entityId",
+    "entity",
+    "eventDetails"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "description": "Unique; consumers de-duplicate on it."
+    },
+    "eventType": {
+      "const": "Process_Event"
+    },
+    "eventCode": {
+      "enum": [
+        "CREATED",
+        "COMPLETED",
+        "CANCELLED",
+        "OVERDUE"
+      ]
+    },
+    "eventName": {
+      "type": "string"
+    },
+    "eventTime": {
+      "type": "string",
+      "description": "When Aktimetrix published the event (yyyy-MM-dd'T'HH:mm:ss.SSSZ)."
+    },
+    "eventUTCTime": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The same, in UTC (yyyy-MM-dd HH:mm:ss)."
+    },
+    "source": {
+      "const": "aktimetrix"
+    },
+    "tenantKey": {
+      "type": "string"
+    },
+    "entityType": {
+      "const": "com.aktimetrix.process.instance"
+    },
+    "entityId": {
+      "type": "string",
+      "description": "Id of the instance the event is about."
+    },
+    "entity": {
+      "type": "object",
+      "required": [
+        "id",
+        "tenant",
+        "processCode",
+        "entityId",
+        "status",
+        "complete"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "tenant": {
+          "type": "string"
+        },
+        "processCode": {
+          "type": "string"
+        },
+        "processName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "definitionRevision": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "entityType": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "entityId": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "Created",
+            "Completed",
+            "Cancelled"
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "startedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+          "description": "Local date-time in aktimetrix.time-zone."
+        },
+        "plannedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+          "description": "Local date-time in aktimetrix.time-zone."
+        },
+        "lateAfter": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+          "description": "Local date-time in aktimetrix.time-zone."
+        },
+        "endedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+          "description": "Local date-time in aktimetrix.time-zone."
+        },
+        "timeliness": {
+          "enum": [
+            "ON_TIME",
+            "LATE",
+            "AT_RISK",
+            "OVERDUE",
+            null
+          ]
+        },
+        "metadata": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Domain data kept on the instance, chosen by the process handler."
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "processInstanceId",
+              "stepCode",
+              "sequence",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "processInstanceId": {
+                "type": "string"
+              },
+              "tenant": {
+                "type": "string"
+              },
+              "stepCode": {
+                "type": "string"
+              },
+              "stepName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "status": {
+                "enum": [
+                  "Created",
+                  "Started",
+                  "Completed",
+                  "Skipped",
+                  "Cancelled"
+                ]
+              },
+              "plannedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+                "description": "Local date-time in aktimetrix.time-zone."
+              },
+              "lateAfter": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+                "description": "Local date-time in aktimetrix.time-zone."
+              },
+              "expectedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+                "description": "Local date-time in aktimetrix.time-zone."
+              },
+              "actualAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+                "description": "Local date-time in aktimetrix.time-zone."
+              },
+              "timeliness": {
+                "enum": [
+                  "ON_TIME",
+                  "LATE",
+                  "AT_RISK",
+                  "OVERDUE",
+                  null
+                ]
+              },
+              "metadata": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Domain data kept on the instance, chosen by the process handler."
+              },
+              "createdOn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+                "description": "Local date-time in aktimetrix.time-zone."
+              },
+              "functionalCtx": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "groupCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "locationCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "categoryCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subCategoryCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "type": "integer"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "valid": {
+          "type": "boolean"
+        }
+      }
+    },
+    "eventDetails": {
+      "type": "object",
+      "description": "Where the event belongs and why it happened.",
+      "required": [
+        "schemaVersion",
+        "occurredAt",
+        "processInstanceId"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1"
+        },
+        "businessEntity": {
+          "type": "object",
+          "required": [
+            "entityId"
+          ],
+          "properties": {
+            "entityType": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "entityId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "description": "The business entity the process follows, e.g. an order."
+        },
+        "processCode": {
+          "type": "string"
+        },
+        "processInstanceId": {
+          "type": "string"
+        },
+        "definitionRevision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Revision of the process definition the instance follows."
+        },
+        "stepCode": {
+          "type": "string"
+        },
+        "stepInstanceId": {
+          "type": "string"
+        },
+        "revision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Revision of the process or step instance after the change; higher is more recent."
+        },
+        "occurredAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+          "description": "When the change happened in the business."
+        },
+        "cause": {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "EVENT",
+                "DEADLINE"
+              ]
+            },
+            "eventId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "eventCode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "description": "The business event, by id and code, or the deadline check that caused the change."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

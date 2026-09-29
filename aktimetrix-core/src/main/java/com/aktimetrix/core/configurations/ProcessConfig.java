@@ -8,9 +8,12 @@ import com.aktimetrix.core.exception.EventHandlerNotFoundException;
 import com.aktimetrix.core.exception.MultipleEventHandlerFoundException;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.service.AktimetrixMetrics;
+import com.aktimetrix.core.service.ProcessingContext;
 import com.aktimetrix.core.service.RegistryService;
+import com.aktimetrix.core.service.StepProgressService;
 import com.aktimetrix.core.store.AktimetrixTransactions;
 import com.aktimetrix.core.transferobjects.Event;
+import com.aktimetrix.core.transferobjects.EventContext.Cause;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.function.Consumer;
 
 /**
@@ -43,6 +47,8 @@ public class ProcessConfig {
     private Outbox outbox;
     @Autowired
     private AktimetrixProperties properties;
+    @Autowired
+    private Clock clock;
 
     @Bean
     public Consumer<Message<?>> processor() {
@@ -66,7 +72,10 @@ public class ProcessConfig {
                 return;
             }
             try {
-                transactions.run(() -> eventHandler(event.getEventCode()).handle(event));
+                // every event published while handling it records it as their cause, and its business time
+                final Cause cause = new Cause(Cause.EVENT, event.getEventId(), event.getEventCode());
+                ProcessingContext.run(cause, StepProgressService.occurredAt(event, clock),
+                        () -> transactions.run(() -> eventHandler(event.getEventCode()).handle(event)));
                 metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "handled");
             } catch (RuntimeException e) {
                 metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "failed");

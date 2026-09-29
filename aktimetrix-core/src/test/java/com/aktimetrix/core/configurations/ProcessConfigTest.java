@@ -117,6 +117,7 @@ class ProcessConfigTest {
         ReflectionTestUtils.setField(config, "transactions", transactions);
         ReflectionTestUtils.setField(config, "outbox", outbox);
         ReflectionTestUtils.setField(config, "properties", properties);
+        ReflectionTestUtils.setField(config, "clock", java.time.Clock.systemUTC());
         return config.processor();
     }
 }
