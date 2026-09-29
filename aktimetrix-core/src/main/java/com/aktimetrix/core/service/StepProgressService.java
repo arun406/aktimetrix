@@ -227,6 +227,14 @@ public class StepProgressService {
      * {@code eventUTCTime}, else the time it is processed.
      */
     public LocalDateTime occurredAt(Event<?, ?> event) {
+        return occurredAt(event, clock);
+    }
+
+    /**
+     * When the event happened in the business, in the clock's time zone: {@code eventTime} if present, else
+     * {@code eventUTCTime}, else now.
+     */
+    public static LocalDateTime occurredAt(Event<?, ?> event, Clock clock) {
         if (event.getEventTime() != null) {
             return event.getEventTime().withZoneSameInstant(clock.getZone()).toLocalDateTime();
         }

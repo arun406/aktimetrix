@@ -104,11 +104,12 @@ The overdue monitor is a `@Scheduled` task, so Aktimetrix enables Spring's sched
 | Binding | Direction | Messages |
 |---|---|---|
 | `processor-in-0` (`aktimetrix.events.topic`) | in | Your business events; see [the event format](getting-started.md#the-event-format). |
-| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps, `plannedAt`, `lateAfter`, `endedAt`, `timeliness` and `definitionRevision`, keyed by process instance id. |
-| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED` (`AT_RISK` again whenever its forecast moves later): a step with its `plannedAt`, `lateAfter`, `expectedAt`, `actualAt` and `timeliness`, keyed by step instance id. |
-| `measurement-instance-out-0` | out | `Measurement_Event` / `CREATED`: a planned (`P`) or actual (`A`) measurement, keyed by measurement instance id. |
+| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps. |
+| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED` (`AT_RISK` again whenever its forecast moves later): a step instance. |
+| `measurement-instance-out-0` | out | `Measurement_Event` / `PLANNED`, `RECORDED`, `READING` or `METRIC`: a planned value, a final actual, an interim reading, or a process metric. |
 | `dead-letter-out-0` (`aktimetrix.events.dead-letter.topic`) | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
+Every event is keyed by its process instance id, so all events of one process, whatever their type, stay in order.
 With Kafka, each binding is a topic of the same name, and the key is the record key. With RabbitMQ, each outbound
 binding is a topic exchange of the same name, and the key is the routing key: bind a queue to it with `#` to receive
 everything. A dashboard or alerting service subscribes to `step-instance-out-0` and acts on `AT_RISK` and `OVERDUE`,
@@ -156,15 +157,39 @@ check, and an event is retried. The in-memory store is not shared between instan
 
 ## Published event payloads
 
-Every outbound message is an [event envelope](getting-started.md#the-event-format) whose `entity` is the instance
-that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventType`, `eventCode`, `eventTime`,
-`tenantKey`, `entityType` and `entityId` (the instance id, also the message key).
+Every outbound message has three parts: the envelope, the `entity`, which is the instance that changed, and the
+context, in `eventDetails`. The [white paper](../README.md#45-published-events) describes the event catalogue. JSON
+Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/aktimetrix/schemas/`:
+`process-event.schema.json`, `step-event.schema.json` and `measurement-event.schema.json`.
+
+**Envelope**
+
+| Field | Meaning |
+|---|---|
+| `eventId` | Unique id of the event; de-duplicate on it. |
+| `eventType`, `eventCode`, `eventName` | `Process_Event`, `Step_Event` or `Measurement_Event`; what happened, from the catalogue; and the same for people, e.g. `Step at risk`. |
+| `eventTime`, `eventUTCTime` | When Aktimetrix published the event, in UTC. The business time of the change is `eventDetails.occurredAt`. |
+| `source` | `aktimetrix`. |
+| `tenantKey` | The tenant. |
+| `entityType`, `entityId` | The kind of instance (`com.aktimetrix.process.instance`, `…step.instance` or `…measurement.instance`) and its id. |
+
+**Context** (`eventDetails`)
+
+| Field | Meaning |
+|---|---|
+| `schemaVersion` | `1`. |
+| `businessEntity` | `entityType` and `entityId` of the business entity the process follows, e.g. `com.ecom.order` `1234`. |
+| `processCode`, `processInstanceId`, `definitionRevision` | The process, its instance, and the revision of the definition it follows. |
+| `stepCode`, `stepInstanceId` | The step, for step events and step measurements. |
+| `revision` | The revision of the process or step instance after the change: of two events about one instance, the higher is the more recent. |
+| `occurredAt` | When the change happened in the business, in `aktimetrix.time-zone`: the time of the business event that caused it, or of the deadline check. |
+| `cause` | `type` `EVENT`, with the `eventId` and `eventCode` of the business event; or `type` `DEADLINE`, for a change made by the overdue monitors. |
 
 **`Process_Event`** (`entityType` `com.aktimetrix.process.instance`)
 
 | Field | Meaning |
 |---|---|
-| `id`, `tenant`, `processCode`, `entityType`, `entityId` | The process instance, and the business entity it follows. |
+| `id`, `tenant`, `processCode`, `processName`, `entityType`, `entityId` | The process instance, its name, and the business entity it follows. |
 | `status` | `Created`, `Completed` or `Cancelled`. |
 | `complete` | `true` once completed or cancelled. |
 | `startedAt` | Business time of the event that started it. |
@@ -179,7 +204,8 @@ that changed. The envelope sets `eventId` (unique; de-duplicate on it), `eventTy
 
 | Field | Meaning |
 |---|---|
-| `id`, `processInstanceId`, `tenant`, `stepCode`, `sequence` | The step instance, its process, and its position from 0. |
+| `id`, `processInstanceId`, `tenant`, `stepCode`, `stepName`, `sequence` | The step instance, its process, its name, and its position from 0. |
+| `optional` | Whether the process can complete without it. |
 | `status` | `Created`, `Started`, `Completed`, `Skipped` or `Cancelled`. |
 | `plannedAt`, `lateAfter` | When it should happen, and its deadline (planned plus tolerance). |
 | `expectedAt` | Forecast, when an earlier step ran late. |
