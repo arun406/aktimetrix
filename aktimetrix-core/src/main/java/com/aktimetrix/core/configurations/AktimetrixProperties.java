@@ -68,6 +68,10 @@ public class AktimetrixProperties {
          * Location of the step definitions: a JSON array.
          */
         private String steps = "classpath*:aktimetrix/step-definitions.json";
+        /**
+         * Locations of YAML definition files, comma-separated: each holds a tenant's steps and processes.
+         */
+        private String files = "classpath*:aktimetrix/*.yaml,classpath*:aktimetrix/*.yml";
     }
 
     @Data
