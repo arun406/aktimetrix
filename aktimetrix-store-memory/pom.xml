@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>aktimetrix</artifactId>
+        <groupId>com.aktimetrix</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>aktimetrix-store-memory</artifactId>
+    <name>Aktimetrix In-Memory Store</name>
+    <description>An in-memory Aktimetrix state store, for tests, demos and trying Aktimetrix out: state is lost when the
+        application stops, and it is not shared between instances.</description>
+    <dependencies>
+        <dependency>
+            <groupId>com.aktimetrix</groupId>
+            <artifactId>aktimetrix-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+    </dependencies>
+</project>
