@@ -348,30 +348,63 @@ the step is published again with its new expected time.
 
 ### 4.5 Published events
 
-Every change the runtime makes is published as an event of its own, in the same envelope as inbound events, with the
-changed instance as its `entity`. Consumers such as dashboards, alerting and analytics subscribe to these instead of
-querying the state store.
+Every change the runtime makes is published as an event of its own. Consumers such as dashboards, alerting and
+analytics subscribe to these instead of querying the state store. Each event has three parts:
 
-| Event type | Event codes | Entity | Keyed by |
-|---|---|---|---|
-| `Process_Event` | `CREATED`, `COMPLETED`, `CANCELLED`, `OVERDUE` | the process instance: status, `startedAt`, `plannedAt`, `lateAfter`, `endedAt`, `timeliness`, `definitionRevision`, metadata, and its steps | process instance id |
-| `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
-| `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, the process and step it belongs to, and for an actual its `plannedValue`, `deviation` and `conformance` | measurement instance id |
+| Part | Holds | Answers |
+|---|---|---|
+| **Envelope** | `eventId`, `eventType`, `eventCode`, `eventName`, `eventTime`, `source` (`aktimetrix`), `tenantKey`, and the instance it is about: `entityType`, `entityId` | *What happened, and to which instance?* |
+| **Entity** | The process, step or measurement instance after the change | *What is its state now?* |
+| **Context** (`eventDetails`) | `schemaVersion`; the `businessEntity` (e.g. order 1234); `processCode`, `processInstanceId` and `definitionRevision`; for a step or its measurement, `stepCode` and `stepInstanceId`; the instance's `revision` after the change; `occurredAt`, the business time of the change; and its `cause`: the business event, by `eventId` and `eventCode`, or the deadline check | *Which entity and process does it belong to, when did it happen in the business, and why?* |
+
+With the context, a consumer can relate any step or measurement to its order without a lookup, apply changes in the
+order of their `revision`, and trace every change back to the business event that caused it. The event codes form a
+fixed catalogue:
+
+| Event type | Event code | Published when |
+|---|---|---|
+| `Process_Event` | `CREATED` | a start event created the process instance and its steps, and they were planned |
+| | `COMPLETED` | the process completed: implicitly with its last mandatory step, or on an end event |
+| | `CANCELLED` | a cancel event cancelled the process and its open steps |
+| | `OVERDUE` | the process's own deadline passed before it completed |
+| `Step_Event` | `CREATED` | the step was created with its process |
+| | `PLANNED` | the step got its planned time, when the step it is planned after completed |
+| | `STARTED` | a step with end events was started by one of its start events |
+| | `COMPLETED` | the step completed, and was judged `ON_TIME` or `LATE` |
+| | `AT_RISK` | an earlier delay pushed its forecast past its deadline; again whenever the forecast moves later |
+| | `OVERDUE` | its deadline passed before it completed |
+| | `SKIPPED`, `CANCELLED` | its process ended explicitly, or was cancelled, while it was open |
+| `Measurement_Event` | `PLANNED` | a planned value was set, for the process or a step |
+| | `RECORDED` | a final actual value was recorded and compared with its plan |
+| | `READING` | an interim reading of a step in progress was compared with its plan |
+| | `METRIC` | a metric of the process was computed from its measurements |
+
+All events of one process instance, whatever their type, carry the process instance id as their message key, so a
+consumer receives them in order. A JSON Schema of each event type ships with the reference implementation, and every
+event published in its end-to-end tests is validated against it.
 
 When order 1234 is finally handed to the delivery agent at 11:40, 40 minutes late, the forecast of its delivery step
 moves to 12:55, after its 12:15 deadline, and the step is published as at risk:
 
 ```json
 {
-  "eventId": "7f0c2a52-…", "eventType": "Step_Event", "eventCode": "AT_RISK",
-  "eventTime": "2024-03-01T11:40:00.000+0000", "tenantKey": "AA",
+  "eventId": "7f0c2a52-…", "eventType": "Step_Event", "eventCode": "AT_RISK", "eventName": "Step at risk",
+  "eventTime": "2024-03-01T11:40:02.114+0000", "source": "aktimetrix", "tenantKey": "AA",
   "entityType": "com.aktimetrix.step.instance", "entityId": "65e1a8c09d2a4e1f5c3b7a91",
   "entity": {
     "id": "65e1a8c09d2a4e1f5c3b7a91", "processInstanceId": "65e1a8c09d2a4e1f5c3b7a8a", "tenant": "AA",
-    "stepCode": "DELIVERED", "sequence": 5, "status": "Created",
+    "stepCode": "DELIVERED", "stepName": "Delivered", "optional": false, "sequence": 5, "status": "Created",
     "plannedAt": "2024-03-01T12:15:00", "lateAfter": "2024-03-01T12:15:00", "expectedAt": "2024-03-01T12:55:00",
     "actualAt": null, "timeliness": "AT_RISK",
     "metadata": { "orderId": "1234", "priority": true, "createdAt": "2024-03-01T09:00:00" }
+  },
+  "eventDetails": {
+    "schemaVersion": "1",
+    "businessEntity": { "entityType": "com.ecom.order", "entityId": "1234" },
+    "processCode": "ORDER_DELIVERY", "processInstanceId": "65e1a8c09d2a4e1f5c3b7a8a", "definitionRevision": 1,
+    "stepCode": "DELIVERED", "stepInstanceId": "65e1a8c09d2a4e1f5c3b7a91", "revision": 2,
+    "occurredAt": "2024-03-01T11:40:00",
+    "cause": { "type": "EVENT", "eventId": "0000…0004", "eventCode": "HANDED_TO_AGENT_EVENT" }
   }
 }
 ```

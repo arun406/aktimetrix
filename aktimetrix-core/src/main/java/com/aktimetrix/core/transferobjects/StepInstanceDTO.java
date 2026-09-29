@@ -19,6 +19,14 @@ public class StepInstanceDTO implements Serializable {
     private String id;
     private String processInstanceId;
     private String stepCode;
+    /**
+     * Name of the step, from its definition.
+     */
+    private String stepName;
+    /**
+     * Whether the process can complete without the step.
+     */
+    private boolean optional;
     private String locationCode;
     private String groupCode;
     private String status;
