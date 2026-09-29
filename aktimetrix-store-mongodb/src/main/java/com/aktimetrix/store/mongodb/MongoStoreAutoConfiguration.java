@@ -2,6 +2,7 @@ package com.aktimetrix.store.mongodb;
 
 import com.aktimetrix.core.configurations.AktimetrixProperties;
 import com.aktimetrix.core.store.AktimetrixTransactions;
+import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
@@ -67,6 +68,11 @@ public class MongoStoreAutoConfiguration {
     @Bean
     public OutboxStore aktimetrixOutboxStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
         return new MongoOutboxStore(mongoTemplate);
+    }
+
+    @Bean
+    public AlarmStore aktimetrixAlarmStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
+        return new MongoAlarmStore(mongoTemplate);
     }
 
     @Bean

@@ -58,12 +58,16 @@ aktimetrix:
 | `aktimetrix.events.group` | `aktimetrix` | Consumer group of the inbound business events. |
 | `aktimetrix.events.dead-letter.enabled` | `true` | Send events that cannot be processed to a dead-letter topic instead of dropping them. |
 | `aktimetrix.events.dead-letter.topic` | *events topic*`.dlq` | The dead-letter topic. |
-| `aktimetrix.time-zone` | `UTC` | Zone of all planned and actual times. Event times are converted to it, and the overdue monitor compares planned times with the current time in it. |
+| `aktimetrix.time-zone` | `UTC` | Zone of all planned and actual times. Event times are converted to it, and alarms compare deadlines with the current time in it. |
 | `aktimetrix.definitions.load-on-startup` | `true` | Load process and step definitions from the classpath at startup. |
 | `aktimetrix.definitions.processes` | `classpath*:aktimetrix/process-definitions.json` | Location of the process definitions: a JSON array. |
 | `aktimetrix.definitions.steps` | `classpath*:aktimetrix/step-definitions.json` | Location of the step definitions: a JSON array. |
-| `aktimetrix.monitor.enabled` | `true` | Run the overdue monitor. |
-| `aktimetrix.monitor.overdue-check-interval` | `PT1M` | How often to look for overdue steps and processes, as an ISO-8601 duration. |
+| `aktimetrix.alarms.enabled` | `true` | Fire the alarms set at the deadlines of steps and processes. Alarms are set whatever this is, so an instance that does not fire them still keeps them up to date. |
+| `aktimetrix.alarms.check-interval` | `PT5S` | How often to look for alarms that are due, as an ISO-8601 duration: at most this long after its deadline, a step or process without its event is marked overdue. |
+| `aktimetrix.alarms.batch-size` | `100` | Most alarms claimed at once; an instance claims further batches while they are full. |
+| `aktimetrix.alarms.lease` | `PT30S` | How long an instance holds a claimed alarm before another may fire it. |
+| `aktimetrix.monitor.enabled` | `true` | Run the overdue sweep: a safety net that finds steps and processes past their deadline without an alarm, such as those saved before alarms existed. |
+| `aktimetrix.monitor.overdue-check-interval` | `PT10M` | How often the sweep runs, as an ISO-8601 duration. |
 | `aktimetrix.outbox.relay-interval` | `PT1S` | How often the outbox relay publishes pending events to Kafka. |
 | `aktimetrix.outbox.batch-size` | `100` | Most events published per relay run. |
 | `aktimetrix.outbox.lease` | `PT30S` | How long a relay holds a claimed event before another instance may retry it. |
@@ -93,7 +97,7 @@ These are set with the lowest precedence, so your own configuration always wins:
 If your application defines Spring Cloud Stream functions of its own, include `processor` in your
 `spring.cloud.stream.function.definition`, e.g. `processor;myFunction`.
 
-The overdue monitor is a `@Scheduled` task, so Aktimetrix enables Spring's scheduling in the application.
+The alarm scheduler, the overdue sweep and the outbox relay are `@Scheduled` tasks, so Aktimetrix enables Spring's scheduling in the application.
 
 > **Using Confluent Cloud or another secured cluster?** Add `security.protocol`, `sasl.mechanism`, and
 > `sasl.jaas.config` under `spring.kafka.properties`, and supply the credentials through environment variables or a
@@ -150,10 +154,10 @@ idempotent.
 
 ### Running several instances
 
-Every instance consumes from the events topic, runs the outbox relay and runs the overdue monitor. Step and process
+Every instance consumes from the events topic, runs the outbox relay and fires due alarms. Step and process
 instances carry a `revision` and are saved with a version check, so when two instances change the same step or
-process, the second change fails instead of overwriting the first: the monitor skips such a step until its next
-check, and an event is retried. The in-memory store is not shared between instances: run a single one.
+process, the second change fails instead of overwriting the first: an alarm is fired again after its lease
+expires, and an event is retried. The in-memory store is not shared between instances: run a single one.
 
 ## Published event payloads
 
@@ -183,7 +187,7 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `stepCode`, `stepInstanceId` | The step, for step events and step measurements. |
 | `revision` | The revision of the process or step instance after the change: of two events about one instance, the higher is the more recent. |
 | `occurredAt` | When the change happened in the business, in `aktimetrix.time-zone`: the time of the business event that caused it, or of the deadline check. |
-| `cause` | `type` `EVENT`, with the `eventId` and `eventCode` of the business event; or `type` `DEADLINE`, for a change made by the overdue monitors. |
+| `cause` | `type` `EVENT`, with the `eventId` and `eventCode` of the business event; or `type` `DEADLINE`, for a change made when a deadline passed: an alarm or the overdue sweep. |
 
 **`Process_Event`** (`entityType` `com.aktimetrix.process.instance`)
 
@@ -240,6 +244,7 @@ process, entity type and entity id.
 | `processDefinitions`, `stepDefinitions`, `measurementTypeDefinitions` | Definitions |
 | `processInstances`, `stepInstances`, `measurement-instance` | Runtime state |
 | `outbox` | Events waiting to be, or recently, published |
+| `alarms` | Alarms at the deadlines of open steps and processes, indexed by due time |
 
 The store creates the indexes its queries need at startup, including a unique index on process instances by
 tenant, process, entity type and entity id. If existing data violates a unique index, the index is not created and
@@ -254,6 +259,7 @@ stores references to process and step instances as strings rather than object id
 | `aktimetrix_process_definition`, `aktimetrix_step_definition`, `aktimetrix_measurement_type` | Definitions |
 | `aktimetrix_process_instance`, `aktimetrix_step_instance`, `aktimetrix_measurement_instance` | Runtime state |
 | `aktimetrix_outbox` | Events waiting to be, or recently, published |
+| `aktimetrix_alarm` | Alarms at the deadlines of open steps and processes, indexed by due time |
 
 Each row keeps its object as a JSON document, next to the columns its queries, constraints and version checks use.
 The store creates the tables and indexes that do not exist at startup, from `com/aktimetrix/store/jdbc/schema.sql`
@@ -279,6 +285,9 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `aktimetrix.steps.at.risk` / `.overdue` | counter | `tenant`, `step` |
 | `aktimetrix.measurements.actual` | counter | `tenant`, `measurement`, `conformance`: actual measurements recorded |
 | `aktimetrix.measurements.deviation` | distribution summary | `tenant`, `measurement`: actual minus planned, in the measurement's unit (not `TIME`) |
+| `aktimetrix.alarms.pending` | gauge | alarms set and not fired yet |
+| `aktimetrix.alarms.fired` | counter | `tenant`, `kind` (`STEP`, `PROCESS`): alarms that marked a step or process overdue |
+| `aktimetrix.alarms.delay` | timer | `kind`: how long after its due time an alarm fired |
 | `aktimetrix.outbox.pending` | gauge | events not yet published to the broker |
 
 ## Process definition fields

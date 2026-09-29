@@ -195,7 +195,7 @@ ISO-8601 local date-time, which `String.valueOf(LocalDateTime)` produces. `metad
 metadata whether it is stored as a `LocalDateTime`, a `Date`, or a string.
 
 That is a working monitor: events start the process, meters plan it, milestone events complete its steps, and the
-overdue monitor watches the deadlines.
+alarms at the deadlines mark any step whose event does not arrive in time as overdue.
 
 ### 5. Optional: choose the metadata
 

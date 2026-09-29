@@ -2,6 +2,7 @@ package com.aktimetrix.store;
 
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Timeliness;
+import com.aktimetrix.core.model.Alarm;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
@@ -11,6 +12,7 @@ import com.aktimetrix.core.referencedata.model.MeasurementTypeDefinition;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.store.AktimetrixTransactions;
+import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,6 +55,7 @@ public abstract class StoreContractTest {
     protected MeasurementInstanceStore measurements;
     protected DefinitionStore definitions;
     protected OutboxStore outbox;
+    protected AlarmStore alarms;
     protected AktimetrixTransactions transactions;
 
     /**
@@ -67,6 +71,7 @@ public abstract class StoreContractTest {
         measurements = context.getBean(MeasurementInstanceStore.class);
         definitions = context.getBean(DefinitionStore.class);
         outbox = context.getBean(OutboxStore.class);
+        alarms = context.getBean(AlarmStore.class);
         transactions = context.getBean(AktimetrixTransactions.class);
     }
 
@@ -375,6 +380,56 @@ public abstract class StoreContractTest {
         assertThat(outbox.countPending()).isEqualTo(pending - 2);
         assertThat(outbox.claimNext(now.plusSeconds(3600), now.plusSeconds(7200))).isEmpty();
         assertThat(outbox.deleteSentBefore(now.plusSeconds(33))).isGreaterThanOrEqualTo(2);
+    }
+
+    // alarms
+
+    @Test
+    void dueAlarmsAreClaimedEarliestFirstAndOnceWhileTheirLeaseHolds() {
+        final LocalDateTime base = LocalDateTime.of(1990, 1, 1, 0, 0);
+        final LocalDateTime now = base.plusMinutes(5);
+        final Instant at = Instant.parse("2024-03-01T12:00:00Z");
+        alarms.claimDue(now, at, at.plusSeconds(3600), 10_000); // leases any alarm left by another test
+        final String tenant = unique();
+        final Alarm later = Alarm.of(Alarm.STEP, tenant, unique(), "p1", base.plusMinutes(2));
+        final Alarm earlier = Alarm.of(Alarm.PROCESS, tenant, unique(), "p2", base.plusMinutes(1));
+        final Alarm notYet = Alarm.of(Alarm.STEP, tenant, unique(), "p1", base.plusMinutes(10));
+        final long pending = alarms.countPending();
+        alarms.schedule(later);
+        alarms.schedule(earlier);
+        alarms.schedule(notYet);
+        assertThat(alarms.countPending()).isEqualTo(pending + 3);
+
+        final List<Alarm> first = alarms.claimDue(now, at, at.plusSeconds(30), 1);
+        assertThat(ids(first)).containsExactly(earlier.getId());
+        assertThat(first.get(0).getDueAt()).isEqualTo(earlier.getDueAt());
+        assertThat(first.get(0).getKind()).isEqualTo(Alarm.PROCESS);
+        assertThat(first.get(0).getTargetId()).isEqualTo(earlier.getTargetId());
+        assertThat(ids(alarms.claimDue(now, at, at.plusSeconds(30), 10))).containsExactly(later.getId());
+        assertThat(alarms.claimDue(now, at, at.plusSeconds(30), 10)).as("both leased, one not due").isEmpty();
+
+        assertThat(ids(alarms.claimDue(now, at.plusSeconds(31), at.plusSeconds(61), 10)))
+                .as("claimed again once the lease expired").containsExactly(earlier.getId(), later.getId());
+
+        // moving an alarm releases its claim; cancelling one removes it
+        alarms.schedule(Alarm.of(Alarm.STEP, tenant, later.getTargetId(), "p1", base.plusMinutes(3)));
+        alarms.schedule(Alarm.of(Alarm.STEP, tenant, later.getTargetId(), "p1", base.plusMinutes(4)));
+        alarms.cancel(earlier.getId());
+        alarms.cancel(Alarm.idOf(Alarm.STEP, unique()));
+        assertThat(alarms.countPending()).isEqualTo(pending + 2);
+        final List<Alarm> moved = alarms.claimDue(now, at.plusSeconds(32), at.plusSeconds(62), 10);
+        assertThat(ids(moved)).containsExactly(later.getId());
+        assertThat(moved.get(0).getDueAt()).isEqualTo(base.plusMinutes(4));
+
+        alarms.cancel(later.getId());
+        assertThat(ids(alarms.claimDue(base.plusMinutes(11), at.plusSeconds(63), at.plusSeconds(93), 10)))
+                .as("due once its time has passed").containsExactly(notYet.getId());
+        alarms.cancel(notYet.getId());
+        assertThat(alarms.countPending()).isEqualTo(pending);
+    }
+
+    private static List<String> ids(List<Alarm> claimed) {
+        return claimed.stream().map(Alarm::getId).collect(Collectors.toList());
     }
 
     // transactions

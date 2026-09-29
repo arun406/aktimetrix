@@ -19,15 +19,25 @@ public class ProcessInstanceService {
 
     private final ProcessInstanceStore store;
     private final StepInstanceStore stepInstanceStore;
+    private final DeadlineAlarms alarms;
 
     /**
-     * Saves the process instance: inserts it, assigning its id, or updates it with a version check.
+     * Saves the process instance: inserts it, assigning its id, or updates it with a version check. Its deadline alarm
+     * is set, moved or cancelled with it.
      *
      * @param processInstance process instance to be saved
      * @return saved process instance
      */
     public ProcessInstance saveProcessInstance(ProcessInstance processInstance) {
+        if (processInstance.getId() != null) {
+            alarms.reconcile(processInstance);
+        }
         store.save(processInstance);
+        if (DeadlineAlarms.needsAlarm(processInstance)) {
+            // a new process with a deadline: its alarm needs its id
+            alarms.reconcile(processInstance);
+            store.save(processInstance);
+        }
         logger.info("Process Instance Id :" + processInstance.getId());
         return processInstance;
     }
