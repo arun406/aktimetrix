@@ -2,8 +2,9 @@
 
 [← Back to README](../README.md)
 
-> This guide describes the **reference implementation**, which binds the message broker to Apache Kafka and the
-> state store to MongoDB. The model itself is technology-neutral: see the [README](../README.md#52-infrastructure-contract).
+> This guide describes the **reference implementation**. Its examples use MongoDB and Kafka, as the reference project
+> does; any store and broker module can be used instead, see [Choosing a store and a broker](configuration.md#choosing-a-store-and-a-broker).
+> The model itself is technology-neutral: see the [README](../README.md#52-infrastructure-contract).
 
 ## Run the reference project
 
@@ -47,7 +48,9 @@ This section builds a smaller version of the same order monitor from scratch: an
 and delivered, and a priority customer's order must be delivered sooner. The reference project adds the other steps
 and measurements the same way.
 
-### 1. Add the dependency
+### 1. Add the dependencies
+
+The core, a store module and a broker module:
 
 ```xml
 <dependency>
@@ -55,12 +58,24 @@ and measurements the same way.
     <artifactId>aktimetrix-core</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 </dependency>
+<dependency>
+    <groupId>com.aktimetrix</groupId>
+    <artifactId>aktimetrix-store-mongodb</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
+<dependency>
+    <groupId>com.aktimetrix</groupId>
+    <artifactId>aktimetrix-broker-kafka</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
 ```
 
-It brings Spring Web, Spring Data MongoDB and Spring Cloud Stream with the Kafka binder, and configures itself
-through Spring Boot auto-configuration. Your application class is a plain `@SpringBootApplication`.
+The core brings Spring Web and Spring Cloud Stream; the modules bring Spring Data MongoDB and the Kafka binder. It all
+configures itself through Spring Boot auto-configuration: your application class is a plain `@SpringBootApplication`.
+To keep the state in PostgreSQL instead, use `aktimetrix-store-jdbc` and the PostgreSQL driver; to use RabbitMQ,
+`aktimetrix-broker-rabbitmq`. To try Aktimetrix without a database, `aktimetrix-store-memory`.
 
-### 2. Point it at Kafka and MongoDB
+### 2. Point it at the broker and the store
 
 ```yaml
 spring:
@@ -267,8 +282,9 @@ publish events in another format, keep it and declare an `EventMapper` instead: 
 | `eventUTCTime` | fallback | When it happened, in UTC (`yyyy-MM-dd HH:mm:ss`), if `eventTime` is absent. |
 | `entity` | no | Your domain object; becomes metadata. |
 
-Events with a missing `tenantKey`, `eventCode` or `entityId` are logged and skipped. Publish all events of one entity
-with the entity id as the Kafka key, so they are processed in order.
+Events with a missing `tenantKey`, `eventCode` or `entityId` are sent to the dead-letter channel. Publish all events of
+one entity with the entity id as the message key (the Kafka record key, or the RabbitMQ routing key), so they are
+processed in order.
 
 ---
 

@@ -156,6 +156,10 @@ The model separates **what a process looks like** from **what is happening to on
 A **business entity** is the real-world object being followed. It is identified by an entity type and an entity id,
 and it is owned by the source systems, not by Aktimetrix.
 
+Definitions are **versioned**. Each change to a process definition is a new revision, and a process instance keeps
+the definition it started with, its steps included, until it ends. A change therefore applies to the entities that
+start after it, and never alters the plan or the rules of one already under way.
+
 ### 3.2 Measurements: plan and actual
 
 A **measurement** is anything about a process that the business plans and observes. Measurement types are defined by
@@ -350,7 +354,7 @@ querying the state store.
 
 | Event type | Event codes | Entity | Keyed by |
 |---|---|---|---|
-| `Process_Event` | `CREATED`, `COMPLETED`, `CANCELLED`, `OVERDUE` | the process instance: status, `startedAt`, `plannedAt`, `lateAfter`, `endedAt`, `timeliness`, metadata, and its steps | process instance id |
+| `Process_Event` | `CREATED`, `COMPLETED`, `CANCELLED`, `OVERDUE` | the process instance: status, `startedAt`, `plannedAt`, `lateAfter`, `endedAt`, `timeliness`, `definitionRevision`, metadata, and its steps | process instance id |
 | `Step_Event` | `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED`, `CANCELLED` | the step instance: status, `plannedAt`, `lateAfter`, `expectedAt`, `actualAt`, `timeliness`, metadata | step instance id |
 | `Measurement_Event` | `CREATED` | one measurement: code, value, unit, `P` or `A`, the process and step it belongs to, and for an actual its `plannedValue`, `deviation` and `conformance` | measurement instance id |
 
@@ -393,7 +397,7 @@ layer whose concern they refine.
 | ② **Process** | Decide what the event means for the entity: which processes it starts, and which steps it starts, completes or reports progress on; end or cancel processes; watch deadlines on a clock. | Event router, lifecycle, deadline monitors | Process handler, event handler, pre- and post-processors |
 | ③ **Measurement** | Give every measurement its plan, record its actuals, compare the two, forecast delays and compute metrics. | Planning, comparison, forecasting, metrics | Meters |
 | ④ **Model** | Describe what is monitored, and hold where each entity stands. | Definitions; process, step and measurement instances | Definitions, which are data |
-| ⑤ **Persistence** | Store state safely, publish results reliably, and answer queries. | Repositories, outbox, outbox relay, query API, operational metrics | None: bound to the infrastructure (§5.2) |
+| ⑤ **Persistence** | Store state safely, publish results reliably, and answer queries. | State-store contract, outbox, outbox relay, query API, operational metrics | A store module and a broker module, which bind the layer to the infrastructure (§5.2) |
 
 An event travels down the layers: the integration layer hands it to the process layer, which asks the measurement
 layer for plans, actuals and comparisons, which read and change the model, which the persistence layer saves together
@@ -413,8 +417,11 @@ The runtime is written against two capabilities rather than two products.
 | **Message broker** | Durable publish/subscribe; ordered delivery of messages with the same key; consumer groups for horizontal scaling | Inbound business events; outbound process, step and measurement events |
 | **State store** | Durable documents queried by tenant, entity and status; an atomic conditional update (compare-and-set) | Definitions, instances, deadline queries, the outbox and its lease |
 
-Any broker and store with these properties can host the model. The technologies used by the reference
-implementation are listed in [§9.1](#91-technology-bindings).
+Any broker and store with these properties can host the model. In the reference implementation, each capability is an
+interface of its own: the state store is a small contract of stores for instances, definitions and the outbox, plus
+units of work; the broker is reached through a message-binding abstraction. A module implements one or the other for
+a given technology, and a monitor is assembled from the core, one store module and one broker module. The modules
+available are listed in [§9.1](#91-technology-bindings).
 
 ### 5.3 Runtime architecture
 
@@ -454,8 +461,8 @@ on several runtime instances share the work by leasing entries with an atomic co
 by a failed instance is taken over by another once its lease expires.
 
 The atomicity relies on the state store's transactions. A store without them (in the reference implementation, a
-standalone MongoDB server rather than a replica set) still works, but a crash in the middle of a unit of work can then
-keep its state without its results. The runtime detects this and says so at startup.
+standalone MongoDB server rather than a replica set, or the in-memory store) still works, but a crash in the middle
+of a unit of work can then keep its state without its results. The runtime detects this and says so at startup.
 
 **Concurrency.** Every step and process instance carries a revision, and a save based on a stale copy is rejected
 rather than overwriting a newer state. The deadline monitors can therefore run on every runtime instance: when two
@@ -489,6 +496,8 @@ discovered at startup.
 | **Event handler** | Changes how an event is interpreted, such as where its business time is read from. | Generic handling of the envelope. |
 | **Pre-processor** | Validates or enriches an entity before a process instance is created. | None. |
 | **Post-processor** | Acts on a newly created and planned process instance. | None. |
+| **State store** | Keeps definitions, instances and the outbox in another database, by implementing the state-store contract. | Chosen from the store modules on the classpath. |
+| **Message broker** | Connects to another broker, through a binder of the message-binding abstraction and its defaults. | Chosen from the broker modules on the classpath. |
 
 The [extension guide](./docs/extending.md) documents each one with examples.
 
@@ -515,24 +524,25 @@ carry the plan, the actual and the deviation together.
 
 ## 9. Reference implementation
 
-This repository contains `aktimetrix-core`, a reference implementation of the model for the JVM, released under the
-Apache License 2.0. It is packaged as a library: an application adds the dependency, supplies its definitions and
-meters, and receives the complete runtime described above through auto-configuration. It is **alpha**
+This repository contains a reference implementation of the model for the JVM, released under the Apache License 2.0.
+It is packaged as libraries: an application adds the core, one store module and one broker module, supplies its
+definitions and meters, and receives the complete runtime described above through auto-configuration. It is **alpha**
 (`0.0.1-SNAPSHOT`): it is tested on JDK 11, 17 and 21, and its APIs may still change.
 
 ### 9.1 Technology bindings
 
-| Concern | Reference implementation |
-|---|---|
-| Runtime | Java 11+, Spring Boot 2.7 |
-| Message broker | Apache Kafka, through the Spring Cloud Stream binder abstraction |
-| State store | MongoDB, through Spring Data MongoDB |
-| Metrics | Micrometer, exportable to Prometheus and other back ends |
-| Query API | HTTP/JSON |
+| Module | Role | Binds to |
+|---|---|---|
+| `aktimetrix-core` | The runtime: every layer of §5.1, independent of any broker or store | Java 11+, Spring Boot 2.7; Micrometer; HTTP/JSON |
+| `aktimetrix-store-mongodb` | State store | MongoDB; atomic units of work on replica sets and sharded clusters |
+| `aktimetrix-store-jdbc` | State store | A relational database through JDBC, written for PostgreSQL; atomic units of work |
+| `aktimetrix-store-memory` | State store | The application's memory: for tests and demos, not durable |
+| `aktimetrix-broker-kafka` | Message broker | Apache Kafka, through the Spring Cloud Stream Kafka binder |
+| `aktimetrix-broker-rabbitmq` | Message broker | RabbitMQ, through the Spring Cloud Stream RabbitMQ binder |
 
-These choices belong to the implementation, not the model. The broker is reached through Spring Cloud Stream, whose
-binder abstraction also targets other brokers; the state store is currently bound to MongoDB (see the
-[known limitations](#103-known-limitations)).
+These choices belong to the implementation, not the model. Every store module passes the same contract tests, and
+every combination used in the tests runs the same end-to-end scenarios, on embedded brokers and databases. Another
+store or broker is added as a module of its own ([§7](#7-extensibility)).
 
 ### 9.2 Running the example
 
@@ -559,15 +569,25 @@ curl -s 'http://localhost:8080/process-instances?tenant=AA&entityId=1234'
 
 ### 9.3 Building a monitor
 
-A monitor consists of a dependency, definitions and, for plans computed by rules, meters. The example below is the
+A monitor consists of dependencies, definitions and, for plans computed by rules, meters. The example below is the
 reference project's.
 
-**Dependency.**
+**Dependencies:** the core, a store module and a broker module; here, MongoDB and Kafka.
 
 ```xml
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-core</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
+<dependency>
+    <groupId>com.aktimetrix</groupId>
+    <artifactId>aktimetrix-store-mongodb</artifactId>   <!-- or aktimetrix-store-jdbc, aktimetrix-store-memory -->
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
+<dependency>
+    <groupId>com.aktimetrix</groupId>
+    <artifactId>aktimetrix-broker-kafka</artifactId>    <!-- or aktimetrix-broker-rabbitmq -->
     <version>0.0.1-SNAPSHOT</version>
 </dependency>
 ```
@@ -659,7 +679,8 @@ public class OrderDeadlineMeter extends AbstractProcessMeter {
 ```
 
 **Configuration.** The application names its inbound channel and supplies the connection settings of its broker and
-state store; with the reference bindings, these are the standard Spring Boot properties for Kafka and MongoDB.
+state store: the standard Spring Boot properties of the chosen broker and store, such as Kafka's bootstrap servers and
+MongoDB's URI.
 
 ```yaml
 aktimetrix:
@@ -715,13 +736,21 @@ published events feed dashboards, process-mining datasets or stream jobs.
 - **Metrics at completion.** A process's metrics are computed once, when it completes, from sums of its
   measurements; values recorded afterwards, such as a later rating, are not included, and the expressions are plain
   arithmetic.
-- **Definitions are not versioned.** Changing a definition affects instances that are already running.
+- **No migration between revisions.** A running instance keeps the definition it started with; there is no way to
+  move it to a newer revision, for example to apply a corrected plan to orders already under way.
 - **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
 - **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
   each milestone. An event mapper can translate formats, but cannot supply missing events.
 - **Monitoring only.** Aktimetrix never calls back into source systems; acting on its events is up to consumers.
-- **Reference implementation.** The broker binding is Kafka and the state store is MongoDB; atomic writes need
-  MongoDB transactions (a replica set). The REST API has no authentication of its own.
+- **Reference implementation.**
+  - *Verification.* The modules are verified on embedded infrastructure: Kafka on an embedded Kafka broker; RabbitMQ
+    on an embedded AMQP 0-9-1 broker (Apache Qpid), which does not support RabbitMQ's single-active-consumer queue
+    argument; the JDBC store on H2 in PostgreSQL mode; MongoDB on an in-memory server without transactions.
+  - *Ordering on RabbitMQ.* The events queue has a single active consumer, so one instance processes events at a
+    time; processing in parallel while keeping each entity's events in order needs partitioned bindings.
+  - *Atomicity.* Atomic units of work need a transactional store: MongoDB as a replica set, or a relational
+    database; the in-memory store is neither atomic nor durable.
+  - *Security.* The REST API has no authentication of its own.
 
 ## 11. Further reading
 
@@ -740,7 +769,7 @@ published events feed dashboards, process-mining datasets or stream jobs.
 |---|---|
 | **Business entity** | The real-world object followed, such as an order; identified by entity type and entity id. |
 | **Business event** | A message from a source system saying something happened to an entity, such as *order delivered*. |
-| **Process definition** | The declaration of a business process: its steps in order, the events that start, end and cancel it, and optionally its own deadline and measurements. |
+| **Process definition** | The declaration of a business process: its steps in order, the events that start, end and cancel it, and optionally its own deadline and measurements. Versioned: each change is a new revision, and an instance keeps the revision it started with. |
 | **Step definition** | The declaration of a milestone: the events that start and complete it, its plan, tolerance and measurements. Shared by a tenant's processes, and adaptable per process. |
 | **Process instance** / **step instance** | A process, or one of its steps, for one business entity. |
 | **Measurement** | A user-defined dimension observed at a process or step, such as time, distance or rating. |
