@@ -27,6 +27,9 @@
       { "measurementCode": "COST", "type": "P", "value": "8", "unit": "EUR", "tolerance": "10%", "worseWhen": "HIGHER" },
       { "measurementCode": "COST", "type": "A", "valueFrom": "deliveryCost", "unit": "EUR" }
     ],
+    "metrics": [
+      { "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" }
+    ],
     "steps": [
       { "stepCode": "CONFIRM", "startEventCodes": ["ORDER_CONFIRMED"], "plannedWithin": "PT5M" },
       { "stepCode": "PAY", "startEventCodes": ["PAYMENT_CONFIRMED"], "plannedAfter": "CONFIRM", "plannedWithin": "PT15M",
@@ -34,6 +37,7 @@
       { "stepCode": "HANDOVER", "startEventCodes": ["HANDED_TO_AGENT"], "plannedWithin": "PT2H" },
       { "stepCode": "ACCEPT", "startEventCodes": ["AGENT_ACCEPTED"], "plannedAfter": "HANDOVER", "plannedWithin": "PT15M" },
       { "stepCode": "TRAVEL", "startEventCodes": ["TRAVEL_STARTED"], "endEventCodes": ["ARRIVED"],
+        "progressEventCodes": ["LOCATION_UPDATED"],
         "plannedAfter": "ACCEPT", "plannedWithin": "PT30M",
         "measurements": [
           { "measurementCode": "DISTANCE", "type": "P", "value": "5", "unit": "KM", "tolerance": "20%", "worseWhen": "HIGHER" },

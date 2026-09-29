@@ -1,5 +1,6 @@
 package com.aktimetrix.core.service;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.repository.StepInstanceRepository;
@@ -16,6 +17,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Detects events that never arrive: periodically marks steps whose deadline (planned time plus tolerance) has passed
@@ -46,17 +48,32 @@ public class OverdueStepMonitor {
     public List<StepInstance> checkOverdueSteps() {
         final LocalDateTime now = LocalDateTime.now(clock);
         final List<StepInstance> overdue = new ArrayList<>();
-        for (StepInstance step : stepInstanceRepository.findOverdue(now)) {
+        for (StepInstance found : stepInstanceRepository.findOverdue(now)) {
             try {
-                transactions.run(() -> stepProgressService.markOverdue(step, now));
-                overdue.add(step);
+                // read the step again: marking an earlier step overdue may have changed it, e.g. put it at risk
+                final AtomicReference<StepInstance> marked = new AtomicReference<>();
+                transactions.run(() -> stepInstanceRepository.findById(found.getId().toHexString())
+                        .filter(current -> isStillOverdue(current, now))
+                        .ifPresent(current -> {
+                            stepProgressService.markOverdue(current, now);
+                            marked.set(current);
+                        }));
+                if (marked.get() != null) {
+                    overdue.add(marked.get());
+                }
             } catch (OptimisticLockingFailureException e) {
                 // completed, or marked by another instance, since it was read; the next check sees its new state
-                logger.debug("Step {} changed while being marked overdue; skipped", step.getId());
+                logger.debug("Step {} changed while being marked overdue; skipped", found.getId());
             } catch (RuntimeException e) {
-                logger.error("Could not mark step {} overdue; retrying on the next check", step.getId(), e);
+                logger.error("Could not mark step {} overdue; retrying on the next check", found.getId(), e);
             }
         }
         return overdue;
+    }
+
+    private static boolean isStillOverdue(StepInstance step, LocalDateTime now) {
+        return !Constants.STATUS_COMPLETED.equals(step.getStatus()) && !Constants.STATUS_CANCELLED.equals(step.getStatus())
+                && !Constants.STATUS_SKIPPED.equals(step.getStatus()) && step.getTimeliness() != Timeliness.OVERDUE
+                && step.getLateAfter() != null && step.getLateAfter().isBefore(now);
     }
 }

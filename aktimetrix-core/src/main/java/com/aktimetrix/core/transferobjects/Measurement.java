@@ -33,6 +33,8 @@ public class Measurement implements Serializable {
     private String plannedValue;
     private String deviation;
     private Conformance conformance;
+    private boolean interim;
+    private String derivedFrom;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSZ")
     @JsonProperty("measuredOn")
     private ZonedDateTime createdOn;
