@@ -62,7 +62,7 @@ public class LateEveningDeliveryWarning implements com.aktimetrix.core.api.PostP
     @Override
     public void postProcess(Context context) {
         context.getProcessInstance().getSteps().stream()
-                .filter(step -> "DELIVER".equals(step.getStepCode()) && step.getPlannedAt() != null)
+                .filter(step -> "DELIVERED".equals(step.getStepCode()) && step.getPlannedAt() != null)
                 .filter(step -> step.getPlannedAt().toLocalTime().isAfter(CUT_OFF))
                 .forEach(step -> log.warn("Order {} is planned for delivery after {}",
                         context.getProperty(Constants.ENTITY_ID), CUT_OFF));
@@ -82,7 +82,7 @@ the inbound topic into an Aktimetrix event:
 @Bean
 EventMapper shopEvents(ObjectMapper json) {
     return (payload, headers) -> {
-        JsonNode order = json.readTree(payload);           // {"id":"1234","status":"SHIPPED","updatedAt":"…"}
+        JsonNode order = json.readTree(payload);           // {"id":"1234","status":"DELIVERED","updatedAt":"…"}
         if (!order.has("status")) {
             return null;                                   // not an order event: ignored
         }
@@ -126,11 +126,13 @@ In a `Context`, read the event's data with the `Constants` context properties: `
 | `DefaultProcessor` | Process handler for processes without their own `@ProcessHandler`. |
 | `DefaultMeasurementProcessor` | Runs the meters of each new step and sets its `plannedAt` from the planned `TIME`. |
 | `StepPlanner` | Plans steps from the durations in their definitions, sets deadlines, and forecasts the steps at risk. |
-| `StepProgressService` | Moves steps through their lifecycle, records actual times, judges `ON_TIME` / `LATE`, and completes processes. |
-| `OverdueStepMonitor` | Marks steps past their deadline as `OVERDUE`, and puts later steps at risk. |
+| `StepProgressService` | Moves steps through their lifecycle, records actual times, judges `ON_TIME` / `LATE`, and completes, ends or cancels processes. |
+| `ActualMeasurementService` | Records the actual measurements of a step or process, and interim readings on progress events, each compared with its plan. |
+| `DerivedMetricService` | Computes a process's declared metrics when it completes, from the plan and from the actuals. |
+| `OverdueStepMonitor`, `OverdueProcessMonitor` | Mark steps and processes past their deadline as `OVERDUE`; an overdue step puts later steps at risk. |
 | `DefinitionLoader` | Loads `aktimetrix/*.json` definitions at startup. |
 | `ProcessInstancePublisherService`, `StepInstancePublisherService`, `MeasurementInstancePublisherService` | Queue events for the outbound topics in the outbox. |
-| `OutboxRelay` | Publishes queued events to Kafka. |
+| `OutboxRelay` | Publishes queued events to the broker. |
 | `AktimetrixMetrics` | Records the Micrometer metrics. |
 
 ## Modelling your own process
@@ -158,8 +160,8 @@ Then:
 
 1. define each step with the event that completes it, e.g. `APPROVAL` completed by `LOAN_APPROVED`, and a planned
    `TIME` where there is a deadline;
-2. write one `@Measurement(code = "TIME", stepCode = "…")` meter per deadline, for example `APPROVAL` at
-   *submitted + 48 business hours*;
+2. give a step a fixed deadline with `plannedWithin`, or write a `@Measurement(code = "TIME", stepCode = "…")` meter
+   for a deadline that follows a rule, for example `APPROVAL` at *submitted + 48 business hours*;
 3. optionally, add a `@ProcessHandler(processType = "LOAN_ORIGINATION")` that keeps the applicant and product
    details as metadata.
 

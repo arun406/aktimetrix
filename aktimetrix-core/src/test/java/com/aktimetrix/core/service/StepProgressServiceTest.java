@@ -62,6 +62,8 @@ class StepProgressServiceTest {
     private ProcessInstancePublisherService processInstancePublisherService;
     @Mock
     private ActualMeasurementService actualMeasurementService;
+    @Mock
+    private DerivedMetricService derivedMetricService;
     private StepProgressService service;
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
     private int nextSequence;
@@ -73,7 +75,8 @@ class StepProgressServiceTest {
         service = new StepProgressService(stepInstanceService, stepDefinitionService, processInstanceService,
                 measurementInstanceService, measurementInstancePublisherService, stepInstancePublisherService,
                 new StepPlanner(), metrics(registry), Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC),
-                processDefinitionService, processInstancePublisherService, actualMeasurementService);
+                processDefinitionService, processInstancePublisherService, actualMeasurementService,
+                derivedMetricService);
         process = new ProcessInstance();
         process.setId(new ObjectId());
         process.setTenant(TENANT);
@@ -327,7 +330,8 @@ class StepProgressServiceTest {
                 processInstanceService, measurementInstanceService, measurementInstancePublisherService,
                 stepInstancePublisherService, new StepPlanner(), metrics(registry),
                 Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneId.of("Asia/Kolkata")),
-                processDefinitionService, processInstancePublisherService, actualMeasurementService);
+                processDefinitionService, processInstancePublisherService, actualMeasurementService,
+                derivedMetricService);
         Event<Object, Object> event = new Event<>();
         assertThat(inKolkata.occurredAt(event)).isEqualTo(LocalDateTime.of(2022, 5, 23, 17, 30));
 
@@ -369,6 +373,22 @@ class StepProgressServiceTest {
     }
 
     @Test
+    void aStepCompletedWithinItsToleranceDelaysNothing() {
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
+        ship.setLateAfter(LocalDateTime.of(2022, 5, 23, 2, 1));
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        givenSteps(ship, deliver);
+        givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 2, 0));
+
+        assertThat(ship.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
+        assertThat(deliver.getExpectedAt()).isNull();
+        assertThat(deliver.getTimeliness()).isNull();
+    }
+
+    @Test
     void completionPlansTheStepsThatCountFromIt() {
         StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
         StepInstance deliver = step("DELIVER", Constants.STATUS_CREATED);
@@ -401,6 +421,25 @@ class StepProgressServiceTest {
         assertThat(deliver.getTimeliness()).isEqualTo(Timeliness.AT_RISK);
         assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 12, 0));
         assertThat(registry.get("aktimetrix.steps.overdue").counter().count()).isEqualTo(1);
+    }
+
+    @Test
+    void aStepAlreadyAtRiskKeepsItsLaterForecast() {
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
+        ship.setTimeliness(Timeliness.OVERDUE);
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        deliver.setTimeliness(Timeliness.AT_RISK);
+        deliver.setExpectedAt(LocalDateTime.of(2022, 5, 23, 9, 47));
+        givenSteps(ship, deliver);
+        givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
+        givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
+
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 3, 0));
+
+        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 11, 0));
+        verify(stepInstanceService).save(deliver);
+        verify(stepInstancePublisherService).publish(deliver, "AT_RISK");
+        assertThat(registry.find("aktimetrix.steps.at.risk").counter()).isNull();
     }
 
     private static StepInstance planned(StepInstance step, LocalDateTime plannedAt) {

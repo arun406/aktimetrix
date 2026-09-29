@@ -1,67 +1,123 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="380" viewBox="0 0 1280 380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="562" viewBox="0 0 1280 562" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
   <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4A5B63"/>
+    </marker>
+    <marker id="arrK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C77C02"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B3261E"/>
+    </marker>
     <style>
-      .tb { font-size: 17px; font-weight: 700; fill: #1F2D33; }
-      .t { font-size: 14px; fill: #1F2D33; }
-      .ts { font-size: 13px; fill: #5B6B72; }
-      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; fill: #0F4C5C; }
-      .tick { font-size: 12px; fill: #8A9AA1; }
+      .t  { font-size: 14px; fill: #1F2D33; }
+      .tb { font-size: 15px; font-weight: 700; fill: #1F2D33; }
+      .ts { font-size: 12px; fill: #5B6B72; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 11.5px; fill: #0F4C5C; }
+      .h  { font-size: 12.5px; font-weight: 700; letter-spacing: 1.5px; fill: #5B6B72; }
+      .box { fill: #FFFFFF; stroke: #B7C7CD; stroke-width: 1.5; }
+      .core { fill: #E8F4F7; stroke: #0F4C5C; stroke-width: 1.5; }
+      .you { fill: #FFF8EC; stroke: #C77C02; stroke-width: 1.5; stroke-dasharray: 5 3; }
+      .topic { fill: #FFF4DE; stroke: #C77C02; stroke-width: 1.5; }
+      .db { fill: #E9F5EC; stroke: #2E8B47; stroke-width: 1.5; }
+      .dead { fill: #FCEBEA; stroke: #B3261E; stroke-width: 1.5; }
+      .band { fill: #FFFFFF; stroke: #DCE5E8; stroke-width: 1.2; }
+      .edge { stroke: #4A5B63; stroke-width: 1.7; fill: none; }
+      .kedge { stroke: #C77C02; stroke-width: 1.7; fill: none; }
+      .redge { stroke: #B3261E; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
     </style>
   </defs>
-  <rect width="1280" height="380" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
-  <text x="40" y="50" class="tb">Process instance ORDER_DELIVERY · order #1234</text>
-  <text x="40" y="74" class="ts">Planned TIME from the meters, actual TIME from each milestone event, and how they compare</text>
-
-  <!-- axis: 0h at x=180, 10h at x=1100 => 92px per hour -->
-  <line x1="180" y1="200" x2="1180" y2="200" stroke="#CAD5D9" stroke-width="8" stroke-linecap="round"/>
-  <line x1="180" y1="200" x2="340" y2="200" stroke="#2E8B47" stroke-width="8" stroke-linecap="round"/>
-  <g class="tick" text-anchor="middle">
-    <line x1="180" y1="222" x2="180" y2="230" stroke="#B7C7CD"/><text x="180" y="246">+0h</text>
-    <line x1="364" y1="222" x2="364" y2="230" stroke="#B7C7CD"/><text x="364" y="246">+2h</text>
-    <line x1="548" y1="222" x2="548" y2="230" stroke="#B7C7CD"/><text x="548" y="246">+4h</text>
-    <line x1="732" y1="222" x2="732" y2="230" stroke="#B7C7CD"/><text x="732" y="246">+6h</text>
-    <line x1="916" y1="222" x2="916" y2="230" stroke="#B7C7CD"/><text x="916" y="246">+8h</text>
-    <line x1="1100" y1="222" x2="1100" y2="230" stroke="#B7C7CD"/><text x="1100" y="246">+10h</text>
-  </g>
-
-  <!-- PLACE -->
-  <circle cx="180" cy="200" r="20" fill="#2E8B47"/>
-  <polyline points="171,200 177,207 190,193" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="180" y="150" text-anchor="middle" class="tb">PLACE</text>
-  <text x="180" y="170" text-anchor="middle" class="ts">order placed</text>
-  <rect x="40" y="270" width="250" height="72" rx="10" fill="#FFFFFF" stroke="#CFE3D3"/>
-  <text x="180" y="294" text-anchor="middle" class="ts">ORDER_PLACED_EVENT</text>
-  <text x="180" y="316" text-anchor="middle" class="mono" style="fill:#2E8B47">A  TIME = 2022-05-22T23:46</text>
-
-  <!-- SHIP -->
-  <circle cx="340" cy="200" r="15" fill="#2E8B47"/>
-  <polyline points="333,200 338,205 347,195" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="366" cy="200" r="7" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="3"/>
-  <text x="356" y="150" text-anchor="middle" class="tb">SHIP</text>
-  <text x="356" y="170" text-anchor="middle" class="ts" fill="#2E8B47">16 min early</text>
-  <rect x="300" y="262" width="276" height="88" rx="10" fill="#FFFFFF" stroke="#CFE3D3"/>
-  <text x="438" y="286" text-anchor="middle" class="ts">OrderShippedPlanTimeMeter · +2h</text>
-  <text x="438" y="308" text-anchor="middle" class="mono">P  TIME = 2022-05-23T01:46</text>
-  <text x="438" y="330" text-anchor="middle" class="mono" style="fill:#2E8B47">A  TIME = 2022-05-23T01:30</text>
-
-  <!-- DELIVER -->
-  <line x1="340" y1="200" x2="1167" y2="200" stroke="#2E8B47" stroke-width="8" stroke-linecap="round" opacity="0.35"/>
-  <circle cx="1100" cy="200" r="7" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="3"/>
-  <circle cx="1167" cy="200" r="15" fill="#D1580B"/>
-  <line x1="1167" y1="192" x2="1167" y2="202" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
-  <circle cx="1167" cy="208" r="2.2" fill="#fff"/>
-  <text x="1150" y="150" text-anchor="middle" class="tb">DELIVER</text>
-  <text x="1150" y="170" text-anchor="middle" class="ts" style="fill:#D1580B">44 min late</text>
-  <rect x="900" y="262" width="296" height="88" rx="10" fill="#FFFFFF" stroke="#F0C9AE"/>
-  <text x="1048" y="286" text-anchor="middle" class="ts">OrderDeliveredPlanTimeMeter · +10h</text>
-  <text x="1048" y="308" text-anchor="middle" class="mono">P  TIME = 2022-05-23T09:46</text>
-  <text x="1048" y="330" text-anchor="middle" class="mono" style="fill:#D1580B">A  TIME = 2022-05-23T10:30</text>
-
-  <!-- legend -->
-  <g transform="translate(830 44)">
-    <circle cx="8" cy="0" r="8" fill="#2E8B47"/><text x="24" y="5" class="ts">on time</text>
-    <circle cx="96" cy="0" r="8" fill="#D1580B"/><text x="112" y="5" class="ts">late</text>
-    <circle cx="164" cy="0" r="7" fill="#FFFFFF" stroke="#2F6FC4" stroke-width="3"/><text x="180" y="5" class="ts">planned (P)</text>
-    <text x="270" y="5" class="ts">A = actual</text>
-  </g>
+  <rect width="1280" height="562" rx="18" fill="#F7FAFB" stroke="#DCE5E8"/>
+  <style>
+    .plan { fill: #FFFFFF; stroke: #0F4C5C; stroke-width: 2; }
+    .ontime { fill: #2E8B47; } .late { fill: #B3261E; }
+    .fc { fill: #FFF4DE; stroke: #C77C02; stroke-width: 2; stroke-dasharray: 3 2; }
+    .lbl { font-size: 12px; fill: #1F2D33; }
+    .risk { font-size: 11.5px; font-weight: 700; fill: #C77C02; }
+    .v1 { font-size: 11.5px; font-weight: 700; fill: #2E8B47; } .v2 { font-size: 11.5px; font-weight: 700; fill: #B3261E; }
+  </style>
+  <text x="40" y="48" text-anchor="start" class="h">ORDER #1234 · STEP TIMES: PLAN, FORECAST AND ACTUAL</text>
+  <text x="40" y="70" text-anchor="start" class="ts">HANDOVER runs 40 minutes late. At 11:40 every later step is forecast 40 minutes late, past its deadline: AT_RISK, before it happens.</text>
+  <line x1="230.0" y1="100" x2="230.0" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="230.0" y="494" text-anchor="middle" class="ts">09:00</text>
+  <line x1="347.6470588235294" y1="100" x2="347.6470588235294" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="347.6470588235294" y="494" text-anchor="middle" class="ts">09:30</text>
+  <line x1="465.2941176470588" y1="100" x2="465.2941176470588" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="465.2941176470588" y="494" text-anchor="middle" class="ts">10:00</text>
+  <line x1="582.9411764705883" y1="100" x2="582.9411764705883" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="582.9411764705883" y="494" text-anchor="middle" class="ts">10:30</text>
+  <line x1="700.5882352941176" y1="100" x2="700.5882352941176" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="700.5882352941176" y="494" text-anchor="middle" class="ts">11:00</text>
+  <line x1="818.2352941176471" y1="100" x2="818.2352941176471" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="818.2352941176471" y="494" text-anchor="middle" class="ts">11:30</text>
+  <line x1="935.8823529411765" y1="100" x2="935.8823529411765" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="935.8823529411765" y="494" text-anchor="middle" class="ts">12:00</text>
+  <line x1="1053.5294117647059" y1="100" x2="1053.5294117647059" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="1053.5294117647059" y="494" text-anchor="middle" class="ts">12:30</text>
+  <line x1="1171.1764705882351" y1="100" x2="1171.1764705882351" y2="476" stroke="#E3EAED" stroke-width="1"/>
+  <text x="1171.1764705882351" y="494" text-anchor="middle" class="ts">13:00</text>
+  <line x1="857.4509803921569" y1="92" x2="857.4509803921569" y2="476" stroke="#C77C02" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="863.4509803921569" y="88" text-anchor="start" class="risk">11:40 · handover arrives, 40 min late: forecast</text>
+  <text x="40" y="139.0" text-anchor="start" class="tb">Order confirmed</text>
+  <text x="40" y="156.0" text-anchor="start" class="mono">CONFIRM</text>
+  <line x1="230" y1="141.0" x2="1230" y2="141.0" stroke="#F0F4F5" stroke-width="1"/>
+  <line x1="249.60784313725492" y1="141.0" x2="237.84313725490196" y2="141.0" stroke="#2E8B47" stroke-width="4" stroke-opacity="0.35"/>
+  <rect x="242.60784313725492" y="134.0" width="14" height="14" rx="3" class="plan"/>
+  <text x="249.60784313725492" y="127.0" text-anchor="middle" class="lbl">plan 09:05</text>
+  <circle cx="237.84313725490196" cy="141.0" r="7" class="ontime"/>
+  <text x="263.6078431372549" y="145.0" text-anchor="start" class="v1">actual 09:02  ON_TIME</text>
+  <text x="40" y="201.0" text-anchor="start" class="tb">Payment confirmed</text>
+  <text x="40" y="218.0" text-anchor="start" class="mono">PAY</text>
+  <line x1="230" y1="203.0" x2="1230" y2="203.0" stroke="#F0F4F5" stroke-width="1"/>
+  <line x1="288.8235294117647" y1="203.0" x2="308.4313725490196" y2="203.0" stroke="#2E8B47" stroke-width="4" stroke-opacity="0.35"/>
+  <rect x="281.8235294117647" y="196.0" width="14" height="14" rx="3" class="plan"/>
+  <text x="288.8235294117647" y="189.0" text-anchor="middle" class="lbl">plan 09:15</text>
+  <circle cx="308.4313725490196" cy="203.0" r="7" class="ontime"/>
+  <text x="322.4313725490196" y="207.0" text-anchor="start" class="v1">actual 09:20  ON_TIME</text>
+  <text x="40" y="263.0" text-anchor="start" class="tb">Handed to agent</text>
+  <text x="40" y="280.0" text-anchor="start" class="mono">HANDOVER</text>
+  <line x1="230" y1="265.0" x2="1230" y2="265.0" stroke="#F0F4F5" stroke-width="1"/>
+  <line x1="700.5882352941176" y1="265.0" x2="857.4509803921569" y2="265.0" stroke="#B3261E" stroke-width="4" stroke-opacity="0.35"/>
+  <rect x="693.5882352941176" y="258.0" width="14" height="14" rx="3" class="plan"/>
+  <text x="700.5882352941176" y="251.0" text-anchor="middle" class="lbl">plan 11:00</text>
+  <circle cx="857.4509803921569" cy="265.0" r="7" class="late"/>
+  <text x="871.4509803921569" y="269.0" text-anchor="start" class="v2">actual 11:40  LATE</text>
+  <text x="40" y="325.0" text-anchor="start" class="tb">Agent accepted</text>
+  <text x="40" y="342.0" text-anchor="start" class="mono">ACCEPT</text>
+  <line x1="230" y1="327.0" x2="1230" y2="327.0" stroke="#F0F4F5" stroke-width="1"/>
+  <line x1="759.4117647058823" y1="327.0" x2="896.6666666666666" y2="327.0" stroke="#B3261E" stroke-width="4" stroke-opacity="0.35"/>
+  <rect x="752.4117647058823" y="320.0" width="14" height="14" rx="3" class="plan"/>
+  <text x="759.4117647058823" y="313.0" text-anchor="middle" class="lbl">plan 11:15</text>
+  <circle cx="916.2745098039215" cy="327.0" r="9" class="fc"/>
+  <text x="916.2745098039215" y="353.0" text-anchor="middle" class="risk">forecast 11:55 · AT_RISK</text>
+  <circle cx="896.6666666666666" cy="327.0" r="7" class="late"/>
+  <text x="930.2745098039215" y="331.0" text-anchor="start" class="v2">actual 11:50  LATE</text>
+  <text x="40" y="387.0" text-anchor="start" class="tb">Travel to customer</text>
+  <text x="40" y="404.0" text-anchor="start" class="mono">TRAVEL</text>
+  <line x1="230" y1="389.0" x2="1230" y2="389.0" stroke="#F0F4F5" stroke-width="1"/>
+  <line x1="935.8823529411765" y1="389.0" x2="1112.3529411764707" y2="389.0" stroke="#B3261E" stroke-width="4" stroke-opacity="0.35"/>
+  <rect x="928.8823529411765" y="382.0" width="14" height="14" rx="3" class="plan"/>
+  <text x="935.8823529411765" y="375.0" text-anchor="middle" class="lbl">plan 12:00</text>
+  <circle cx="1092.7450980392157" cy="389.0" r="9" class="fc"/>
+  <text x="1092.7450980392157" y="415.0" text-anchor="middle" class="risk">forecast 12:40 · AT_RISK</text>
+  <circle cx="1112.3529411764707" cy="389.0" r="7" class="late"/>
+  <text x="1126.3529411764707" y="393.0" text-anchor="start" class="v2">actual 12:45  LATE</text>
+  <text x="40" y="449.0" text-anchor="start" class="tb">Delivered</text>
+  <text x="40" y="466.0" text-anchor="start" class="mono">DELIVERED</text>
+  <line x1="230" y1="451.0" x2="1230" y2="451.0" stroke="#F0F4F5" stroke-width="1"/>
+  <line x1="994.7058823529412" y1="451.0" x2="1151.5686274509803" y2="451.0" stroke="#B3261E" stroke-width="4" stroke-opacity="0.35"/>
+  <rect x="987.7058823529412" y="444.0" width="14" height="14" rx="3" class="plan"/>
+  <text x="994.7058823529412" y="437.0" text-anchor="middle" class="lbl">plan 12:15</text>
+  <circle cx="1151.5686274509803" cy="451.0" r="9" class="fc"/>
+  <text x="1151.5686274509803" y="477.0" text-anchor="middle" class="risk">forecast 12:55 · AT_RISK</text>
+  <circle cx="1151.5686274509803" cy="451.0" r="7" class="late"/>
+  <text x="1165.5686274509803" y="455.0" text-anchor="start" class="v2">actual 12:55  LATE</text>
+  <rect x="40" y="529" width="14" height="14" rx="3" class="plan"/>
+  <text x="64" y="540" text-anchor="start" class="ts">planned time</text>
+  <circle cx="185.0" cy="536" r="8" class="fc"/>
+  <text x="202.0" y="540" text-anchor="start" class="ts">forecast after an earlier delay</text>
+  <circle cx="446.5" cy="536" r="7" class="late"/>
+  <text x="463.5" y="540" text-anchor="start" class="ts">actual, late</text>
+  <circle cx="584.5" cy="536" r="7" class="ontime"/>
+  <text x="601.5" y="540" text-anchor="start" class="ts">actual, on time</text>
 </svg>

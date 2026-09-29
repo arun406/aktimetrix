@@ -20,7 +20,7 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
 | ① Inbound | `ProcessConfig.processor()`, `EventMapper`, `AktimetrixTransactions` | Consume each message, turn it into an event, reject what cannot be processed, and run the rest as one unit of work. |
 | ② Routing | `RegistryService`, `DefaultRegistry`, `*PostBeanProcessor`, event handlers | Find the components registered for a code: event handlers by event code, process handlers by process code, meters by step or process and measurement code. |
 | ③ Start and plan | `AbstractProcessor`, pre- and post-processors, `DefaultMeasurementProcessor`, meters | Create a process instance and its steps, and compute their planned measurements. |
-| ④ Record | `StepProgressService`, `ActualMeasurementService`, `StepPlanner` | Advance steps, record actual values, judge timeliness, forecast delays, complete or cancel processes. |
+| ④ Record | `StepProgressService`, `ActualMeasurementService`, `DerivedMetricService`, `StepPlanner` | Advance steps, record actual values and interim readings, judge timeliness, forecast delays, complete, end or cancel processes, and compute their metrics. |
 | ⑤ Watch | `OverdueStepMonitor`, `OverdueProcessMonitor` | Find steps and processes past their deadline with no event. |
 | ⑥ Definitions and state | `DefinitionLoader`, `ProcessDefinitionService`, `StepDefinitionService`, instance services and repositories, `AktimetrixStorageInitializer` | Load and resolve definitions; read and save instances with version checks; prepare the database. |
 | ⑦ Outbound | publishers, `Outbox`, `OutboxRelay` | Queue every result with the state it describes, and publish it to the broker. |
@@ -61,9 +61,11 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
    - if the event is one of the process's cancel events, the process and its open steps are cancelled;
    - otherwise each step that lists the event is started or completed. A completed step gets its actual `TIME`, its
      other actual measurements from `ActualMeasurementService`, and its timeliness. `StepPlanner` then plans the steps
-     that follow it and forecasts the later ones; those pushed past their deadline become `AT_RISK`;
-   - when the last mandatory step completes, the process completes, is judged against its own deadline, and records its
-     actual measurements.
+     that follow it and forecasts the later ones; those pushed past their deadline become `AT_RISK`, and those already
+     at risk are published again with their later forecast;
+   - an open step that lists the event among its progress events gets interim readings from `ActualMeasurementService`;
+   - when the last mandatory step completes, or one of the process's end events arrives, the process completes, is
+     judged against its own deadline, records its actual measurements, and `DerivedMetricService` computes its metrics.
 
    Every change is saved and its event queued in the outbox.
 6. **Commit.** The transaction commits: state and queued events together.
@@ -71,8 +73,9 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
 ### When a deadline passes
 
 Every minute, on every instance, `OverdueStepMonitor` and `OverdueProcessMonitor` query the steps and processes whose
-`lateAfter` has passed, that are not completed or cancelled and not yet overdue. Each is marked `OVERDUE` in its own
-transaction, with an `OVERDUE` event queued, and, for a step, the later steps are forecast. Saves are version-checked:
+`lateAfter` has passed, that are not completed or cancelled and not yet overdue. Each is read again and marked
+`OVERDUE` in its own transaction, with an `OVERDUE` event queued, and, for a step, the later steps are forecast; a step
+that an earlier one has just put at risk is therefore marked from its current state. Saves are version-checked:
 if another instance, or the step's event, changed it since it was read, the save fails and the monitor moves on.
 
 ### When results are published

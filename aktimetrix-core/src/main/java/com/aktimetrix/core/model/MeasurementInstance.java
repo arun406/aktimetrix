@@ -48,6 +48,15 @@ public class MeasurementInstance {
      * For an actual measurement with a tolerance: whether the deviation is within it.
      */
     private Conformance conformance;
+    /**
+     * {@code true} for a reading taken while its step was still in progress; the final actual is recorded when the step
+     * completes.
+     */
+    private boolean interim;
+    /**
+     * For a metric computed from other measurements: its expression, e.g. {@code FUEL / DISTANCE}.
+     */
+    private String derivedFrom;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonProperty("measuredOn")

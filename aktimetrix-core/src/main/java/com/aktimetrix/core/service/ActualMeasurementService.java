@@ -61,6 +61,29 @@ public class ActualMeasurementService {
     }
 
     /**
+     * Interim readings of an open step, from a progress event: its actual measurements that the event carries
+     * ({@code valueFrom}), each compared with the plan.
+     */
+    public List<MeasurementInstance> readings(StepInstance step, List<MeasurementDefinition> declared, Event<?, ?> event) {
+        final List<MeasurementInstance> readings = new ArrayList<>();
+        for (MeasurementDefinition measurement : actualsOnly(declared)) {
+            if (measurement.getValueFrom() == null) {
+                continue;
+            }
+            final Object value = read(event, measurement.getValueFrom());
+            if (value == null) {
+                continue;
+            }
+            final MeasurementInstance reading = new MeasurementInstance(step.getTenant(), measurement.getMeasurementCode(),
+                    String.valueOf(value), measurement.getUnit(), step.getProcessInstanceId(), step.getId(),
+                    step.getStepCode(), Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(), ZonedDateTime.now(clock));
+            reading.setInterim(true);
+            add(readings, reading, measurement, step.getStepCode(), declared);
+        }
+        return readings;
+    }
+
+    /**
      * @param event the event that completed the process; may be {@code null}
      */
     public List<MeasurementInstance> forProcess(ProcessInstance process, List<MeasurementDefinition> declared,

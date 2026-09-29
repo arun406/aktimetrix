@@ -27,6 +27,12 @@ public class StepDefinition {
     private String responsiblePartyCode;
     private List<String> startEventCodes;
     private List<String> endEventCodes;
+    /**
+     * Events that report progress while the step is open, e.g. {@code LOCATION_UPDATED} during a journey: each records
+     * interim readings of the step's actual measurements that it carries ({@code valueFrom}), compared with the plan,
+     * without completing the step.
+     */
+    private List<String> progressEventCodes;
     private String groupCode;
     private List<MeasurementDefinition> measurements;
     /**
@@ -72,6 +78,7 @@ public class StepDefinition {
         merged.setResponsiblePartyCode(pick(override.getResponsiblePartyCode(), responsiblePartyCode));
         merged.setStartEventCodes(pick(override.getStartEventCodes(), startEventCodes));
         merged.setEndEventCodes(pick(override.getEndEventCodes(), endEventCodes));
+        merged.setProgressEventCodes(pick(override.getProgressEventCodes(), progressEventCodes));
         merged.setGroupCode(pick(override.getGroupCode(), groupCode));
         merged.setMeasurements(pick(override.getMeasurements(), measurements));
         merged.setPlannedAfter(pick(override.getPlannedAfter(), plannedAfter));
