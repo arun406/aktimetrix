@@ -1,9 +1,10 @@
 package com.aktimetrix.core.service;
 
+import java.util.UUID;
+
 import com.aktimetrix.core.model.ProcessInstance;
-import com.aktimetrix.core.repository.ProcessInstanceRepository;
-import com.aktimetrix.core.storage.AktimetrixTransactions;
-import org.bson.types.ObjectId;
+import com.aktimetrix.core.store.ProcessInstanceStore;
+import com.aktimetrix.core.store.AktimetrixTransactions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,7 +31,7 @@ class OverdueProcessMonitorTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2022, 5, 23, 12, 0);
 
     @Mock
-    private ProcessInstanceRepository processInstanceRepository;
+    private ProcessInstanceStore processInstanceStore;
     @Mock
     private StepProgressService stepProgressService;
     @Mock
@@ -43,13 +44,13 @@ class OverdueProcessMonitorTest {
             return null;
         }).when(transactions).run(any());
         ProcessInstance first = new ProcessInstance();
-        first.setId(new ObjectId());
+        first.setId(UUID.randomUUID().toString());
         ProcessInstance second = new ProcessInstance();
-        second.setId(new ObjectId());
-        when(processInstanceRepository.findOverdue(NOW)).thenReturn(List.of(first, second));
+        second.setId(UUID.randomUUID().toString());
+        when(processInstanceStore.findOverdue(NOW)).thenReturn(List.of(first, second));
         doThrow(new OptimisticLockingFailureException("stale")).when(stepProgressService).markProcessOverdue(first);
 
-        List<ProcessInstance> overdue = new OverdueProcessMonitor(processInstanceRepository, stepProgressService, CLOCK,
+        List<ProcessInstance> overdue = new OverdueProcessMonitor(processInstanceStore, stepProgressService, CLOCK,
                 transactions).checkOverdueProcesses();
 
         assertThat(overdue).containsExactly(second);

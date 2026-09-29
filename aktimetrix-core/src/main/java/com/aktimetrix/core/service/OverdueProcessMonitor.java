@@ -2,8 +2,8 @@ package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.ProcessInstance;
-import com.aktimetrix.core.repository.ProcessInstanceRepository;
-import com.aktimetrix.core.storage.AktimetrixTransactions;
+import com.aktimetrix.core.store.AktimetrixTransactions;
+import com.aktimetrix.core.store.ProcessInstanceStore;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ import java.util.List;
 public class OverdueProcessMonitor {
     private static final Logger logger = LoggerFactory.getLogger(OverdueProcessMonitor.class);
 
-    private final ProcessInstanceRepository processInstanceRepository;
+    private final ProcessInstanceStore processInstanceStore;
     private final StepProgressService stepProgressService;
     private final Clock clock;
     private final AktimetrixTransactions transactions;
@@ -41,7 +41,7 @@ public class OverdueProcessMonitor {
     public List<ProcessInstance> checkOverdueProcesses() {
         final LocalDateTime now = LocalDateTime.now(clock);
         final List<ProcessInstance> overdue = new ArrayList<>();
-        for (ProcessInstance process : processInstanceRepository.findOverdue(now)) {
+        for (ProcessInstance process : processInstanceStore.findOverdue(now)) {
             try {
                 transactions.run(() -> stepProgressService.markProcessOverdue(process));
                 overdue.add(process);

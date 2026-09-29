@@ -4,16 +4,12 @@ import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.annotation.Version;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,14 +20,12 @@ import java.util.Map;
  *
  */
 @Data
-@Document(collection = "processInstances")
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProcessInstance {
 
     @Id
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId id;
+    private String id;
     private String entityId;
     private String entityType;
     private String tenant;
@@ -72,6 +66,17 @@ public class ProcessInstance {
     @Version
     @JsonIgnore
     private Long revision;
+    /**
+     * The definition the process started with, its steps resolved: the process follows it until it ends, even if the
+     * definition changes meanwhile. {@code null} for instances started by versions that did not keep it; they follow
+     * the current definition.
+     */
+    @JsonIgnore
+    private ProcessDefinition definition;
+    /**
+     * Revision of {@link #definition}.
+     */
+    private Long definitionRevision;
     @Transient
     private List<StepInstance> steps = new ArrayList<>();
 
@@ -87,5 +92,7 @@ public class ProcessInstance {
         this.createdOn = LocalDateTime.now();
         this.tenant = definition.getTenant();
         this.entityType = definition.getEntityType();
+        this.definition = definition;
+        this.definitionRevision = definition.getRevision();
     }
 }

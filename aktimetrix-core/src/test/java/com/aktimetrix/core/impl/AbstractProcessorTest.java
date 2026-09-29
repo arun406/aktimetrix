@@ -1,5 +1,7 @@
 package com.aktimetrix.core.impl;
 
+import java.util.UUID;
+
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.model.ProcessInstance;
@@ -7,7 +9,6 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.service.ProcessInstanceService;
 import com.aktimetrix.core.service.StepInstanceService;
-import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,7 +38,7 @@ class AbstractProcessorTest {
     @Test
     void replayedStartEventReusesExistingProcessAndSteps() {
         ProcessInstance existing = new ProcessInstance();
-        existing.setId(new ObjectId());
+        existing.setId(UUID.randomUUID().toString());
         StepInstance place = new StepInstance();
         when(processInstanceService.getProcessInstance("AA", "ORDER_DELIVERY", "com.ecom.order", "1234"))
                 .thenReturn(existing);

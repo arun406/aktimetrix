@@ -3,10 +3,8 @@ package com.aktimetrix.core.service;
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
-import com.aktimetrix.core.repository.StepInstanceRepository;
+import com.aktimetrix.core.store.StepInstanceStore;
 import lombok.RequiredArgsConstructor;
-import org.bson.Document;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,45 +22,26 @@ import java.util.Map;
 public class StepInstanceService {
 
     private static final Logger logger = LoggerFactory.getLogger(StepInstanceService.class);
-    final private StepInstanceRepository repository;
+    private final StepInstanceStore store;
 
     /**
-     * @param stepInstances step instance
+     * @param stepInstances step instances to save
      */
     public void save(List<StepInstance> stepInstances) {
-        // Step Instance
-        this.repository.saveAll(stepInstances);
-        // log step instance ids;
+        store.saveAll(stepInstances);
         stepInstances.forEach(si -> logger.info(" Step Code: " + si.getStepCode() + ", Step instance id: " + si.getId()));
     }
 
     /**
-     * persists the step instance
-     *
-     * @param stepInstance step instance
-     * @return step instance
+     * Saves the step instance: inserts it, assigning its id, or updates it with a version check.
      */
     public StepInstance save(StepInstance stepInstance) {
-        this.repository.save(stepInstance);
+        store.save(stepInstance);
         return stepInstance;
     }
 
-
     /**
-     * returns the step instance by process instance id and step code
-     *
-     * @param processInstanceId process instance id
-     * @param stepCode          step code
-     * @return step instance collection
-     */
-    public List<StepInstance> getStepInstancesByProcessInstanceIdAndStepCode(String tenant, ObjectId processInstanceId, String stepCode) {
-        return this.repository
-                .findByTenantAndStepCodeAndProcessInstanceId(tenant, stepCode, processInstanceId);
-    }
-
-
-    /**
-     * Creates  step instances
+     * Creates the step instances of a process instance, one per step definition, in order.
      *
      * @param tenant            tenant
      * @param stepDefinitions   step definitions
@@ -71,8 +50,7 @@ public class StepInstanceService {
      * @return step instance collection
      */
     public List<StepInstance> save(String tenant, List<StepDefinition> stepDefinitions,
-                                   Map<String, Object> metadata, ObjectId processInstanceId) {
-
+                                   Map<String, Object> metadata, String processInstanceId) {
         List<StepInstance> steps = new ArrayList<>();
         int sequence = 0;
         for (StepDefinition stepDefinition : stepDefinitions) {
@@ -86,54 +64,19 @@ public class StepInstanceService {
             stepInstance.setSequence(sequence++);
             steps.add(stepInstance);
         }
-        // save
         this.save(steps);
         return steps;
     }
 
-
-
-    /**
-     * @param tenant
-     * @param processInstanceId
-     * @param stepCode
-     * @param functionalCtx
-     * @param groupCode
-     * @param version
-     * @param status
-     * @return
-     */
-    public StepInstance prepareStepInstanceObject(String tenant, ObjectId processInstanceId, String stepCode,
+    public StepInstance prepareStepInstanceObject(String tenant, String processInstanceId, String stepCode,
                                                   String functionalCtx, String groupCode, String version, String status) {
         return new StepInstance(tenant, stepCode, processInstanceId, groupCode, functionalCtx, version, status, LocalDateTime.now());
     }
 
     /**
-     * returns the step instance objects by process instance id
-     *
-     * @param tenant            tenant
-     * @param processInstanceId process instance id
-     * @return step instance collection
+     * Returns the step instances of the process instance, in order.
      */
-    public List<StepInstance> getStepInstancesByProcessInstanceId(String tenant, ObjectId processInstanceId) {
-
-        Document params = new Document();
-        params.put("tenant", tenant);
-        params.put("processInstanceId", processInstanceId);
-
-        return this.repository
-                .findByTenantAndProcessInstanceId(tenant, processInstanceId);
-    }
-
-    /**
-     * Returns step instance by process id and step id
-     *
-     * @param tenant            tenant
-     * @param processInstanceId process instance id
-     * @param stepInstanceId    step instance id
-     * @return step instance
-     */
-    public StepInstance getStepInstancesByProcessInstanceIdAndId(String tenant, String processInstanceId, String stepInstanceId) {
-        return this.repository.getStepInstancesWithMeasurements(tenant, new ObjectId(processInstanceId), new ObjectId(stepInstanceId));
+    public List<StepInstance> getStepInstancesByProcessInstanceId(String tenant, String processInstanceId) {
+        return store.findByProcessInstance(tenant, processInstanceId);
     }
 }

@@ -10,7 +10,6 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
-import com.aktimetrix.core.referencedata.service.StepDefinitionService;
 import com.aktimetrix.core.transferobjects.Event;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -46,7 +45,6 @@ public class StepProgressService {
     private static final Logger logger = LoggerFactory.getLogger(StepProgressService.class);
 
     private final StepInstanceService stepInstanceService;
-    private final StepDefinitionService stepDefinitionService;
     private final ProcessInstanceService processInstanceService;
     private final MeasurementInstanceService measurementInstanceService;
     private final MeasurementInstancePublisherService measurementInstancePublisherService;
@@ -85,8 +83,7 @@ public class StepProgressService {
             logger.debug("No process instance for {} {}; {} records nothing", entityType, entityId, eventCode);
         }
         for (ProcessInstance processInstance : processInstances) {
-            final ProcessDefinition definition = processDefinitionService.findByCode(tenant,
-                    processInstance.getProcessCode());
+            final ProcessDefinition definition = processDefinitionService.definitionOf(processInstance);
             if (definition != null && contains(definition.getCancelEventCodes(), eventCode)) {
                 if (processInstance.isComplete()) {
                     continue;   // too late to cancel
@@ -125,7 +122,7 @@ public class StepProgressService {
                                                      LocalDateTime occurredAt, Event<?, ?> event) {
         final String tenant = processInstance.getTenant();
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(tenant, processInstance.getId());
-        final Map<String, StepDefinition> definitions = definitions(tenant, processInstance.getProcessCode(), steps);
+        final Map<String, StepDefinition> definitions = processDefinitionService.stepDefinitionsOf(processInstance);
         final List<MeasurementInstance> actuals = new ArrayList<>();
         final List<MeasurementInstance> readings = new ArrayList<>();
         final List<StepInstance> completed = new ArrayList<>();
@@ -199,8 +196,8 @@ public class StepProgressService {
                 step.getProcessInstanceId());
         final ProcessInstance processInstance = processInstanceService.getProcessInstance(step.getTenant(),
                 step.getProcessInstanceId());
-        final String processCode = processInstance == null ? null : processInstance.getProcessCode();
-        forecast(step, Duration.between(step.getPlannedAt(), now), steps, definitions(step.getTenant(), processCode, steps));
+        forecast(step, Duration.between(step.getPlannedAt(), now), steps, processInstance == null
+                ? new HashMap<>() : processDefinitionService.stepDefinitionsOf(processInstance));
     }
 
     private void forecast(StepInstance source, Duration delay, List<StepInstance> steps,
@@ -223,19 +220,6 @@ public class StepProgressService {
                     stepInstanceService.save(step);
                     stepInstancePublisherService.publish(step, Timeliness.AT_RISK.name());
                 });
-    }
-
-    /**
-     * The definitions of the steps as their process uses them, by step code.
-     */
-    private Map<String, StepDefinition> definitions(String tenant, String processCode, List<StepInstance> steps) {
-        final Map<String, StepDefinition> definitions = new HashMap<>();
-        for (StepInstance step : steps) {
-            definitions.computeIfAbsent(step.getStepCode(),
-                    code -> stepDefinitionService.findStepDefinition(tenant, processCode, code));
-        }
-        definitions.values().removeIf(Objects::isNull);
-        return definitions;
     }
 
     /**
@@ -336,8 +320,7 @@ public class StepProgressService {
         if (processInstance.isComplete()) {
             return List.of();
         }
-        final ProcessDefinition definition = processDefinitionService.findByCode(processInstance.getTenant(),
-                processInstance.getProcessCode());
+        final ProcessDefinition definition = processDefinitionService.definitionOf(processInstance);
         if (definition != null && !isEmpty(definition.getEndEventCodes())) {
             return List.of();
         }
@@ -357,8 +340,7 @@ public class StepProgressService {
                                           LocalDateTime occurredAt, Event<?, ?> event) {
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(
                 processInstance.getTenant(), processInstance.getId());
-        final Map<String, StepDefinition> definitions = definitions(processInstance.getTenant(),
-                processInstance.getProcessCode(), steps);
+        final Map<String, StepDefinition> definitions = processDefinitionService.stepDefinitionsOf(processInstance);
         for (StepInstance step : steps) {
             if (isOpen(step) && !isOptional(definitions.get(step.getStepCode()))) {
                 step.setStatus(Constants.STATUS_SKIPPED);
@@ -399,7 +381,7 @@ public class StepProgressService {
      */
     private List<MeasurementInstance> recordMetrics(ProcessInstance processInstance) {
         final List<MeasurementInstance> results = derivedMetricService.compute(processInstance,
-                processDefinitionService.findByCode(processInstance.getTenant(), processInstance.getProcessCode()));
+                processDefinitionService.definitionOf(processInstance));
         if (!results.isEmpty()) {
             saveAndPublish(processInstance.getTenant(), results);
         }
