@@ -3,8 +3,8 @@ package com.aktimetrix.core.service;
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.StepInstance;
-import com.aktimetrix.core.repository.StepInstanceRepository;
-import com.aktimetrix.core.storage.AktimetrixTransactions;
+import com.aktimetrix.core.store.StepInstanceStore;
+import com.aktimetrix.core.store.AktimetrixTransactions;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class OverdueStepMonitor {
     private static final Logger logger = LoggerFactory.getLogger(OverdueStepMonitor.class);
 
-    private final StepInstanceRepository stepInstanceRepository;
+    private final StepInstanceStore stepInstanceStore;
     private final StepProgressService stepProgressService;
     private final Clock clock;
     private final AktimetrixTransactions transactions;
@@ -48,11 +48,11 @@ public class OverdueStepMonitor {
     public List<StepInstance> checkOverdueSteps() {
         final LocalDateTime now = LocalDateTime.now(clock);
         final List<StepInstance> overdue = new ArrayList<>();
-        for (StepInstance found : stepInstanceRepository.findOverdue(now)) {
+        for (StepInstance found : stepInstanceStore.findOverdue(now)) {
             try {
                 // read the step again: marking an earlier step overdue may have changed it, e.g. put it at risk
                 final AtomicReference<StepInstance> marked = new AtomicReference<>();
-                transactions.run(() -> stepInstanceRepository.findById(found.getId().toHexString())
+                transactions.run(() -> stepInstanceStore.findById(found.getId())
                         .filter(current -> isStillOverdue(current, now))
                         .ifPresent(current -> {
                             stepProgressService.markOverdue(current, now);

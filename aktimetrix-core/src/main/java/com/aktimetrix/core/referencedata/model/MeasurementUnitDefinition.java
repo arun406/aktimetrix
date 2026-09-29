@@ -2,10 +2,8 @@ package com.aktimetrix.core.referencedata.model;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Document(collection = "measurementUnitDefinitions")
 public class MeasurementUnitDefinition {
 
     private String tenant;

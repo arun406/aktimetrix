@@ -1,11 +1,12 @@
 package com.aktimetrix.core.service;
 
+import java.util.UUID;
+
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.StepInstance;
-import com.aktimetrix.core.repository.StepInstanceRepository;
-import com.aktimetrix.core.storage.AktimetrixTransactions;
-import org.bson.types.ObjectId;
+import com.aktimetrix.core.store.StepInstanceStore;
+import com.aktimetrix.core.store.AktimetrixTransactions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +36,7 @@ class OverdueStepMonitorTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2022, 5, 23, 12, 0);
 
     @Mock
-    private StepInstanceRepository stepInstanceRepository;
+    private StepInstanceStore stepInstanceStore;
     @Mock
     private StepProgressService stepProgressService;
     @Mock
@@ -49,13 +50,13 @@ class OverdueStepMonitorTest {
             invocation.<Runnable>getArgument(0).run();
             return null;
         }).when(transactions).run(any());
-        monitor = new OverdueStepMonitor(stepInstanceRepository, stepProgressService, CLOCK, transactions);
+        monitor = new OverdueStepMonitor(stepInstanceStore, stepProgressService, CLOCK, transactions);
     }
 
     @Test
     void marksStepsPastTheirDeadlineOverdue() {
         StepInstance deliver = step("DELIVER");
-        when(stepInstanceRepository.findOverdue(NOW)).thenReturn(List.of(deliver));
+        when(stepInstanceStore.findOverdue(NOW)).thenReturn(List.of(deliver));
         stored(deliver);
 
         assertThat(monitor.checkOverdueSteps()).containsExactly(deliver);
@@ -66,7 +67,7 @@ class OverdueStepMonitorTest {
     void skipsAStepThatChangedSinceItWasReadAndCarriesOn() {
         StepInstance ship = step("SHIP");
         StepInstance deliver = step("DELIVER");
-        when(stepInstanceRepository.findOverdue(NOW)).thenReturn(List.of(ship, deliver));
+        when(stepInstanceStore.findOverdue(NOW)).thenReturn(List.of(ship, deliver));
         stored(ship);
         stored(deliver);
         // e.g. another instance marked SHIP first, or its event just completed it
@@ -80,14 +81,14 @@ class OverdueStepMonitorTest {
     void marksTheCurrentStateOfAStepThatAnEarlierOneChanged() {
         StepInstance handover = step("HANDOVER");
         StepInstance accept = step("ACCEPT");
-        when(stepInstanceRepository.findOverdue(NOW)).thenReturn(List.of(handover, accept));
+        when(stepInstanceStore.findOverdue(NOW)).thenReturn(List.of(handover, accept));
         stored(handover);
         // marking HANDOVER overdue put ACCEPT at risk: a newer copy than the one found
         StepInstance acceptNow = step("ACCEPT");
         acceptNow.setId(accept.getId());
         acceptNow.setTimeliness(Timeliness.AT_RISK);
         acceptNow.setRevision(1L);
-        when(stepInstanceRepository.findById(accept.getId().toHexString())).thenReturn(Optional.of(acceptNow));
+        when(stepInstanceStore.findById(accept.getId())).thenReturn(Optional.of(acceptNow));
 
         assertThat(monitor.checkOverdueSteps()).containsExactly(handover, acceptNow);
         verify(stepProgressService).markOverdue(acceptNow, NOW);
@@ -96,23 +97,23 @@ class OverdueStepMonitorTest {
     @Test
     void skipsAStepCompletedSinceItWasFound() {
         StepInstance deliver = step("DELIVER");
-        when(stepInstanceRepository.findOverdue(NOW)).thenReturn(List.of(deliver));
+        when(stepInstanceStore.findOverdue(NOW)).thenReturn(List.of(deliver));
         StepInstance completed = step("DELIVER");
         completed.setId(deliver.getId());
         completed.setStatus(Constants.STATUS_COMPLETED);
-        when(stepInstanceRepository.findById(deliver.getId().toHexString())).thenReturn(Optional.of(completed));
+        when(stepInstanceStore.findById(deliver.getId())).thenReturn(Optional.of(completed));
 
         assertThat(monitor.checkOverdueSteps()).isEmpty();
         verify(stepProgressService, never()).markOverdue(any(), any());
     }
 
     private void stored(StepInstance step) {
-        when(stepInstanceRepository.findById(step.getId().toHexString())).thenReturn(Optional.of(step));
+        when(stepInstanceStore.findById(step.getId())).thenReturn(Optional.of(step));
     }
 
     private static StepInstance step(String stepCode) {
         StepInstance step = new StepInstance();
-        step.setId(new ObjectId());
+        step.setId(UUID.randomUUID().toString());
         step.setStepCode(stepCode);
         step.setStatus(Constants.STATUS_CREATED);
         step.setLateAfter(NOW.minusHours(1));

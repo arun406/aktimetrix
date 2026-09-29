@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Duration;
 import java.util.List;
@@ -12,7 +11,6 @@ import java.util.List;
 @Data
 @ToString
 @NoArgsConstructor
-@Document(collection = "processDefinitions")
 public class ProcessDefinition {
     private String tenant;
     @Id
@@ -60,6 +58,11 @@ public class ProcessDefinition {
      * ISO-8601 duration the process may run past its planned completion before it counts as late or overdue.
      */
     private String tolerance;
+    /**
+     * Incremented each time the definition is saved. A process instance keeps the definition, at the revision it
+     * started with, until it ends; a change applies to instances started after it.
+     */
+    private Long revision;
 
     /**
      * @param tenant

@@ -4,11 +4,7 @@ import com.aktimetrix.core.api.EventMapper;
 import com.aktimetrix.core.configurations.AktimetrixProperties;
 import com.aktimetrix.core.event.EnvelopeEventMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -18,15 +14,13 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import java.time.Clock;
 
 /**
- * Wires Aktimetrix into a Spring Boot application: adding the {@code aktimetrix-core} dependency is enough, no
- * {@code @ComponentScan} needed.
+ * Wires Aktimetrix into a Spring Boot application: adding the {@code aktimetrix-core} dependency, one store module and
+ * one broker module is enough, no {@code @ComponentScan} needed.
  * <p>
- * The framework's package is registered as an auto-configuration package, so Spring Boot creates its MongoDB
- * repositories alongside the application's own.
+ * The store module supplies the {@link com.aktimetrix.core.store state-store contract}; the broker module, the
+ * Spring Cloud Stream binder and its defaults.
  */
 @Configuration(proxyBeanMethods = false)
-@AutoConfigureBefore({MongoDataAutoConfiguration.class, MongoRepositoriesAutoConfiguration.class})
-@AutoConfigurationPackage(basePackages = "com.aktimetrix.core")
 @ComponentScan("com.aktimetrix.core")
 @EnableConfigurationProperties(AktimetrixProperties.class)
 @EnableScheduling

@@ -2,10 +2,7 @@ package com.aktimetrix.core.model;
 
 import com.aktimetrix.core.api.Timeliness;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 
@@ -13,15 +10,12 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @Data
-@org.springframework.data.mongodb.core.mapping.Document(collection = "stepInstances")
 public class StepInstance {
 
     private String tenant;
     @Id
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId id;
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId processInstanceId;
+    private String id;
+    private String processInstanceId;
     private String stepCode;
     /**
      * Position of the step in its process, from 0.
@@ -75,7 +69,7 @@ public class StepInstance {
      * @param status
      * @param createdOn
      */
-    public StepInstance(String tenant, String stepCode, ObjectId processInstanceId, String groupCode,
+    public StepInstance(String tenant, String stepCode, String processInstanceId, String groupCode,
                         String functionalCtx, String version, String status, LocalDateTime createdOn) {
         this.tenant = tenant;
         this.stepCode = stepCode;

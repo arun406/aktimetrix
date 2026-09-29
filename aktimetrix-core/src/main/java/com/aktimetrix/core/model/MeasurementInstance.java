@@ -4,29 +4,23 @@ import com.aktimetrix.core.api.Conformance;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.ZonedDateTime;
 
 @Data
-@Document(collection = "measurement-instance")
 public class MeasurementInstance {
 
     private String tenant;
     @Id
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId id;
+    private String id;
 
     @JsonIgnore
-    private ObjectId processInstanceId;
+    private String processInstanceId;
 
     @JsonIgnore
-    private ObjectId stepInstanceId;
+    private String stepInstanceId;
 
     @JsonIgnore
     private String stepCode;
@@ -73,8 +67,8 @@ public class MeasurementInstance {
      * @param processInstanceId
      * @param stepInstanceId
      */
-    public MeasurementInstance(String tenant, String code, String value, String unit, ObjectId processInstanceId,
-                               ObjectId stepInstanceId, String stepCode, String type, String measuredAt, ZonedDateTime createdOn) {
+    public MeasurementInstance(String tenant, String code, String value, String unit, String processInstanceId,
+                               String stepInstanceId, String stepCode, String type, String measuredAt, ZonedDateTime createdOn) {
         this.tenant = tenant;
         this.code = code;
         this.value = value;

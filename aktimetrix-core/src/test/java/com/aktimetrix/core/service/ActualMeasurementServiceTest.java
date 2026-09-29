@@ -1,5 +1,7 @@
 package com.aktimetrix.core.service;
 
+import java.util.UUID;
+
 import com.aktimetrix.core.api.MeasurementType;
 import com.aktimetrix.core.meter.api.ProcessMeter;
 import com.aktimetrix.core.model.MeasurementInstance;
@@ -7,7 +9,6 @@ import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.transferobjects.Event;
-import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -36,7 +37,7 @@ class ActualMeasurementServiceTest {
     @Test
     void readsAStepActualFromTheCompletingEvent() {
         StepInstance deliver = new StepInstance();
-        deliver.setId(new ObjectId());
+        deliver.setId(UUID.randomUUID().toString());
         deliver.setTenant("AA");
         deliver.setStepCode("DELIVER");
         Event<Object, Object> delivered = Event.of("AA", "ORDER_DELIVERED_EVENT", "com.ecom.order", "1234", ZonedDateTime.now());
@@ -60,7 +61,7 @@ class ActualMeasurementServiceTest {
     @Test
     void asksTheProcessMeterWhenTheMeasurementDoesNotSayWhereToRead() {
         ProcessInstance order = new ProcessInstance();
-        order.setId(new ObjectId());
+        order.setId(UUID.randomUUID().toString());
         order.setTenant("AA");
         order.setProcessCode("ORDER_DELIVERY");
         Event<Object, Object> rated = Event.of("AA", "ORDER_RATED_EVENT", "com.ecom.order", "1234", ZonedDateTime.now());

@@ -1,0 +1,43 @@
+package com.aktimetrix.core.store;
+
+import com.aktimetrix.core.model.ProcessInstance;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Stores process instances.
+ * <p>
+ * {@link #save} inserts an instance without an id, assigning one, and otherwise updates it with a version check: it
+ * increments {@code revision}, and throws {@link org.springframework.dao.OptimisticLockingFailureException} when the
+ * stored revision is not the one the instance was read with. At most one instance may exist per tenant, process code,
+ * entity type and entity id: inserting a second throws {@link org.springframework.dao.DuplicateKeyException}.
+ */
+public interface ProcessInstanceStore {
+
+    ProcessInstance save(ProcessInstance instance);
+
+    Optional<ProcessInstance> findById(String tenant, String id);
+
+    /**
+     * The instance of the process for the entity, whatever its status.
+     */
+    Optional<ProcessInstance> findByEntity(String tenant, String processCode, String entityType, String entityId);
+
+    /**
+     * Every instance of any process for the entity id, whatever its entity type and status.
+     */
+    List<ProcessInstance> findByEntityId(String tenant, String entityId);
+
+    /**
+     * The instances for the entity that are not cancelled: running and completed ones.
+     */
+    List<ProcessInstance> findNotCancelled(String tenant, String entityType, String entityId);
+
+    /**
+     * Instances of every tenant that are not complete, whose {@code lateAfter} is before {@code now}, and whose
+     * timeliness is not {@code OVERDUE} yet.
+     */
+    List<ProcessInstance> findOverdue(LocalDateTime now);
+}

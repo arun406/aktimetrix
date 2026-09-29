@@ -1,6 +1,7 @@
 package com.aktimetrix.core.outbox;
 
 import com.aktimetrix.core.service.AktimetrixMetrics;
+import com.aktimetrix.core.store.OutboxStore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -8,24 +9,25 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 
 /**
- * Queues events for publishing to Kafka. See {@link OutboxRelay}.
+ * Queues events for publishing to the message broker, in the state store, in the same unit of work as the state they
+ * describe. See {@link OutboxRelay}.
  */
 @Component
 public class Outbox {
 
-    private final OutboxRepository repository;
+    private final OutboxStore store;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
-    public Outbox(OutboxRepository repository, ObjectMapper objectMapper, Clock clock, AktimetrixMetrics metrics) {
-        this.repository = repository;
+    public Outbox(OutboxStore store, ObjectMapper objectMapper, Clock clock, AktimetrixMetrics metrics) {
+        this.store = store;
         this.objectMapper = objectMapper;
         this.clock = clock;
-        metrics.outboxPending(repository::countBySentAtIsNull);
+        metrics.outboxPending(store::countPending);
     }
 
     /**
-     * Queues the event for the binding, with the Kafka message key.
+     * Queues the event for the binding, with its message key.
      */
     public void enqueue(String destination, String messageKey, Object event) {
         final String payload;
@@ -41,6 +43,6 @@ public class Outbox {
      * Queues a payload that is already serialized, as is, for the binding.
      */
     public void enqueueRaw(String destination, String messageKey, String payload) {
-        repository.save(new OutboxMessage(destination, messageKey, payload, clock.instant()));
+        store.add(new OutboxMessage(destination, messageKey, payload, clock.instant()));
     }
 }
