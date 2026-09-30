@@ -1,16 +1,41 @@
 name: Release
 
-# Publishes to Maven Central when a version tag such as v0.1.0 is pushed. See RELEASING.md for the one-time setup.
+# On a version tag such as v0.1.0: builds and tests the tagged code, creates the GitHub release with its notes from
+# CHANGELOG.md, and publishes the artifacts to Maven Central once its secrets are configured (see RELEASING.md).
 on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: write
+
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
+    env:
+      CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+      CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+      MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+          cache: maven
+      - name: Build and test
+        run: ./mvnw -B verify
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '/^## /{p = ($2 == v)} p' CHANGELOG.md | tail -n +2 > release-notes.md
+          gh release create "$GITHUB_REF_NAME" --title "Aktimetrix $version" --notes-file release-notes.md
+      - name: Configure signing and Maven Central
+        if: env.CENTRAL_TOKEN != '' && env.GPG_PRIVATE_KEY != ''
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 11
@@ -20,11 +45,8 @@ jobs:
           server-password: CENTRAL_TOKEN
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-      - name: Set the version from the tag
-        run: ./mvnw -B versions:set -DnewVersion="${GITHUB_REF_NAME#v}" -DgenerateBackupPoms=false
-      - name: Build, sign, and publish
-        run: ./mvnw -B -Prelease deploy
-        env:
-          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Publish to Maven Central
+        if: env.CENTRAL_TOKEN != '' && env.GPG_PRIVATE_KEY != ''
+        run: |
+          ./mvnw -B versions:set -DnewVersion="${GITHUB_REF_NAME#v}" -DgenerateBackupPoms=false
+          ./mvnw -B -Prelease deploy -DskipTests
