@@ -4,12 +4,12 @@
 
 > This guide describes the **reference implementation**. Its examples use MongoDB and Kafka, as the reference project
 > does; any store and broker module can be used instead, see [Choosing a store and a broker](configuration.md#choosing-a-store-and-a-broker).
-> The model itself is technology-neutral: see the [README](../README.md#52-infrastructure-contract).
+> The model itself is technology-neutral: see the [white paper](./white-paper.md#52-infrastructure-contract).
 
 ## Run the reference project
 
 The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) is a complete Aktimetrix
-application: it monitors the order delivery process of the [worked example](../README.md#11-a-worked-example-order-delivery),
+application: it monitors the order delivery process of the [worked example](./white-paper.md#11-a-worked-example-order-delivery),
 seven steps from order confirmation to the customer's rating, in time, distance, fuel, temperature, cost and rating.
 You need **JDK 11+** and **Docker**.
 

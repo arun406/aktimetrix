@@ -3,7 +3,7 @@
 [← Back to README](../README.md)
 
 > This guide describes the **reference implementation**: its modules, their settings, and its API. The model itself
-> is technology-neutral: see the [README](../README.md#52-infrastructure-contract).
+> is technology-neutral: see the [white paper](./white-paper.md#52-infrastructure-contract).
 
 ## Choosing a store and a broker
 
@@ -163,7 +163,7 @@ expires, and an event is retried. The in-memory store is not shared between inst
 ## Published event payloads
 
 Every outbound message has three parts: the envelope, the `entity`, which is the instance that changed, and the
-context, in `eventDetails`. The [white paper](../README.md#45-published-events) describes the event catalogue. JSON
+context, in `eventDetails`. The [white paper](./white-paper.md#45-published-events) describes the event catalogue. JSON
 Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/aktimetrix/schemas/`:
 `process-event.schema.json`, `step-event.schema.json` and `measurement-event.schema.json`.
 
