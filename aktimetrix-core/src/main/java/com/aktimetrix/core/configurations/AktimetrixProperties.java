@@ -22,6 +22,7 @@ public class AktimetrixProperties {
     private final Events events = new Events();
     private final Definitions definitions = new Definitions();
     private final Monitor monitor = new Monitor();
+    private final Alarms alarms = new Alarms();
     private final Outbox outbox = new Outbox();
     private final Storage storage = new Storage();
 
@@ -67,18 +68,45 @@ public class AktimetrixProperties {
          * Location of the step definitions: a JSON array.
          */
         private String steps = "classpath*:aktimetrix/step-definitions.json";
+        /**
+         * Locations of YAML definition files, comma-separated: each holds a tenant's steps and processes.
+         */
+        private String files = "classpath*:aktimetrix/*.yaml,classpath*:aktimetrix/*.yml";
     }
 
     @Data
     public static class Monitor {
         /**
-         * Whether to check periodically for steps whose planned time has passed without completing.
+         * Whether to sweep periodically for steps and processes past their deadline. Alarms mark them overdue as their
+         * deadlines pass; the sweep is a safety net, for instances without an alarm, such as those created by earlier
+         * versions.
          */
         private boolean enabled = true;
         /**
-         * How often to check for overdue steps, as an ISO-8601 duration such as {@code PT1M}.
+         * How often to sweep for overdue steps and processes, as an ISO-8601 duration such as {@code PT10M}.
          */
-        private Duration overdueCheckInterval = Duration.ofMinutes(1);
+        private Duration overdueCheckInterval = Duration.ofMinutes(10);
+    }
+
+    @Data
+    public static class Alarms {
+        /**
+         * Whether to fire the alarms set at deadlines: a step or process with a planned time gets an alarm at its
+         * deadline, which marks it overdue if its event has not arrived by then.
+         */
+        private boolean enabled = true;
+        /**
+         * How often to look for alarms that are due, as an ISO-8601 duration: at most how late an alarm fires.
+         */
+        private Duration checkInterval = Duration.ofSeconds(5);
+        /**
+         * Most alarms claimed at once; claiming continues until none are due.
+         */
+        private int batchSize = 100;
+        /**
+         * How long an instance holds a claimed alarm before another may fire it, if the first did not finish.
+         */
+        private Duration lease = Duration.ofSeconds(30);
     }
 
     @Data

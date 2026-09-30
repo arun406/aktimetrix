@@ -80,7 +80,7 @@
   <text x="862.5" y="329.0" text-anchor="middle" class="ts">start · complete · end</text>
   <text x="862.5" y="347.0" text-anchor="middle" class="ts">cancel · skip</text>
   <rect x="995.0" y="291" width="225.0" height="66" rx="10" class="core"/>
-  <text x="1107.5" y="311.0" text-anchor="middle" class="tb">Deadline monitors</text>
+  <text x="1107.5" y="311.0" text-anchor="middle" class="tb">Deadline alarms</text>
   <text x="1107.5" y="329.0" text-anchor="middle" class="ts">clock-driven:</text>
   <text x="1107.5" y="347.0" text-anchor="middle" class="ts">OVERDUE</text>
   <rect x="40" y="392" width="1200" height="108" rx="14" class="band"/>

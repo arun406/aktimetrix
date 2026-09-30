@@ -27,7 +27,7 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
 | ② Routing | `RegistryService`, `DefaultRegistry`, `*PostBeanProcessor`, event handlers | Find the components registered for a code: event handlers by event code, process handlers by process code, meters by step or process and measurement code. |
 | ③ Start and plan | `AbstractProcessor`, pre- and post-processors, `DefaultMeasurementProcessor`, meters | Create a process instance and its steps, and compute their planned measurements. |
 | ④ Record | `StepProgressService`, `ActualMeasurementService`, `DerivedMetricService`, `StepPlanner` | Advance steps, record actual values and interim readings, judge timeliness, forecast delays, complete, end or cancel processes, and compute their metrics. |
-| ⑤ Watch | `OverdueStepMonitor`, `OverdueProcessMonitor` | Find steps and processes past their deadline with no event. |
+| ⑤ Watch | `DeadlineAlarms`, `AlarmScheduler`; `OverdueStepMonitor`, `OverdueProcessMonitor` | Keep an alarm at each open deadline; fire the alarms that are due, and mark steps and processes still without their event overdue. The monitors are a slower safety-net sweep. |
 | ⑥ Definitions and state | `DefinitionLoader`, `ProcessDefinitionService`, `StepDefinitionService`, instance services, and the store contract (`core.store`) implemented by the store module | Load, version and resolve definitions; read and save instances with version checks; prepare the database. |
 | ⑦ Outbound | publishers, `Outbox`, `OutboxRelay` | Queue every result with the state it describes, and publish it to the broker. |
 | Cross-cutting | `AktimetrixAutoConfiguration`, `AktimetrixDefaultProperties`, `AktimetrixProperties`, `AktimetrixMetrics`, REST resources | Wiring, configuration, metrics and the query API. |
@@ -44,8 +44,9 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
 3. Before any event is consumed:
    - the store module prepares its database before the stores are first used: the MongoDB store upgrades data
      saved by earlier versions and creates its indexes, the JDBC store creates its tables;
-   - `DefinitionLoader` upserts the process and step definitions from `aktimetrix/*.json`; a process definition that
-     changed gets a new revision.
+   - `DefinitionLoader` registers the planning rules of `Definitions` beans (the Java DSL) as meters, and upserts
+     the process and step definitions from `aktimetrix/*.json`, `aktimetrix/*.yaml` and those beans; a process
+     definition that changed gets a new revision.
 
 ### When an event arrives
 
@@ -80,11 +81,23 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
 
 ### When a deadline passes
 
-Every minute, on every instance, `OverdueStepMonitor` and `OverdueProcessMonitor` query the steps and processes whose
-`lateAfter` has passed, that are not completed or cancelled and not yet overdue. Each is read again and marked
-`OVERDUE` in its own transaction, with an `OVERDUE` event queued, and, for a step, the later steps are forecast; a step
-that an earlier one has just put at risk is therefore marked from its current state. Saves are version-checked:
-if another instance, or the step's event, changed it since it was read, the save fails and the monitor moves on.
+Whenever a step or process instance is saved, `DeadlineAlarms` keeps its alarm in line with its deadline
+(`lateAfter`), in the same unit of work: it sets one when the instance is planned, moves it when a forecast or re-plan
+moves the deadline, and cancels it when the instance completes, is cancelled or becomes overdue. The instance records
+the due time of its alarm, so a save that does not move the deadline writes nothing more. There is at most one alarm
+per step or process, identified by it.
+
+Every 5 seconds, on every instance, `AlarmScheduler` claims the alarms that are due, oldest first, in batches of 100,
+with an atomic conditional update that sets a lease, so each alarm is fired by one instance. For each, in its own
+transaction, it reads the step or process again: if its event has arrived, the alarm is dropped; if its deadline has
+moved later, the alarm is set again; otherwise it is marked `OVERDUE`, with an `OVERDUE` event queued, and, for a step,
+the later steps are forecast. Saves are version-checked: if the step's event changed it meanwhile, the save fails and
+the alarm fires again when its lease expires, and then finds it settled. Firing costs one indexed query for the due
+alarms, however many entities are watched.
+
+Every 10 minutes, `OverdueStepMonitor` and `OverdueProcessMonitor` sweep for steps and processes past their deadline
+and not yet overdue, and mark them the same way: a safety net for any deadline without an alarm, such as those of
+instances saved before alarms existed.
 
 ### When results are published
 
@@ -100,8 +113,8 @@ keeps its lease until it expires, then any instance retries it. Sent entries are
 | Events of one entity processed in order | The broker's per-key ordering; producers key events by entity id. |
 | One process instance per entity | Unique index on tenant, process code, entity type and entity id. |
 | Two changes to the same step or process | `@Version revision` on step and process instances: the second save fails instead of overwriting. |
-| State and outbound events | One transaction per event, or per overdue step or process, when the store supports transactions: MongoDB as a replica set, or a relational database. |
-| Outbox shared by several instances | Leases claimed with an atomic find-and-modify. |
+| State and outbound events | One transaction per event, or per alarm fired, when the store supports transactions: MongoDB as a replica set, or a relational database. |
+| Outbox and alarms shared by several instances | Leases claimed with an atomic conditional update. |
 | Replayed events | A process that exists is not created again, and a completed step is not completed again. |
 
 ## Adapting Aktimetrix

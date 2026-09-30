@@ -67,6 +67,12 @@ public class ProcessInstance {
     @JsonIgnore
     private Long revision;
     /**
+     * When the alarm set for this instance's deadline is due; {@code null} when it has none. Kept so that a save that
+     * does not move the deadline writes no alarm.
+     */
+    @JsonIgnore
+    private LocalDateTime alarmAt;
+    /**
      * The definition the process started with, its steps resolved: the process follows it until it ends, even if the
      * definition changes meanwhile. {@code null} for instances started by versions that did not keep it; they follow
      * the current definition.

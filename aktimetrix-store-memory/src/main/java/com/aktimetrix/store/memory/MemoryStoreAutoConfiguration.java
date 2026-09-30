@@ -1,6 +1,7 @@
 package com.aktimetrix.store.memory;
 
 import com.aktimetrix.core.store.AktimetrixTransactions;
+import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
@@ -52,6 +53,11 @@ public class MemoryStoreAutoConfiguration {
     @Bean
     public OutboxStore aktimetrixOutboxStore() {
         return new MemoryOutboxStore();
+    }
+
+    @Bean
+    public AlarmStore aktimetrixAlarmStore() {
+        return new MemoryAlarmStore();
     }
 
     @Bean

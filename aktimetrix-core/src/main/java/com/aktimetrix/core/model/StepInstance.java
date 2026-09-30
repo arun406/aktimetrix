@@ -54,6 +54,12 @@ public class StepInstance {
     @Version
     @JsonIgnore
     private Long revision;
+    /**
+     * When the alarm set for this instance's deadline is due; {@code null} when it has none. Kept so that a save that
+     * does not move the deadline writes no alarm.
+     */
+    @JsonIgnore
+    private LocalDateTime alarmAt;
 
     public StepInstance() {
         super();

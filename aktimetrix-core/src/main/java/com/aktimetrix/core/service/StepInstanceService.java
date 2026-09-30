@@ -23,20 +23,30 @@ public class StepInstanceService {
 
     private static final Logger logger = LoggerFactory.getLogger(StepInstanceService.class);
     private final StepInstanceStore store;
+    private final DeadlineAlarms alarms;
 
     /**
      * @param stepInstances step instances to save
      */
     public void save(List<StepInstance> stepInstances) {
-        store.saveAll(stepInstances);
+        stepInstances.forEach(this::save);
         stepInstances.forEach(si -> logger.info(" Step Code: " + si.getStepCode() + ", Step instance id: " + si.getId()));
     }
 
     /**
-     * Saves the step instance: inserts it, assigning its id, or updates it with a version check.
+     * Saves the step instance: inserts it, assigning its id, or updates it with a version check. Its deadline alarm is
+     * set, moved or cancelled with it.
      */
     public StepInstance save(StepInstance stepInstance) {
+        if (stepInstance.getId() != null) {
+            alarms.reconcile(stepInstance);
+        }
         store.save(stepInstance);
+        if (DeadlineAlarms.needsAlarm(stepInstance)) {
+            // a new step with a deadline: its alarm needs its id
+            alarms.reconcile(stepInstance);
+            store.save(stepInstance);
+        }
         return stepInstance;
     }
 
