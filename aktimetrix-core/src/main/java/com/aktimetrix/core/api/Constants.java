@@ -27,6 +27,14 @@ public class Constants {
     public static final String VAL_NO = "no";
     public static final String DEFAULT_VERSION = "1.0.0";
     public static final String ATT_METER_SERVICE = "meter-service";
+    /**
+     * The tenant a planning rule of the DSL is limited to.
+     */
+    public static final String ATT_RULE_TENANT = "rule-tenant";
+    /**
+     * The process a step's planning rule of the DSL is limited to.
+     */
+    public static final String ATT_RULE_PROCESS = "rule-process";
     public static final String PLAN_MEASUREMENT_TYPE = "P";
     public static final String ACTUAL_MEASUREMENT_TYPE = "A";
     public static final String CREATED = "C";

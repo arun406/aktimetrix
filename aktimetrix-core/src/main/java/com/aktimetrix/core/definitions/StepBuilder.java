@@ -16,10 +16,14 @@ import java.util.function.Function;
 public final class StepBuilder extends MeasurementsBuilder<StepBuilder> {
 
     private final StepDefinition definition = new StepDefinition();
+    private final String tenant;
+    private final String processCode;
     private final List<Definitions.Rule> rules;
 
-    StepBuilder(String stepCode, List<Definitions.Rule> rules) {
+    StepBuilder(String stepCode, String tenant, String processCode, List<Definitions.Rule> rules) {
         definition.setStepCode(stepCode);
+        this.tenant = tenant;
+        this.processCode = processCode;
         this.rules = rules;
     }
 
@@ -111,13 +115,15 @@ public final class StepBuilder extends MeasurementsBuilder<StepBuilder> {
     }
 
     /**
-     * Plans a measurement of the step by a rule, computed when the step is created.
+     * Plans a measurement of the step by a rule, computed when the step is created. The rule applies to this step of
+     * this process only; for a step shared by the tenant's processes, to every process that has it and no rule of its
+     * own.
      *
      * @param rule returns the planned value; {@code String.valueOf} of it is kept
      */
     public StepBuilder plan(String measurementCode, String unit, Function<StepInstance, Object> rule) {
         planned(measurementCode);
-        rules.add(new Definitions.Rule(measurementCode, unit, definition.getStepCode(), rule, null, null));
+        rules.add(new Definitions.Rule(tenant, measurementCode, unit, definition.getStepCode(), rule, processCode, null));
         return this;
     }
 
