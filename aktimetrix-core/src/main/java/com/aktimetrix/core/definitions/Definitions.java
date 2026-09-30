@@ -84,10 +84,13 @@ public class Definitions {
     }
 
     /**
-     * A planning rule given as code: computes the planned value of one measurement of a step or a process.
+     * A planning rule given as code: computes the planned value of one measurement of a step or a process. It applies
+     * to its tenant only and, for a step of a process, to that process only: two processes can plan steps of the same
+     * code differently.
      */
     @Data
     public static final class Rule {
+        private final String tenant;
         private final String measurementCode;
         private final String unit;
         /**
@@ -96,7 +99,8 @@ public class Definitions {
         private final String stepCode;
         private final Function<StepInstance, Object> stepRule;
         /**
-         * Set for a process rule.
+         * The process of a process rule; for a step rule, the process the step belongs to, or {@code null} for a
+         * step shared by the tenant's processes.
          */
         private final String processCode;
         private final Function<ProcessInstance, Object> processRule;

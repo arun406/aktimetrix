@@ -123,7 +123,7 @@ public abstract class AbstractProcessor implements Processor {
             if (MeasurementType.P != measurement.getType()) {
                 continue;
             }
-            final ProcessMeter meter = registryService.getProcessMeter(context.getTenant(),
+            final ProcessMeter meter = registryService.processPlanMeter(context.getTenant(),
                     definition.getProcessCode(), measurement.getMeasurementCode());
             if (meter != null) {
                 final MeasurementInstance planned = meter.measure(context.getTenant(), processInstance);
