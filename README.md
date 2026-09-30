@@ -6,7 +6,7 @@
   <a href="https://github.com/arun406/aktimetrix/actions/workflows/ci.yml"><img src="https://github.com/arun406/aktimetrix/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI"></a>
   <a href="#9-reference-implementation"><img src="https://img.shields.io/badge/java-11%2B-0F4C5C?logo=openjdk&logoColor=white" alt="Java 11+"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License: Apache 2.0"></a>
-  <a href="#9-reference-implementation"><img src="https://img.shields.io/badge/status-alpha-F5A524" alt="Status: alpha"></a>
+  <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/release-v0.1.0-0F4C5C" alt="Release: v0.1.0"></a>
 </p>
 
 <h1 align="center">Aktimetrix</h1>
@@ -26,6 +26,36 @@
 </p>
 
 ---
+
+## In 60 seconds
+
+**The problem.** A business process such as *order → pay → hand over → deliver* runs across many systems. Each
+records its own step, none sees the whole journey, and a broken promise is usually found by the customer first.
+
+**What Aktimetrix does.** You declare the process once. For every entity, such as order 1234, it plans each step
+and each measurement (time, distance, cost, temperature, rating), sets an alarm at every deadline, and compares every
+event that arrives with its plan: on time, late, at risk or overdue, and by how much. It only listens to the events
+your systems already emit; nothing is replaced.
+
+<p align="center">
+  <img src="./img/demo.svg" alt="Animation: order 1234 is planned with an alarm at each deadline; the handover alarm fires with no event, so the step is overdue and delivery at risk; the late event is then compared with its plan, late by 40 minutes; the order is still delivered on time" width="100%">
+</p>
+
+**Three hard problems it solves**
+
+1. **Deadlines that survive crashes, at scale.** Every deadline is a durable alarm in the database, claimed in leased
+   batches by any running instance, so no deadline is lost on a restart and none is handled twice
+   ([§4](#4-execution-semantics), [§5.3](#53-runtime-architecture)).
+2. **Never publishing a change that was not saved.** State and outgoing events are written in one transaction and
+   relayed afterwards (the transactional outbox), with optimistic locking so instances need no coordination
+   ([§6](#6-reliability-and-consistency)).
+3. **One engine, any infrastructure.** The core depends on neither a broker nor a database: Kafka or RabbitMQ,
+   MongoDB, PostgreSQL or in memory are interchangeable modules that pass the same contract tests
+   ([§5.2](#52-infrastructure-contract), [§9.1](#91-technology-bindings)).
+
+**Status.** Release [0.1.0](./CHANGELOG.md): Java 11+, tested on JDK 11, 17 and 21. Commercial observability and
+process-intelligence suites offer similar business-flow monitoring; Aktimetrix is an open, embeddable engine for it
+([§10.2](#102-compared-with-neighbouring-tools)). The rest of this page is the white paper.
 
 ## Abstract
 
@@ -567,8 +597,9 @@ carry the plan, the actual and the deviation together.
 
 This repository contains a reference implementation of the model for the JVM, released under the Apache License 2.0.
 It is packaged as libraries: an application adds the core, one store module and one broker module, supplies its
-definitions and meters, and receives the complete runtime described above through auto-configuration. It is **alpha**
-(`0.0.1-SNAPSHOT`): it is tested on JDK 11, 17 and 21, and its APIs may still change.
+definitions and meters, and receives the complete runtime described above through auto-configuration. Its first release is
+**0.1.0** (see the [changelog](./CHANGELOG.md)): it is tested on JDK 11, 17 and 21, and its public API may still change
+before 1.0.
 
 ### 9.1 Technology bindings
 
@@ -619,17 +650,17 @@ reference project's.
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-core</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-store-mongodb</artifactId>   <!-- or aktimetrix-store-jdbc, aktimetrix-store-memory -->
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-broker-kafka</artifactId>    <!-- or aktimetrix-broker-rabbitmq -->
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
