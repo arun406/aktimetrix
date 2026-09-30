@@ -119,16 +119,16 @@
   <path d="M551.0,468 C551.0,428 1091.0,428 1091.0,466" class="edge" marker-end="url(#arr)"/>
   <path d="M571.0,410 C571.0,448 1051.0,438 1051.0,466" class="edge" marker-end="url(#arr)" stroke-dasharray="5 4"/>
   <rect x="360" y="602" width="262" height="76" rx="10" class="core"/>
-  <text x="491.0" y="627.0" text-anchor="middle" class="tb">Step deadlines</text>
-  <text x="491.0" y="645.0" text-anchor="middle" class="mono">OverdueStepMonitor</text>
-  <text x="491.0" y="663.0" text-anchor="middle" class="ts">steps past lateAfter → OVERDUE</text>
+  <text x="491.0" y="627.0" text-anchor="middle" class="tb">Alarms</text>
+  <text x="491.0" y="645.0" text-anchor="middle" class="mono">DeadlineAlarms</text>
+  <text x="491.0" y="663.0" text-anchor="middle" class="ts">set · moved · cancelled on save</text>
   <rect x="660" y="602" width="262" height="76" rx="10" class="core"/>
-  <text x="791.0" y="627.0" text-anchor="middle" class="tb">Process deadlines</text>
-  <text x="791.0" y="645.0" text-anchor="middle" class="mono">OverdueProcessMonitor</text>
-  <text x="791.0" y="663.0" text-anchor="middle" class="ts">processes past lateAfter → OVERDUE</text>
+  <text x="791.0" y="627.0" text-anchor="middle" class="tb">Alarm scheduler</text>
+  <text x="791.0" y="645.0" text-anchor="middle" class="mono">AlarmScheduler</text>
+  <text x="791.0" y="663.0" text-anchor="middle" class="ts">due, no event → OVERDUE</text>
   <rect x="60" y="610" width="262" height="60" rx="10" class="box"/>
   <text x="191.0" y="636.0" text-anchor="middle" class="tb">@Scheduled</text>
-  <text x="191.0" y="654.0" text-anchor="middle" class="ts">on every instance; version-checked</text>
+  <text x="191.0" y="654.0" text-anchor="middle" class="ts">on every instance; leased, version-checked</text>
   <path d="M491.0,602 L491.0,546" class="edge" marker-end="url(#arr)"/>
   <path d="M791.0,602 C791.0,578 531.0,588 531.0,546" class="edge" marker-end="url(#arr)"/>
   <rect x="60" y="736" width="262" height="60" rx="10" class="core"/>

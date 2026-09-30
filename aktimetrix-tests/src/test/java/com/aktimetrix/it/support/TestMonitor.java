@@ -34,6 +34,8 @@ public class TestMonitor implements AutoCloseable {
         final Map<String, Object> all = new HashMap<>(broker.properties());
         all.putAll(store.properties());
         all.put("aktimetrix.monitor.enabled", "false");
+        // the scenarios' events are in the past: alarms fire only when a test fires them
+        all.put("aktimetrix.alarms.check-interval", "PT1H");
         this.context = new SpringApplicationBuilder(application)
                 .web(WebApplicationType.NONE)
                 .initializers(ctx -> ctx.getBeanFactory().registerSingleton("meterRegistry", new SimpleMeterRegistry()))

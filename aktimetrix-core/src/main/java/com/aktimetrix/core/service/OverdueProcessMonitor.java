@@ -38,8 +38,8 @@ public class OverdueProcessMonitor {
     /**
      * @return the processes marked overdue by this check
      */
-    @Scheduled(fixedDelayString = "${aktimetrix.monitor.overdue-check-interval:PT1M}",
-            initialDelayString = "${aktimetrix.monitor.overdue-check-interval:PT1M}")
+    @Scheduled(fixedDelayString = "${aktimetrix.monitor.overdue-check-interval:PT10M}",
+            initialDelayString = "${aktimetrix.monitor.overdue-check-interval:PT10M}")
     public List<ProcessInstance> checkOverdueProcesses() {
         final LocalDateTime now = LocalDateTime.now(clock);
         final List<ProcessInstance> overdue = new ArrayList<>();

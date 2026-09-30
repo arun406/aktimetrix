@@ -1,0 +1,21 @@
+# The parcel process, as a YAML definition file. Its steps BOOK, PICKUP and SORT are the tenant's shared steps,
+# defined in step-definitions.json; DELIVER is defined here.
+tenant: T1
+processes:
+  - processCode: PARCEL
+    entityType: parcel
+    status: CONFIRMED
+    startEventCodes: [PARCEL_BOOKED]
+    cancelEventCodes: [PARCEL_CANCELLED]
+    plannedWithin: PT12H
+    measurements:
+      - measurementCode: DISTANCE
+        type: P
+    steps:
+      - stepCode: BOOK
+      - stepCode: PICKUP
+      - stepCode: SORT
+      - stepCode: DELIVER
+        startEventCodes: [PARCEL_DELIVERED]
+        plannedAfter: SORT
+        plannedWithin: PT5H
