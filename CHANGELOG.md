@@ -3,6 +3,12 @@
 All notable changes to Aktimetrix. Versions follow [Semantic Versioning](https://semver.org/); until 1.0, a minor
 version may change the public API.
 
+## Unreleased
+
+**Documentation**
+- The README is now the product page: what Aktimetrix is and is not, a quick start, how to use it, its modules, the
+  air-cargo focus and the roadmap. The white paper moved, unchanged, to [docs/white-paper.md](./docs/white-paper.md).
+
 ## 0.1.0
 
 The first release: plan-versus-actual monitoring of long-running business processes, from the events the business
