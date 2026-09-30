@@ -126,7 +126,10 @@ public abstract class AbstractProcessor implements Processor {
             final ProcessMeter meter = registryService.getProcessMeter(context.getTenant(),
                     definition.getProcessCode(), measurement.getMeasurementCode());
             if (meter != null) {
-                measurements.add(meter.measure(context.getTenant(), processInstance));
+                final MeasurementInstance planned = meter.measure(context.getTenant(), processInstance);
+                if (planned != null) {
+                    measurements.add(planned);
+                }
             } else if (measurement.getValue() != null) {
                 measurements.add(new MeasurementInstance(context.getTenant(), measurement.getMeasurementCode(),
                         measurement.getValue(), measurement.getUnit(), processInstance.getId(), null, null,

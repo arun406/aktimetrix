@@ -11,6 +11,7 @@ public final class MongoCollections {
     public static final String STEP_DEFINITIONS = "stepDefinitions";
     public static final String MEASUREMENT_TYPE_DEFINITIONS = "measurementTypeDefinitions";
     public static final String OUTBOX = "outbox";
+    public static final String ALARMS = "alarms";
 
     private MongoCollections() {
     }

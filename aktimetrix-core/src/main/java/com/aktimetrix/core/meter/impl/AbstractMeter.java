@@ -73,7 +73,7 @@ public abstract class AbstractMeter implements Meter {
         return toLocalDateTime(step.getMetadata() == null ? null : step.getMetadata().get(key));
     }
 
-    static LocalDateTime toLocalDateTime(Object value) {
+    public static LocalDateTime toLocalDateTime(Object value) {
         if (value == null || value instanceof LocalDateTime) {
             return (LocalDateTime) value;
         }

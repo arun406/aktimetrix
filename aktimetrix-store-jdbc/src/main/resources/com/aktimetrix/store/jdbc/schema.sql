@@ -73,3 +73,14 @@ CREATE TABLE IF NOT EXISTS aktimetrix_outbox (
     attempts     INT          NOT NULL
 );
 CREATE INDEX IF NOT EXISTS aktimetrix_outbox_pending ON aktimetrix_outbox (sent_at, created_at);
+CREATE TABLE IF NOT EXISTS aktimetrix_alarm (
+    id                  VARCHAR(80)  PRIMARY KEY,
+    tenant              VARCHAR(255) NOT NULL,
+    kind                VARCHAR(16)  NOT NULL,
+    target_id           VARCHAR(64)  NOT NULL,
+    process_instance_id VARCHAR(64),
+    due_at              TIMESTAMP    NOT NULL,
+    locked_until        BIGINT,
+    attempts            INT          NOT NULL
+);
+CREATE INDEX IF NOT EXISTS aktimetrix_alarms_due ON aktimetrix_alarm (due_at);
