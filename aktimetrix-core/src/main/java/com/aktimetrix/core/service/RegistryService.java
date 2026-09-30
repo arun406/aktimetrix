@@ -142,40 +142,79 @@ public class RegistryService {
 
 
     /**
-     * Return applicable meter instance
+     * The {@code @Measurement} meter of the step and measurement code, or {@code null}. Planning rules of the DSL
+     * are not returned: see {@link #planMeter}.
      *
      * @param tenant          tenant parameter
      * @param stepCode        step code
      * @param measurementCode measurement code
      */
     public Meter getMeter(String tenant, String stepCode, String measurementCode) {
-        return lookupMeter(Constants.ATT_STEP_CODE, stepCode, measurementCode, Meter.class);
+        return lookupMeter(Constants.ATT_STEP_CODE, stepCode, measurementCode, Meter.class, null, null, false);
     }
 
     /**
-     * Return the process-level meter for the process and measurement code, or {@code null}
+     * The {@code @Measurement} process-level meter of the process and measurement code, or {@code null}. Planning
+     * rules of the DSL are not returned: see {@link #processPlanMeter}.
      *
      * @param tenant          tenant parameter
      * @param processCode     process code
      * @param measurementCode measurement code
      */
     public ProcessMeter getProcessMeter(String tenant, String processCode, String measurementCode) {
-        return lookupMeter(Constants.ATT_PROCESS_CODE, processCode, measurementCode, ProcessMeter.class);
+        return lookupMeter(Constants.ATT_PROCESS_CODE, processCode, measurementCode, ProcessMeter.class, null, null,
+                false);
     }
 
-    private <T> T lookupMeter(String levelAttribute, String levelCode, String measurementCode, Class<T> type) {
-        final List<Object> meters = this.registry.lookupAll(registryEntry ->
+    /**
+     * The meter that plans a measurement of a step of a process: the most specific of the planning rules and meters
+     * that apply, a rule limited to the tenant's process before one limited to the tenant, before a meter for any.
+     */
+    public Meter planMeter(String tenant, String processCode, String stepCode, String measurementCode) {
+        return lookupMeter(Constants.ATT_STEP_CODE, stepCode, measurementCode, Meter.class, tenant, processCode, true);
+    }
+
+    /**
+     * The meter that plans a measurement of a process: a planning rule of the tenant before a meter for any.
+     */
+    public ProcessMeter processPlanMeter(String tenant, String processCode, String measurementCode) {
+        return lookupMeter(Constants.ATT_PROCESS_CODE, processCode, measurementCode, ProcessMeter.class, tenant, null,
+                true);
+    }
+
+    private <T> T lookupMeter(String levelAttribute, String levelCode, String measurementCode, Class<T> type,
+                              String tenant, String processCode, boolean withRules) {
+        final List<RegistryEntry> entries = this.registry.lookupAllEntries(registryEntry ->
                 registryEntry.hasAttribute(Constants.ATT_METER_SERVICE) &&
                         registryEntry.attribute(Constants.ATT_METER_SERVICE).equals(Constants.VAL_YES) &&
                         Objects.equals(registryEntry.attribute(Constants.ATT_CODE), measurementCode) &&
                         Objects.equals(registryEntry.attribute(levelAttribute), levelCode)
         );
         T meter = null;
-        for (Object m : meters) {
-            if (type.isInstance(m)) {
+        int best = -1;
+        for (RegistryEntry entry : entries) {
+            final Object ruleTenant = entry.attribute(Constants.ATT_RULE_TENANT);
+            final Object ruleProcess = entry.attribute(Constants.ATT_RULE_PROCESS);
+            final boolean rule = ruleTenant != null || ruleProcess != null;
+            if (rule && (!withRules || (ruleTenant != null && !ruleTenant.equals(tenant))
+                    || (ruleProcess != null && !ruleProcess.equals(processCode)))) {
+                continue;
+            }
+            final Object m = instance(entry);
+            final int specificity = (ruleProcess != null ? 2 : 0) + (ruleTenant != null ? 1 : 0);
+            if (type.isInstance(m) && specificity >= best) {
                 meter = type.cast(m);
+                best = specificity;
             }
         }
         return meter;
+    }
+
+    private static Object instance(RegistryEntry entry) {
+        try {
+            return entry.getInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new IllegalStateException("Cannot create the meter " + entry, e);
+        }
     }
 }

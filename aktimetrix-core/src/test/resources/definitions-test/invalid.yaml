@@ -1,0 +1,13 @@
+tenant: T1
+processes:
+  - processCode: PARCEL
+    status: CONFIRMED
+    steps:
+      - stepCode: PICKUP
+        startEventCodes: [PICKED_UP]
+        plannedWithin: 2 hours
+      - stepCode: DELIVER
+        startEventCodes: [DELIVERED]
+        plannedAfter: SORT
+        measurements:
+          - { measurementCode: WEIGHT, type: P, value: "2", tolerance: ten percent, worseWhen: BIGGER }

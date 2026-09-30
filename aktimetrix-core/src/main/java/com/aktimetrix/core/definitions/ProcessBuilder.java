@@ -25,10 +25,12 @@ public final class ProcessBuilder extends MeasurementsBuilder<ProcessBuilder> {
     private final ProcessDefinition definition = new ProcessDefinition();
     private final List<StepDefinition> steps = new ArrayList<>();
     private final List<MetricDefinition> metrics = new ArrayList<>();
+    private final String tenant;
     private final List<Definitions.Rule> rules;
 
-    ProcessBuilder(String processCode, List<Definitions.Rule> rules) {
+    ProcessBuilder(String processCode, String tenant, List<Definitions.Rule> rules) {
         definition.setProcessCode(processCode);
+        this.tenant = tenant;
         definition.setStatus(CONFIRMED);
         this.rules = rules;
     }
@@ -115,7 +117,7 @@ public final class ProcessBuilder extends MeasurementsBuilder<ProcessBuilder> {
      * The next step, defined here, or adapting the tenant's shared step of the same code.
      */
     public ProcessBuilder step(String stepCode, Consumer<StepBuilder> step) {
-        final StepBuilder builder = new StepBuilder(stepCode, rules);
+        final StepBuilder builder = new StepBuilder(stepCode, tenant, definition.getProcessCode(), rules);
         step.accept(builder);
         steps.add(builder.build());
         return this;
@@ -136,7 +138,7 @@ public final class ProcessBuilder extends MeasurementsBuilder<ProcessBuilder> {
      */
     public ProcessBuilder plan(String measurementCode, String unit, Function<ProcessInstance, Object> rule) {
         planned(measurementCode);
-        rules.add(new Definitions.Rule(measurementCode, unit, null, null, definition.getProcessCode(), rule));
+        rules.add(new Definitions.Rule(tenant, measurementCode, unit, null, null, definition.getProcessCode(), rule));
         return this;
     }
 
@@ -158,7 +160,7 @@ public final class ProcessBuilder extends MeasurementsBuilder<ProcessBuilder> {
         return this;
     }
 
-    ProcessDefinition build(String tenant) {
+    ProcessDefinition build() {
         definition.setTenant(tenant);
         definition.setSteps(steps);
         if (!measurements.isEmpty()) {
