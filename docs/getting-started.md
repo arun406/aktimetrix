@@ -240,7 +240,10 @@ public class OrderDefinitions {
 | `.step(code)` with no body | a reference to the tenant's shared step, defined with `Definitions.tenant(...).step(...)` |
 
 Definitions built by the DSL default to status `CONFIRMED`. A rule plans one measurement of one step or process, like
-a meter; declaring two for the same one fails at startup.
+a meter, but only for its own tenant and, on a step of a process, only for that process: an express and a standard
+process can each plan their `DELIVERED` step by a rule of their own. When several could plan the same measurement, the
+most specific wins: a rule on the process's step, then a rule on the tenant's shared step, then an `@Measurement`
+meter. Two rules for the same measurement in the same place fail at startup.
 
 As **YAML**, any file `src/main/resources/aktimetrix/*.yaml` (or `*.yml`) holds one tenant's steps and processes,
 with the fields of the JSON files:
@@ -265,6 +268,21 @@ steps: []                                      # the tenant's shared steps, if a
 
 The forms can be mixed: a process in YAML may list shared steps defined in JSON, and a rule can be a lambda or a
 meter. All are loaded at startup and saved by tenant and code.
+
+#### Mistakes are caught at startup
+
+Definitions are checked as they are loaded, whatever their form, and the application does not start until they are
+right. The error lists every problem, each with the file or bean it is in:
+
+```
+Invalid Aktimetrix definitions:
+  - URL [.../aktimetrix/parcel.yaml]: process PARCEL, step PICKUP: plannedWithin is not an ISO-8601 duration such as PT2H or P1D: 2 hours
+  - URL [.../aktimetrix/parcel.yaml]: process PARCEL, step DELIVER: plannedAfter names SORT, which is not a step of the process
+```
+
+A misspelt field in a YAML or JSON file, such as `plannedWitin`, is an error too, rather than being silently
+ignored. The checks cover the codes and start events a process needs, durations, tolerances, `worseWhen`,
+`optionalInd`, and steps that `plannedAfter` names.
 
 ### 5. Optional: choose the metadata
 

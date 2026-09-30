@@ -19,7 +19,7 @@ public final class DefinitionsBuilder {
      * A step shared by the tenant's processes, which list it by its code and may adapt it.
      */
     public DefinitionsBuilder step(String stepCode, Consumer<StepBuilder> step) {
-        final StepBuilder builder = new StepBuilder(stepCode, definitions.getRules());
+        final StepBuilder builder = new StepBuilder(stepCode, definitions.getTenant(), null, definitions.getRules());
         step.accept(builder);
         final StepDefinition definition = builder.build();
         definition.setTenant(definitions.getTenant());
@@ -34,9 +34,9 @@ public final class DefinitionsBuilder {
      * A process of the tenant.
      */
     public DefinitionsBuilder process(String processCode, Consumer<ProcessBuilder> process) {
-        final ProcessBuilder builder = new ProcessBuilder(processCode, definitions.getRules());
+        final ProcessBuilder builder = new ProcessBuilder(processCode, definitions.getTenant(), definitions.getRules());
         process.accept(builder);
-        definitions.getProcesses().add(builder.build(definitions.getTenant()));
+        definitions.getProcesses().add(builder.build());
         return this;
     }
 

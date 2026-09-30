@@ -44,9 +44,10 @@ Dashed orange boxes are **extension points**: you implement or replace them. Blu
 3. Before any event is consumed:
    - the store module prepares its database before the stores are first used: the MongoDB store upgrades data
      saved by earlier versions and creates its indexes, the JDBC store creates its tables;
-   - `DefinitionLoader` registers the planning rules of `Definitions` beans (the Java DSL) as meters, and upserts
-     the process and step definitions from `aktimetrix/*.json`, `aktimetrix/*.yaml` and those beans; a process
-     definition that changed gets a new revision.
+   - `DefinitionLoader` registers the planning rules of `Definitions` beans (the Java DSL) as meters, each limited
+     to its tenant and process; reads the process and step definitions from `aktimetrix/*.json`, `aktimetrix/*.yaml`
+     and those beans, rejecting unknown fields; validates them all, failing with every problem found; and upserts
+     them. A process definition that changed gets a new revision.
 
 ### When an event arrives
 
