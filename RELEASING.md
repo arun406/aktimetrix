@@ -33,7 +33,7 @@ Portal.
 
 ## Releasing a version
 
-Set the version in every `pom.xml` and in the README, add its section to `CHANGELOG.md` (`## 0.2.0`), merge to `main`,
+Set the version in every `pom.xml`, in the README and in the white paper (`docs/white-paper.md`), add its section to `CHANGELOG.md` (`## 0.2.0`), merge to `main`,
 then tag it:
 
 ```bash
@@ -43,7 +43,7 @@ git push origin v0.1.0
 ```
 
 The workflow sets the project version from the tag, runs the tests, and publishes. The release appears on Maven
-Central within about 30 minutes. Then update the version in the README and the reference project to the new release.
+Central within about 30 minutes. Then update the version in the README, the white paper and the reference project to the new release.
 
 ## Checking a release build locally
 

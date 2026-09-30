@@ -4,7 +4,7 @@
 
 This page is for contributors, and for anyone adapting Aktimetrix to their own systems. It describes the reference
 implementation's internal components: what each does, how an event flows through them, and where to change them.
-The [white paper](../README.md) describes the model they implement.
+The [white paper](./white-paper.md) describes the model they implement.
 
 ## Components
 
@@ -13,10 +13,10 @@ The [white paper](../README.md) describes the model they implement.
 </p>
 
 The figure groups the components by the stage of an event's path through them. The white paper's
-[five layers](../README.md#51-logical-architecture) group the same components by concern: *integration* is stage ①;
+[five layers](./white-paper.md#51-logical-architecture) group the same components by concern: *integration* is stage ①;
 *process* is stages ② and ⑤ and the lifecycle part of ④; *measurement* is stage ③'s meters and planning and stage ④'s
 actual values, comparison, forecasts and metrics; *model* and *persistence* are stages ⑥ and ⑦. How the stages run on
-several instances is described in [Runtime architecture](../README.md#53-runtime-architecture).
+several instances is described in [Runtime architecture](./white-paper.md#53-runtime-architecture).
 
 Dashed orange boxes are **extension points**: you implement or replace them. Blue boxes are **built in**. The
 [public API](extending.md#public-api) lists which types you may use; everything else is internal and may change.
