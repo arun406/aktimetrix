@@ -1,7 +1,9 @@
 # Releasing Aktimetrix
 
-Releases are published to [Maven Central](https://central.sonatype.com/) by
-[`.github/workflows/release.yml`](.github/workflows/release.yml) when a version tag is pushed. The `release` Maven
+When a version tag is pushed, [`.github/workflows/release.yml`](.github/workflows/release.yml) builds and tests the
+tagged code, creates the GitHub release with its notes from [`CHANGELOG.md`](CHANGELOG.md), and publishes the artifacts
+to [Maven Central](https://central.sonatype.com/) once the secrets below are configured; until then it only creates
+the GitHub release. The `release` Maven
 profile builds the sources and javadoc jars, signs everything with GPG, and uploads it through the Sonatype Central
 Portal.
 
@@ -30,6 +32,9 @@ Portal.
    | `GPG_PASSPHRASE` | its passphrase |
 
 ## Releasing a version
+
+Set the version in every `pom.xml` and in the README, add its section to `CHANGELOG.md` (`## 0.2.0`), merge to `main`,
+then tag it:
 
 ```bash
 git checkout main && git pull
