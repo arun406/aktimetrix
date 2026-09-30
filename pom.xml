@@ -11,7 +11,7 @@
     <packaging>pom</packaging>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
     <name>Aktimetrix</name>
     <description>Event-driven business process monitoring for the JVM: plans each step of a business process,
         records what actually happens, and flags steps that are late, at risk, or overdue.</description>
