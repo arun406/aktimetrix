@@ -119,7 +119,9 @@ public class DefaultMeasurementProcessor implements Processor {
                                         MeasurementDefinition measurementDefinition) {
         if (MeasurementType.P == measurementDefinition.getType()) {
             logger.info("Step Code: {}, Measurement Code: {} ", stepDefinition.getStepCode(), measurementDefinition.getMeasurementCode());
-            Meter meter = registryService.getMeter(context.getTenant(), stepDefinition.getStepCode(), measurementDefinition.getMeasurementCode());
+            final ProcessDefinition process = (ProcessDefinition) context.getProperty(Constants.PROCESS_DEFINITION);
+            Meter meter = registryService.planMeter(context.getTenant(), process == null ? null : process.getProcessCode(),
+                    stepDefinition.getStepCode(), measurementDefinition.getMeasurementCode());
             if (meter != null) {
                 final MeasurementInstance measurement = meter.measure(context.getTenant(), stepInstance);
                 logger.debug("measurement instance found for " + meter.getClass().getName());

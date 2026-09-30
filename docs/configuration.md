@@ -62,7 +62,7 @@ aktimetrix:
 | `aktimetrix.definitions.load-on-startup` | `true` | Load process and step definitions from the classpath at startup. |
 | `aktimetrix.definitions.processes` | `classpath*:aktimetrix/process-definitions.json` | Location of the process definitions: a JSON array. |
 | `aktimetrix.definitions.steps` | `classpath*:aktimetrix/step-definitions.json` | Location of the step definitions: a JSON array. |
-| `aktimetrix.definitions.files` | `classpath*:aktimetrix/*.yaml,classpath*:aktimetrix/*.yml` | Locations of YAML definition files, comma-separated; each holds a `tenant` and its `steps` and `processes`. `Definitions` beans built with the Java DSL are loaded as well. |
+| `aktimetrix.definitions.files` | `classpath*:aktimetrix/*.yaml,classpath*:aktimetrix/*.yml` | Locations of YAML definition files, comma-separated; each holds a `tenant` and its `steps` and `processes`. `Definitions` beans built with the Java DSL are loaded as well. Every definition is validated at startup: an unknown field or an invalid value stops the application, with a message naming the file. |
 | `aktimetrix.alarms.enabled` | `true` | Fire the alarms set at the deadlines of steps and processes. Alarms are set whatever this is, so an instance that does not fire them still keeps them up to date. |
 | `aktimetrix.alarms.check-interval` | `PT5S` | How often to look for alarms that are due, as an ISO-8601 duration: at most this long after its deadline, a step or process without its event is marked overdue. |
 | `aktimetrix.alarms.batch-size` | `100` | Most alarms claimed at once; an instance claims further batches while they are full. |

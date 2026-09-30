@@ -1,0 +1,9 @@
+tenant: T1
+processes:
+  - processCode: PARCEL
+    status: CONFIRMED
+    startEventCodes: [BOOKED]
+    plannedWithin: P1D
+    steps:
+      - { stepCode: PICKUP, startEventCodes: [PICKED_UP], plannedWithin: PT2H }
+      - { stepCode: DELIVER, startEventCodes: [DELIVERED], plannedAfter: PICKUP, plannedWithin: PT5H }
