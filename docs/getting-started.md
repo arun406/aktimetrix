@@ -56,17 +56,17 @@ The core, a store module and a broker module:
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-core</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-store-mongodb</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-broker-kafka</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
