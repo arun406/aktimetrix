@@ -384,6 +384,10 @@ curl -X POST http://localhost:8080/reference-data/step-definitions \
        "measurements":[{"measurementCode":"TIME","type":"P"}]}'
 ```
 
+A posted definition is checked as strictly as a definition file. When it is not valid, nothing is saved and the answer
+is `400 Bad Request` listing every problem, such as
+`{"problems":["process ORDER_DELIVERY: startEventCodes is missing, so the process can never start"]}`.
+
 The API has no authentication of its own. Protect it as you would any internal service, for example with Spring
 Security or a gateway.
 

@@ -65,7 +65,6 @@ public class LogUtil {
      * @param args
      */
     public static void warn(Logger log, String message, Object... args) {
-        //System.err.println("Warning : "+fmt(message,args));
         warn(log, null, message, args);
     }
 

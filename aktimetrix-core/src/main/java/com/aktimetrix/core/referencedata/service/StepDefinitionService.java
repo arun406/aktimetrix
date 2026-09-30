@@ -1,5 +1,6 @@
 package com.aktimetrix.core.referencedata.service;
 
+import com.aktimetrix.core.exception.InvalidDefinitionException;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.store.DefinitionStore;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +16,14 @@ public class StepDefinitionService {
 
     /**
      * Saves the definition, replacing the one with the same tenant and step code.
+     *
+     * @throws InvalidDefinitionException if the definition is not valid; nothing is saved then
      */
     public StepDefinition add(StepDefinition stepDefinition) {
+        final List<String> problems = DefinitionValidator.problems(stepDefinition);
+        if (!problems.isEmpty()) {
+            throw new InvalidDefinitionException(problems);
+        }
         store.findStep(stepDefinition.getTenant(), stepDefinition.getStepCode())
                 .ifPresent(existing -> stepDefinition.setId(existing.getId()));
         return store.saveStep(stepDefinition);
