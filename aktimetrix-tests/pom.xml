@@ -20,7 +20,7 @@
         <maven.source.skip>true</maven.source.skip>
         <gpg.skip>true</gpg.skip>
         <!-- an embedded AMQP 0-9-1 broker for the RabbitMQ tests -->
-        <qpid-broker.version>9.2.1</qpid-broker.version>
+        <qpid-broker.version>10.1.1</qpid-broker.version>
     </properties>
 
     <dependencies>
