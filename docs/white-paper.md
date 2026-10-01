@@ -221,6 +221,24 @@ The full envelope is specified in the [event format](./getting-started.md#the-ev
 need to adopt it: an **event mapper** translates each system's own messages into this envelope as they are consumed
 ([§7](#7-extensibility)).
 
+### 3.6 Managing definitions
+
+Definitions are the reference data of the monitor: they change with the business, more often than the code. Their
+management follows a few rules.
+
+| Concern | Rule |
+|---|---|
+| **Authoring** | Definitions are written in code with the Java DSL, next to the rules that compute plans; in YAML or JSON files, when people other than developers maintain them; or sent to the REST API by another system, such as an administration tool. All three produce the same definitions. |
+| **Ownership** | Every definition belongs to a **tenant**, such as a business unit or a customer. A tenant's steps are shared by its processes, and each process may adapt a shared step, for example with a shorter deadline, or declare steps of its own. An event of one tenant is only ever matched against that tenant's definitions. |
+| **Validation** | A definition is checked before it is saved, whatever its form: codes and tenant present, every duration and tolerance well formed, steps not repeated, a step planned only after a step of the same process. Files are read strictly, so a misspelt field is an error rather than ignored. Invalid files stop the application at startup with every problem and where it is; an invalid definition sent to the API is refused with its problems. Nothing is saved from a set that has errors. |
+| **Status** | Only a process definition with status `CONFIRMED` starts process instances. Others are drafts: stored and listed, but inactive. |
+| **Revisions** | Saving a process definition that differs from the stored one makes a new revision; saving an identical one keeps the revision, so reloading unchanged files at every start creates no history. |
+| **Rollout** | A process instance keeps the revision it started with, its steps resolved, until it ends. A change, to a process or to a shared step, therefore applies to entities that start afterwards, and never moves the plan of one under way. |
+| **Catalogue** | Measurement types, each with a code, name and unit, can be registered as a catalogue for tools and consumers. The runtime does not require them: a measurement is defined by its code and unit where it is used. |
+
+Definitions can be listed, each with its tenant, code, status and revision. Every published event names the
+`definitionRevision` its instance follows, so a result can always be explained by the definition that produced it.
+
 ## 4. Execution semantics
 
 The runtime works in four stages: the first three are driven by each business event, the fourth by the clock. The
@@ -470,6 +488,27 @@ position, and its leased alarms and outbox entries to any instance once the leas
 number of instances, up to the number of partitions of the inbound channel; the state store is the shared resource to
 size. [§6](#6-reliability-and-consistency) sets out the guarantees this arrangement provides.
 
+### 5.4 Configuration
+
+The model fixes behaviour; configuration adapts the runtime to a deployment. Everything has a default, so a monitor
+needs only the connection settings of its broker and state store. The settings group by concern:
+
+| Concern | Settings | Default |
+|---|---|---|
+| **Time** | The time zone of all planned and actual times | UTC |
+| **Inbound events** | The destination events are read from, the consumer group, and whether events that cannot be processed go to a dead-letter destination, and which | Dead-lettering on |
+| **Definitions** | Whether definitions are loaded at startup, and from which files | Loaded, from the application's `aktimetrix` folder |
+| **Deadlines** | Whether this instance fires alarms; how often it looks for due alarms, how many it claims at once, and for how long | On; every 5 s; 100; 30 s |
+| **Overdue sweep** | Whether the periodic safety sweep runs, and how often | On; every 10 min |
+| **Publishing** | How often the outbox is relayed, how many results per run, the lease of a claimed result, and how long sent results are kept | Every 1 s; 100; 30 s; 7 days |
+| **Storage** | Which store to use when several are available; whether units of work must be atomic, may be, or are not; whether indexes are created at startup | Detected; atomic when the store supports it; created |
+
+Two settings shape a deployment. **Alarm firing** can be switched off on some instances, so that, for example, only
+a few instances fire deadlines while all of them process events; alarms are still kept up to date by every instance.
+**Atomicity** can be forced, so that every unit of work runs in a transaction and fails rather than write state and
+outgoing results separately, or switched off for a store without transactions, accepting the risk described in §6. The [configuration reference](./configuration.md) lists every property of the
+reference implementation.
+
 ## 6. Reliability and consistency
 
 **Transactional outbox.** Each business event is processed as one unit of work. The state it changes and the
@@ -523,25 +562,96 @@ The [extension guide](./extending.md) documents each one with examples.
 
 ## 8. Observability
 
-The runtime reports its own behaviour and the health of the monitored processes as metrics:
+Observability serves three questions, each answered by a different signal:
 
-| Metric | Meaning |
+| Question | Asked by | Signal |
+|---|---|---|
+| *Are we keeping our commitments?* | The business, operations managers | **Business metrics**: aggregates over all entities, by process, step and measurement |
+| *Is the monitor itself healthy?* | The team that runs it | **Runtime metrics**: events, alarms and the outbox |
+| *What happened to order 1234, and why?* | Support, investigation | **Published events** and the **query API**, for one entity |
+
+Metrics never carry an entity id: their tags are low-cardinality (tenant, process, step, measurement, timeliness,
+conformance, outcome), so they stay cheap however many entities are monitored. The detail of each entity is in its
+published events and its current state, which carry every id.
+
+### 8.1 Business metrics
+
+| Metric | Type | Tags | Meaning |
+|---|---|---|---|
+| `aktimetrix.processes.started` / `.completed` / `.cancelled` | counter | tenant, process | Process instances started, completed and cancelled. |
+| `aktimetrix.processes.overdue` | counter | tenant, process | Process instances whose own deadline passed before they completed. |
+| `aktimetrix.steps.completed` | counter | tenant, step, timeliness | Steps completed, as `ON_TIME` or `LATE` (or `unplanned`). |
+| `aktimetrix.steps.lateness` | timer | tenant, step | How long after its planned time each step completed; zero when early. |
+| `aktimetrix.steps.at.risk` | counter | tenant, step | Steps forecast to miss their deadline because of an earlier delay. |
+| `aktimetrix.steps.overdue` | counter | tenant, step | Steps whose deadline passed without their event. |
+| `aktimetrix.measurements.actual` | counter | tenant, measurement, conformance | Actual measurements recorded, `WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`. |
+| `aktimetrix.measurements.deviation` | distribution | tenant, measurement | Actual minus planned value, in the measurement's unit (numeric measurements other than time). |
+
+They answer operational questions directly, without a separate analytics pipeline:
+
+| Question | Computed as |
 |---|---|
-| `aktimetrix.events` | Events received, by tenant, event code and outcome (handled, ignored, invalid, failed). |
-| `aktimetrix.processes.started` / `.completed` / `.cancelled` / `.overdue` | Process instances started, completed, cancelled, and past their own deadline, by process. |
-| `aktimetrix.steps.completed` | Steps completed, by step and timeliness. |
-| `aktimetrix.steps.lateness` | How long after its planned time each step completed. |
-| `aktimetrix.steps.at.risk` / `.overdue` | Steps forecast to be late, and steps past their deadline. |
-| `aktimetrix.measurements.actual` | Actual measurements recorded, by measurement and conformance. |
-| `aktimetrix.measurements.deviation` | Distribution of actual minus planned, by measurement. |
-| `aktimetrix.alarms.pending` / `.fired` / `.delay` | Alarms set and not yet fired; alarms that marked a step or process overdue, by kind; how long after its due time each fired. |
-| `aktimetrix.outbox.pending` | Results not yet published. |
+| What share of deliveries were on time this week? | `steps.completed{step=DELIVERED, timeliness=ON_TIME}` over all `steps.completed{step=DELIVERED}` |
+| Which step causes most delays? | `steps.lateness` by step: its mean and high percentiles |
+| How many orders are in trouble right now? | the rate of `steps.at.risk` and `steps.overdue`, by step |
+| How often was the route longer than planned, and by how much? | `measurements.actual{measurement=DISTANCE, conformance=OUT_OF_TOLERANCE}`, and `measurements.deviation{measurement=DISTANCE}` |
 
-Together they answer operational questions directly, without a separate analytics pipeline: *what share of
-deliveries were late this week? How often was the route longer than planned, and by how much?* Metrics specific to a
-domain, such as fuel per kilometre, are declared on the process and published with each order; aggregations beyond
-these, such as the average rating per region, are computed by consumers of the published measurement events, which
-carry the plan, the actual and the deviation together.
+Metrics specific to a domain, such as fuel per kilometre, are declared on the process (§3.2) and published with each
+entity. Aggregations by business attributes, such as the average rating per region or the late deliveries per
+courier, need the entity's data and are computed by consumers of the published measurement events, which carry the
+plan, the actual, the deviation and the entity together.
+
+### 8.2 Runtime metrics
+
+| Metric | Type | Tags | Meaning |
+|---|---|---|---|
+| `aktimetrix.events` | counter | tenant, event, outcome | Business events received: `handled`, `ignored` (skipped by the event mapper), `invalid` (rejected, sent to the dead-letter channel) or `failed` (an error while processing; retried, then dead-lettered). |
+| `aktimetrix.alarms.pending` | gauge | | Alarms set at deadlines and not fired yet. |
+| `aktimetrix.alarms.fired` | counter | tenant, kind | Alarms that found their step or process still open and marked it overdue. |
+| `aktimetrix.alarms.delay` | timer | kind | How long after its due time each alarm fired. |
+| `aktimetrix.outbox.pending` | gauge | | Results saved but not yet published to the broker. |
+
+### 8.3 What to alert on
+
+| Condition | Likely cause | Action |
+|---|---|---|
+| `outbox.pending` keeps growing | The broker is unreachable, or publishing fails | Results are safe in the store and are published once the broker is back; check its connection. |
+| `alarms.delay` rises above a few check intervals | Too few instances, or a slow state store, for the number of deadlines | Add instances, or shorten the check interval or enlarge the batch. |
+| `events{outcome=invalid}` or `{outcome=failed}` rises | A source system changed its message format, or sends events without an entity id or code | Inspect the dead-letter channel; fix the source or the event mapper; replay. |
+| A start event is `handled` but `processes.started` stays flat | No confirmed definition starts on that event: missing, or its start event code misspelt | Check the tenant's definitions. |
+| `events` drops to zero for an event code | The source system stopped publishing | Investigate upstream; deadlines keep firing, so steps go `OVERDUE` meanwhile. |
+| Share of `ON_TIME` steps falls, or `steps.overdue` rises | A business problem: the commitments are not kept | This is what the monitor is for: alert the business owner, not the platform team. |
+
+The last row is the purpose of the system; the others protect it. Separating them keeps business alerts with the
+people who can act on them.
+
+### 8.4 Tracing one entity
+
+For a single entity, three sources together tell the whole story:
+
+- **Current state.** The query API returns the entity's process instances with each step's status, planned, expected
+  and actual times, and timeliness: *where is order 1234 now?*
+- **History.** The published events of the entity, filtered by `eventDetails.businessEntity`, list every change in
+  order of `revision`: created, planned, at risk, overdue, completed, with each measurement's plan and actual.
+- **Causes.** Each change names its `cause`: the business event, by `eventId` and `eventCode`, or the deadline check.
+  An unexpected `OVERDUE` is thus traced either to a missing event or to an event that arrived late, and an event to
+  the source message it came from.
+
+Logs complement them: the runtime logs each step transition, overdue and at-risk change with the step code and
+process instance id, so a log search by instance id follows the same entity.
+
+### 8.5 Definitions and configuration
+
+What the monitor is configured to do is observable as well:
+
+- **Definitions in force.** The definitions can be listed by tenant, each with its status and revision; a process that
+  should start entities but does not is often a draft, or a start event code that does not match.
+- **Which revision produced a result.** Every published event carries the `definitionRevision` of its instance, so a
+  dashboard can compare the timeliness of entities before and after a change of plan.
+- **Mistakes.** An invalid definition never becomes active: it stops the startup, or is refused by the API, with every
+  problem named.
+- **Effective configuration.** The runtime's settings, defaults included, are exposed by the platform's standard
+  configuration endpoint where one exists, such as Spring Boot Actuator's `configprops`.
 
 ## 9. Reference implementation
 

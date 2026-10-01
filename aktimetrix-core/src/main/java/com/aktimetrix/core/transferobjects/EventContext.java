@@ -56,6 +56,13 @@ public class EventContext {
      */
     private Cause cause;
 
+    /**
+     * Builds an {@link EventContext}. Declared so that its name exists in the source, for Javadoc; Lombok generates
+     * its methods.
+     */
+    public static class EventContextBuilder {
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

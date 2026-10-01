@@ -8,12 +8,16 @@ version may change the public API.
 **Fixed**
 - Definitions posted to the REST API are validated like definition files: an invalid one is answered with
   `400 Bad Request` and its problems, and is not saved. Before, it was saved and failed only when an event used it.
+- The javadoc jar of `aktimetrix-core` failed to build, which would have stopped publishing a release to Maven
+  Central.
 
 **Removed**
 - Unused classes `ProcessorException` and `DefaultProcessDefinitionProvider`, and a stray Maven wrapper script in
   `aktimetrix-core`.
 
 **Documentation**
+- White paper: observability rewritten around what to watch, what to alert on and how to trace one entity (§8);
+  new sections on managing definitions (§3.6) and on configuration (§5.4).
 - The README is now the product page: what Aktimetrix is and is not, a quick start, how to use it, its modules, the
   air-cargo focus and the roadmap. The white paper moved, unchanged, to [docs/white-paper.md](./docs/white-paper.md).
 
