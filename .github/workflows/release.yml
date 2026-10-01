@@ -17,7 +17,7 @@ jobs:
       PUBLISH: ${{ secrets.CENTRAL_TOKEN != '' && secrets.GPG_PRIVATE_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
@@ -33,7 +33,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" --title "Aktimetrix $version" --notes-file release-notes.md
       - name: Configure signing and Maven Central
         if: env.PUBLISH == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
