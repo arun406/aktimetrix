@@ -867,19 +867,16 @@ It is not the right tool when a process should be **driven** rather than observe
 goal is to **discover** how processes actually run from historical logs (use process mining), or when the milestones
 are not visible as events at all.
 
-### 10.2 Compared with neighbouring tools
+### 10.2 Compared with BPMN
 
-| | Aktimetrix | Workflow engines | Process mining | Application monitoring | Stream processing |
-|---|---|---|---|---|---|
-| Purpose | Track each entity against its plan, live | Execute a process: call services, wait, decide | Discover and analyse processes from event logs | Observe the health of services | Compute over event streams |
-| Owns the process | No: observes events from any system | Yes: the process runs inside it | No | No | No |
-| Unit of attention | One business entity, its plan and its deviations | One process execution | Aggregate process variants | Requests, traces, hosts | Whatever the job computes |
-| Timing | Live: at risk before a deadline, overdue when it passes | Live, for the steps it runs | Mostly after the fact | Live, technical | Live |
-| Business plan per entity | Yes: planned times and measurements | Timers per task | Derived statistically | No | Must be built |
-| Effort to adopt | Definitions, and meters for computed plans | Model and deploy the process; integrate every step | Extract and prepare event logs | Instrument services | Write and operate the pipeline |
+| | BPMN engine (e.g. Camunda, Flowable) | Aktimetrix |
+|---|---|---|
+| Role | **Runs** the process: calls services, waits, decides | **Watches** the process: runs nothing |
+| Systems | Each step is integrated into the engine | Unchanged: they only emit events |
+| Plan | Timers per task, the same for every instance | A plan per entity, in any measurement |
+| Answers | What happens next? | Is each entity on plan, and how far off? |
 
-The tools combine well: a workflow engine or any other system emits events, Aktimetrix tracks the commitments, and its
-published events feed dashboards, process-mining datasets or stream jobs.
+They combine: a BPMN engine can be one of the systems whose events Aktimetrix watches.
 
 ### 10.3 Known limitations
 
