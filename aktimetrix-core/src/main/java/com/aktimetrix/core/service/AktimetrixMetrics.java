@@ -25,12 +25,15 @@ import java.util.function.Supplier;
  *
  * <table>
  *     <tr><td>{@code aktimetrix.events}</td><td>counter</td><td>tenant, event, outcome</td></tr>
- *     <tr><td>{@code aktimetrix.processes.started}</td><td>counter</td><td>tenant, process</td></tr>
- *     <tr><td>{@code aktimetrix.processes.completed}</td><td>counter</td><td>tenant, process</td></tr>
+ *     <tr><td>{@code aktimetrix.processes.started}, {@code .completed}, {@code .cancelled}, {@code .overdue}</td><td>counter</td><td>tenant, process</td></tr>
  *     <tr><td>{@code aktimetrix.steps.completed}</td><td>counter</td><td>tenant, step, timeliness</td></tr>
  *     <tr><td>{@code aktimetrix.steps.lateness}</td><td>timer</td><td>tenant, step</td></tr>
- *     <tr><td>{@code aktimetrix.steps.overdue}</td><td>counter</td><td>tenant, step</td></tr>
- *     <tr><td>{@code aktimetrix.steps.at.risk}</td><td>counter</td><td>tenant, step</td></tr>
+ *     <tr><td>{@code aktimetrix.steps.overdue}, {@code .at.risk}</td><td>counter</td><td>tenant, step</td></tr>
+ *     <tr><td>{@code aktimetrix.measurements.actual}</td><td>counter</td><td>tenant, measurement, conformance</td></tr>
+ *     <tr><td>{@code aktimetrix.measurements.deviation}</td><td>distribution summary</td><td>tenant, measurement</td></tr>
+ *     <tr><td>{@code aktimetrix.alarms.pending}</td><td>gauge</td><td></td></tr>
+ *     <tr><td>{@code aktimetrix.alarms.fired}</td><td>counter</td><td>tenant, kind</td></tr>
+ *     <tr><td>{@code aktimetrix.alarms.delay}</td><td>timer</td><td>kind</td></tr>
  *     <tr><td>{@code aktimetrix.outbox.pending}</td><td>gauge</td><td></td></tr>
  * </table>
  */
@@ -90,9 +93,6 @@ public class AktimetrixMetrics {
     }
 
     /**
-     * Registers the gauge of outbox messages not yet sent to Kafka.
-     */
-    /**
      * An actual measurement was recorded; counted by conformance, and its numeric deviation from plan recorded.
      */
     public void measurementRecorded(MeasurementInstance measurement) {
@@ -126,6 +126,9 @@ public class AktimetrixMetrics {
                 .register(registry).record(delay.isNegative() ? Duration.ZERO : delay);
     }
 
+    /**
+     * Registers the gauge of outbox messages not yet sent to the message broker.
+     */
     public void outboxPending(Supplier<Number> pending) {
         Gauge.builder("aktimetrix.outbox.pending", pending)
                 .description("Outbox messages not yet sent to the message broker").register(registry);

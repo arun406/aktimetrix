@@ -15,8 +15,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Internal: checks definitions as they are loaded, so that a mistake stops the application at startup with a message
- * that says where it is, instead of showing only when the first event arrives. Not part of the public API.
+ * Internal: checks definitions before they are saved, whether loaded at startup or sent to the REST API, so that a
+ * mistake is reported with a message that says where it is, instead of showing only when the first event arrives. Not
+ * part of the public API.
  */
 final class DefinitionValidator {
 
