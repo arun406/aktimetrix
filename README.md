@@ -54,9 +54,8 @@ your systems already emit; nothing is replaced.
    MongoDB, PostgreSQL or in memory are interchangeable modules that pass the same contract tests
    ([§5.2](./docs/white-paper.md#52-infrastructure-contract), [§9.1](./docs/white-paper.md#91-technology-bindings)).
 
-**Status.** Java 17+ and Spring Boot 4.1, tested on JDK 17, 21 and 25; first release [0.1.0](./CHANGELOG.md). Commercial observability and
-process-intelligence suites offer similar business-flow monitoring; Aktimetrix is an open, embeddable engine for it
-([§10.2](./docs/white-paper.md#102-compared-with-neighbouring-tools)). The model behind it is described in the
+**Status.** Java 17+ and Spring Boot 4.1, tested on JDK 17, 21 and 25; first release [0.1.0](./CHANGELOG.md). Unlike a BPMN engine, it
+runs no process: it watches the ones your systems already run ([§10.2](./docs/white-paper.md#102-compared-with-bpmn)). The model behind it is described in the
 [white paper](./docs/white-paper.md).
 
 ## Where it fits
