@@ -1,1 +1,1 @@
-org.springframework.boot.env.EnvironmentPostProcessor=com.aktimetrix.broker.rabbitmq.RabbitBrokerDefaults
+org.springframework.boot.EnvironmentPostProcessor=com.aktimetrix.broker.rabbitmq.RabbitBrokerDefaults

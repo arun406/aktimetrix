@@ -16,14 +16,13 @@ class AktimetrixDefaultPropertiesTest {
         StandardEnvironment environment = new StandardEnvironment();
         environment.getPropertySources().addFirst(new MapPropertySource("application",
                 Map.of("aktimetrix.events.topic", "order-events",
-                        "spring.jackson.serialization.write-dates-as-timestamps", "true")));
+                        "spring.cloud.stream.bindings.processor-in-0.group", "monitors")));
 
         new AktimetrixDefaultProperties().postProcessEnvironment(environment, new SpringApplication());
 
         assertThat(environment.getProperty("spring.cloud.stream.function.definition")).isEqualTo("processor");
         assertThat(environment.getProperty("spring.cloud.stream.bindings.processor-in-0.destination"))
                 .isEqualTo("order-events");
-        assertThat(environment.getProperty("spring.cloud.stream.bindings.processor-in-0.group")).isEqualTo("aktimetrix");
-        assertThat(environment.getProperty("spring.jackson.serialization.write-dates-as-timestamps")).isEqualTo("true");
+        assertThat(environment.getProperty("spring.cloud.stream.bindings.processor-in-0.group")).isEqualTo("monitors");
     }
 }

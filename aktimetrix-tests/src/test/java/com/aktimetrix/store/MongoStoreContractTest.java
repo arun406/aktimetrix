@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration;
+import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -36,7 +36,7 @@ class MongoStoreContractTest extends StoreContractTest {
     @Configuration(proxyBeanMethods = false)
     @EnableConfigurationProperties(AktimetrixProperties.class)
     @ImportAutoConfiguration({MongoAutoConfiguration.class, MongoStoreAutoConfiguration.class,
-            MongoDataAutoConfiguration.class})
+            DataMongoAutoConfiguration.class})
     static class Store {
     }
 
@@ -45,7 +45,7 @@ class MongoStoreContractTest extends StoreContractTest {
         final InetSocketAddress address = server.bind();
         return new SpringApplicationBuilder(Store.class).web(WebApplicationType.NONE)
                 .properties("aktimetrix.storage.type=mongodb",
-                        "spring.data.mongodb.uri=mongodb://localhost:" + address.getPort() + "/contract")
+                        "spring.mongodb.uri=mongodb://localhost:" + address.getPort() + "/contract")
                 .run();
     }
 

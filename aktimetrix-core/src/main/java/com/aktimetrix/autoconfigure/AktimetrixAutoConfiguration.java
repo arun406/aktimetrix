@@ -3,7 +3,7 @@ package com.aktimetrix.autoconfigure;
 import com.aktimetrix.core.api.EventMapper;
 import com.aktimetrix.core.configurations.AktimetrixProperties;
 import com.aktimetrix.core.event.EnvelopeEventMapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

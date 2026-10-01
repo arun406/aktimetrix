@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/arun406/aktimetrix/actions/workflows/ci.yml"><img src="https://github.com/arun406/aktimetrix/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
-  <a href="#modules"><img src="https://img.shields.io/badge/java-11%2B-0F4C5C?logo=openjdk&logoColor=white" alt="Java 11+"></a>
+  <a href="#modules"><img src="https://img.shields.io/badge/java-17%2B-0F4C5C?logo=openjdk&logoColor=white" alt="Java 17+"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License: Apache 2.0"></a>
   <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/release-v0.1.0-0F4C5C" alt="Release: v0.1.0"></a>
 </p>
@@ -54,7 +54,7 @@ your systems already emit; nothing is replaced.
    MongoDB, PostgreSQL or in memory are interchangeable modules that pass the same contract tests
    ([§5.2](./docs/white-paper.md#52-infrastructure-contract), [§9.1](./docs/white-paper.md#91-technology-bindings)).
 
-**Status.** Release [0.1.0](./CHANGELOG.md): Java 11+, tested on JDK 11, 17 and 21. Commercial observability and
+**Status.** Java 17+ and Spring Boot 4.1, tested on JDK 17, 21 and 25; first release [0.1.0](./CHANGELOG.md). Commercial observability and
 process-intelligence suites offer similar business-flow monitoring; Aktimetrix is an open, embeddable engine for it
 ([§10.2](./docs/white-paper.md#102-compared-with-neighbouring-tools)). The model behind it is described in the
 [white paper](./docs/white-paper.md).
@@ -84,7 +84,7 @@ It combines with all of them; see [positioning](./docs/white-paper.md#10-positio
 ## Quick start
 
 The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) reference application runs
-the order from the animation above end to end. It needs **JDK 11+** and **Docker**.
+the order from the animation above end to end. It needs **JDK 17+** and **Docker**.
 
 ```bash
 git clone https://github.com/arun406/aktimetrix.git
@@ -110,17 +110,17 @@ Add the core, one state store and one message broker:
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-core</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-store-mongodb</artifactId>   <!-- or aktimetrix-store-jdbc, aktimetrix-store-memory -->
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-broker-kafka</artifactId>    <!-- or aktimetrix-broker-rabbitmq -->
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -147,6 +147,9 @@ Definitions orderDelivery() {
 }
 ```
 
+Add `aktimetrix-rest` as well for the REST API: where each entity stands, and the definitions. It describes itself
+at `/v3/api-docs/aktimetrix`, and in Swagger UI once you add `springdoc-openapi-starter-webmvc-ui`.
+
 Name the inbound topic (`aktimetrix.events.topic`) and the usual Spring Boot connection settings of your broker and
 store. The [getting-started guide](./docs/getting-started.md) builds a complete monitor step by step.
 
@@ -154,12 +157,13 @@ store. The [getting-started guide](./docs/getting-started.md) builds a complete 
 
 | Module | Role | Binds to |
 |---|---|---|
-| `aktimetrix-core` | The runtime, independent of any broker or store | Java 11+, Spring Boot 2.7, Micrometer |
+| `aktimetrix-core` | The runtime, independent of any broker or store | Java 17+, Spring Boot 4.1, Micrometer |
 | `aktimetrix-store-mongodb` | State store | MongoDB; atomic on replica sets and sharded clusters |
 | `aktimetrix-store-jdbc` | State store | A relational database through JDBC, written for PostgreSQL |
 | `aktimetrix-store-memory` | State store | Memory: for tests and demos, not durable |
 | `aktimetrix-broker-kafka` | Message broker | Apache Kafka |
 | `aktimetrix-broker-rabbitmq` | Message broker | RabbitMQ |
+| `aktimetrix-rest` | REST API, optional | Spring MVC; describes itself with OpenAPI (springdoc) |
 
 Every store passes the same contract tests; a new store or broker is a module of its own
 ([extending](./docs/extending.md)).
@@ -203,8 +207,9 @@ the author. Aktimetrix is independent and not affiliated with IATA or Cargo iQ.
 
 ## Status and roadmap
 
-**Release 0.1.0.** Tested on JDK 11, 17 and 21, on embedded brokers and databases. The public API may still change
-before 1.0; the [known limitations](./docs/white-paper.md#103-known-limitations) are listed in the white paper.
+**In development: 0.2.0.** Java 17+ and Spring Boot 4.1, tested on JDK 17, 21 and 25, on embedded brokers and
+databases; the REST API is a module of its own, with an OpenAPI description. The first release, **0.1.0**, runs on
+Java 11+ and Spring Boot 2.7. The public API may still change before 1.0; the [known limitations](./docs/white-paper.md#103-known-limitations) are listed in the white paper.
 
 Next:
 

@@ -5,9 +5,12 @@ import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.referencedata.model.MetricDefinition;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.core.util.Expression;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +56,8 @@ final class DefinitionValidator {
                 }
                 if (blank(metric.getExpression())) {
                     problems.add(at + ": expression is missing");
+                } else {
+                    expression(problems, at, metric.getExpression());
                 }
                 amount(problems, at, metric.getTolerance());
                 direction(problems, at, metric.getWorseWhen());
@@ -118,6 +123,38 @@ final class DefinitionValidator {
                 amount(problems, at, measurement.getTolerance());
             }
             direction(problems, at, measurement.getWorseWhen());
+        }
+    }
+
+    /**
+     * Checks the expression's form with every name valued 1, so that a mistake shows now rather than when a process
+     * completes.
+     */
+    private static void expression(List<String> problems, String where, String expression) {
+        try {
+            Expression.evaluate(expression, new OneForEveryName());
+        } catch (IllegalArgumentException e) {
+            problems.add(where + ": expression " + e.getMessage());
+        }
+    }
+
+    /**
+     * Values every name 1.
+     */
+    private static final class OneForEveryName extends AbstractMap<String, BigDecimal> {
+        @Override
+        public BigDecimal get(Object key) {
+            return BigDecimal.ONE;
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            return true;
+        }
+
+        @Override
+        public Set<Entry<String, BigDecimal>> entrySet() {
+            return Set.of();
         }
     }
 

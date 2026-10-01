@@ -1,6 +1,7 @@
 package com.aktimetrix.core.referencedata.service;
 
 import com.aktimetrix.core.exception.InvalidDefinitionException;
+import com.aktimetrix.core.referencedata.model.MetricDefinition;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.model.ProcessInstance;
@@ -120,6 +121,21 @@ class ProcessDefinitionServiceTest {
                 .isInstanceOfSatisfying(InvalidDefinitionException.class, e -> assertThat(e.getProblems())
                         .containsExactly("process ORDER_DELIVERY: startEventCodes is missing, so the process can never start",
                                 "process ORDER_DELIVERY: plannedWithin is not an ISO-8601 duration such as PT2H or P1D: one day"));
+        verify(store, never()).saveProcess(any());
+    }
+
+    @Test
+    void aMalformedMetricExpressionIsRejectedWhenTheDefinitionIsSaved() {
+        ProcessDefinition definition = new ProcessDefinition("AA", "ORDER_DELIVERY");
+        definition.setStartEventCodes(List.of("ORDER_PLACED_EVENT"));
+        MetricDefinition metric = new MetricDefinition();
+        metric.setCode("FUEL_PER_KM");
+        metric.setExpression("(FUEL / DISTANCE");
+        definition.setMetrics(List.of(metric));
+
+        assertThatThrownBy(() -> service.add(definition))
+                .isInstanceOfSatisfying(InvalidDefinitionException.class, e -> assertThat(e.getProblems())
+                        .singleElement().asString().startsWith("process ORDER_DELIVERY, metric FUEL_PER_KM: expression"));
         verify(store, never()).saveProcess(any());
     }
 

@@ -139,6 +139,7 @@ aktimetrix-store-jdbc/             state store: relational database through JDBC
 aktimetrix-store-memory/           state store: in memory, for tests and demos
 aktimetrix-broker-kafka/           message broker: Apache Kafka
 aktimetrix-broker-rabbitmq/        message broker: RabbitMQ
+aktimetrix-rest/                   the REST API, described with OpenAPI
 aktimetrix-tests/                  store contract tests, and end-to-end tests of every store with every broker
 
 aktimetrix-core/src/main/java/com/aktimetrix/
@@ -150,12 +151,11 @@ aktimetrix-core/src/main/java/com/aktimetrix/
     ├── event/                 the default event mapper, and event handlers
     ├── impl/                  AbstractProcessor, DefaultProcessor, the registry, event generators
     ├── model/                 process, step and measurement instances
-    ├── referencedata/         definitions: model, loading, versioning, resolution, REST
+    ├── referencedata/         definitions: model, loading, validation, versioning, resolution
     ├── service/               progress, planning, actual measurements, monitors, publishers, metrics
     ├── outbox/                the outbox and its relay
     ├── store/                 the state-store contract, which store modules implement
     ├── configurations/        aktimetrix.* properties and the inbound consumer
-    ├── resource/              the query API
     └── transferobjects/       the event envelope and outbound payloads
 ```
 

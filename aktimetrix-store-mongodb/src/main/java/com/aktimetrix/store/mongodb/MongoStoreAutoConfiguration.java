@@ -11,7 +11,7 @@ import com.aktimetrix.core.store.StepInstanceStore;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
+import org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -31,7 +31,7 @@ import java.util.List;
  * {@code aktimetrix.storage.type=mongodb}, or when it is the only store module on the classpath.
  */
 @Configuration(proxyBeanMethods = false)
-@AutoConfigureBefore(MongoDataAutoConfiguration.class)
+@AutoConfigureBefore(DataMongoAutoConfiguration.class)
 @ConditionalOnProperty(prefix = "aktimetrix.storage", name = "type", havingValue = "mongodb", matchIfMissing = true)
 @ConditionalOnMissingBean(ProcessInstanceStore.class)
 public class MongoStoreAutoConfiguration {

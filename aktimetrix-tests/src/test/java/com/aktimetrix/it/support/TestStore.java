@@ -14,8 +14,8 @@ public interface TestStore extends AutoCloseable {
     /**
      * Every store module is on the test classpath: keep Spring Boot from connecting to a MongoDB it does not use.
      */
-    String WITHOUT_MONGODB = "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,"
-            + "org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration";
+    String WITHOUT_MONGODB = "org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration,"
+            + "org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration";
 
     /**
      * Spring properties that select this store and connect an Aktimetrix application to it.
@@ -33,7 +33,7 @@ public interface TestStore extends AutoCloseable {
             @Override
             public Map<String, Object> properties() {
                 return Map.of("aktimetrix.storage.type", "mongodb",
-                        "spring.data.mongodb.uri", "mongodb://localhost:" + port + "/aktimetrix");
+                        "spring.mongodb.uri", "mongodb://localhost:" + port + "/aktimetrix");
             }
 
             @Override
