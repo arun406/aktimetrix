@@ -8,8 +8,10 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
+import org.springframework.kafka.test.EmbeddedKafkaKraftBroker;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +27,7 @@ public class KafkaTestBroker implements TestBroker {
     private final KafkaTemplate<String, String> producer;
 
     public KafkaTestBroker(String eventsTopic) {
-        kafka = new EmbeddedKafkaBroker(1, true, 1, eventsTopic, eventsTopic + ".dlq", "step-instance-out-0",
+        kafka = new EmbeddedKafkaKraftBroker(1, 1, eventsTopic, eventsTopic + ".dlq", "step-instance-out-0",
                 "process-instance-out-0", "measurement-instance-out-0");
         kafka.afterPropertiesSet();
         producer = new KafkaTemplate<>(new DefaultKafkaProducerFactory<>(KafkaTestUtils.producerProps(kafka),
@@ -54,7 +56,7 @@ public class KafkaTestBroker implements TestBroker {
             kafka.consumeFromAnEmbeddedTopic(consumer, destination);
             final long deadline = System.currentTimeMillis() + 20_000;
             while (!enough.test(values) && System.currentTimeMillis() < deadline) {
-                KafkaTestUtils.getRecords(consumer, 500).forEach(record -> values.add(record.value()));
+                KafkaTestUtils.getRecords(consumer, Duration.ofMillis(500)).forEach(record -> values.add(record.value()));
             }
         }
         return values;

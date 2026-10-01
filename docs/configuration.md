@@ -12,7 +12,7 @@ settings with the standard Spring Boot properties.
 
 | Module | Connection settings | Notes |
 |---|---|---|
-| `aktimetrix-store-mongodb` | `spring.data.mongodb.uri` | Atomic units of work on a replica set or sharded cluster (a single-node replica set is enough). |
+| `aktimetrix-store-mongodb` | `spring.mongodb.uri` | Atomic units of work on a replica set or sharded cluster (a single-node replica set is enough). |
 | `aktimetrix-store-jdbc` | `spring.datasource.url`, `.username`, `.password`, and the database's JDBC driver | Written for PostgreSQL; atomic units of work. |
 | `aktimetrix-store-memory` | none | Not durable, not shared between instances, not atomic: for tests and demos. |
 | `aktimetrix-broker-kafka` | `spring.kafka.properties.bootstrap.servers` (or `spring.cloud.stream.kafka.binder.brokers`) | Events of one entity are processed in order through partitions keyed by entity id. |
@@ -87,7 +87,6 @@ These are set with the lowest precedence, so your own configuration always wins:
 | `spring.cloud.stream.bindings.processor-in-0.destination` | `${aktimetrix.events.topic}` | core |
 | `spring.cloud.stream.bindings.processor-in-0.group` | `${aktimetrix.events.group}` | core |
 | `spring.cloud.stream.bindings.dead-letter-out-0.destination` | `${aktimetrix.events.dead-letter.topic}` | core |
-| `spring.jackson.serialization.write-dates-as-timestamps` | `false` | core |
 | `spring.cloud.stream.kafka.bindings.processor-in-0.consumer.enableDlq`, `.dlqName` | `true`, the dead-letter topic | Kafka module |
 | `spring.cloud.stream.kafka.bindings.*-out-0.producer.messageKeyExpression` | `headers['aktimetrixKey']` | Kafka module |
 | `spring.cloud.stream.kafka.bindings.*-out-0.producer.configuration.key.serializer` | `StringSerializer` | Kafka module |
@@ -368,6 +367,17 @@ stored and published with it.
 
 ## REST API
 
+The REST API is the `aktimetrix-rest` module: add it to a servlet web application and the endpoints below are
+configured with the rest of Aktimetrix.
+
+```xml
+<dependency>
+    <groupId>com.aktimetrix</groupId>
+    <artifactId>aktimetrix-rest</artifactId>
+    <version>0.2.0-SNAPSHOT</version>
+</dependency>
+```
+
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/process-instances?tenant=&entityId=[&entityType=]` | The entity's process instances, each with its steps' status, `plannedAt`, `actualAt` and `timeliness`. |
@@ -387,6 +397,20 @@ curl -X POST http://localhost:8080/reference-data/step-definitions \
 A posted definition is checked as strictly as a definition file. When it is not valid, nothing is saved and the answer
 is `400 Bad Request` listing every problem, such as
 `{"problems":["process ORDER_DELIVERY: startEventCodes is missing, so the process can never start"]}`.
+
+### OpenAPI
+
+The API describes itself with OpenAPI 3, generated at runtime by springdoc as the group `aktimetrix`:
+
+| Path | Content |
+|---|---|
+| `/v3/api-docs/aktimetrix` | The OpenAPI description of the Aktimetrix endpoints and their schemas, as JSON |
+| `/v3/api-docs/aktimetrix.yaml` | The same, as YAML |
+| `/swagger-ui.html` | Swagger UI, when the application adds `org.springdoc:springdoc-openapi-starter-webmvc-ui` |
+
+The group keeps the Aktimetrix endpoints apart from the application's own, which springdoc describes in its default
+group. Standard `springdoc.*` properties apply, for example `springdoc.api-docs.enabled=false` to switch the
+description off in production.
 
 The API has no authentication of its own. Protect it as you would any internal service, for example with Spring
 Security or a gateway.

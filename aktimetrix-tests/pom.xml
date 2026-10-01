@@ -5,7 +5,7 @@
     <parent>
         <artifactId>aktimetrix</artifactId>
         <groupId>com.aktimetrix</groupId>
-        <version>0.1.0</version>
+        <version>0.2.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>aktimetrix-tests</artifactId>
@@ -19,8 +19,8 @@
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <maven.source.skip>true</maven.source.skip>
         <gpg.skip>true</gpg.skip>
-        <!-- 9.x is the last line that runs on Java 11 -->
-        <qpid-broker.version>9.2.1</qpid-broker.version>
+        <!-- an embedded AMQP 0-9-1 broker for the RabbitMQ tests -->
+        <qpid-broker.version>10.1.1</qpid-broker.version>
     </properties>
 
     <dependencies>

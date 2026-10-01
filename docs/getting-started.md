@@ -11,7 +11,7 @@
 The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) is a complete Aktimetrix
 application: it monitors the order delivery process of the [worked example](./white-paper.md#11-a-worked-example-order-delivery),
 seven steps from order confirmation to the customer's rating, in time, distance, fuel, temperature, cost and rating.
-You need **JDK 11+** and **Docker**.
+You need **JDK 17+** and **Docker**.
 
 ```bash
 # 1. Build and install the framework (it is not on Maven Central yet)
@@ -56,21 +56,23 @@ The core, a store module and a broker module:
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-core</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-store-mongodb</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-broker-kafka</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 ```
 
-The core brings Spring Web and Spring Cloud Stream; the modules bring Spring Data MongoDB and the Kafka binder. It all
+The core brings Spring Cloud Stream; the modules bring Spring Data MongoDB and the Kafka binder. For the REST API,
+which answers where an entity stands and manages definitions, add `aktimetrix-rest` too; it brings Spring MVC and an
+OpenAPI description of itself. It all
 configures itself through Spring Boot auto-configuration: your application class is a plain `@SpringBootApplication`.
 To keep the state in PostgreSQL instead, use `aktimetrix-store-jdbc` and the PostgreSQL driver; to use RabbitMQ,
 `aktimetrix-broker-rabbitmq`. To try Aktimetrix without a database, `aktimetrix-store-memory`.

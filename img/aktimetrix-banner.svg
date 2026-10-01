@@ -15,7 +15,7 @@
   <text x="232" y="148" font-size="76" font-weight="700" fill="#FFFFFF" letter-spacing="1">Aktimetrix</text>
   <text x="236" y="196" font-size="24" fill="#CDE7EE">Event-driven business process monitoring for the JVM</text>
   <g font-size="16" font-weight="600" fill="#0B3441">
-    <rect x="236" y="226" width="92" height="32" rx="16" fill="#CDE7EE"/><text x="282" y="247" text-anchor="middle">Java 11+</text>
+    <rect x="236" y="226" width="92" height="32" rx="16" fill="#CDE7EE"/><text x="282" y="247" text-anchor="middle">Java 17+</text>
     <rect x="340" y="226" width="118" height="32" rx="16" fill="#CDE7EE"/><text x="399" y="247" text-anchor="middle">Spring Boot</text>
     <rect x="470" y="226" width="126" height="32" rx="16" fill="#CDE7EE"/><text x="533" y="247" text-anchor="middle">Multi-tenant</text>
     <rect x="608" y="226" width="102" height="32" rx="16" fill="#CDE7EE"/><text x="659" y="247" text-anchor="middle">Apache 2.0</text>

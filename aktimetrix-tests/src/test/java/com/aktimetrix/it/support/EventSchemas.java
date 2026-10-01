@@ -1,7 +1,7 @@
 package com.aktimetrix.it.support;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -20,6 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public final class EventSchemas {
 
     private static final ObjectMapper JSON = new ObjectMapper();
+    /**
+     * The schema validator reads Jackson 2 trees.
+     */
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON2 =
+            new com.fasterxml.jackson.databind.ObjectMapper();
 
     private EventSchemas() {
     }
@@ -44,7 +49,7 @@ public final class EventSchemas {
                 default:
                     throw new AssertionError("Unknown event type: " + message);
             }
-            final Set<ValidationMessage> errors = load(schema).validate(event);
+            final Set<ValidationMessage> errors = load(schema).validate(JSON2.readTree(message));
             assertThat(errors).as("%s is valid against %s.schema.json", message, schema).isEmpty();
             return event;
         } catch (IOException e) {

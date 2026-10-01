@@ -104,15 +104,38 @@ public class ProcessConfig {
     /**
      * An event that can never be processed: retrying cannot help, so it goes straight to the dead-letter topic.
      */
+    /**
+     * Identifies a rejected event for the log without its content, which may hold personal data and, being untrusted,
+     * line breaks that would forge log lines; the content goes to the dead-letter topic, and to the log at DEBUG.
+     */
+    private static String describe(Event<?, ?> event, String payload) {
+        final int size = payload == null ? 0 : payload.length();
+        if (event == null) {
+            return "unreadable payload of " + size + " characters";
+        }
+        return String.format("eventId=%s, eventCode=%s, entityId=%s, %d characters", safe(event.getEventId()),
+                safe(event.getEventCode()), safe(event.getEntityId()), size);
+    }
+
+    private static String safe(String value) {
+        if (value == null) {
+            return null;
+        }
+        final String printable = value.replaceAll("\\p{Cntrl}", "?");
+        return printable.length() > 100 ? printable.substring(0, 100) + "…" : printable;
+    }
+
     private void reject(Event<?, ?> event, String payload, String reason) {
         metrics.eventReceived(event == null ? null : event.getTenantKey(), event == null ? null : event.getEventCode(),
                 "invalid");
         if (properties.getEvents().getDeadLetter().isEnabled()) {
-            logger.error("Event {}; sent to the dead-letter topic: {}", reason, payload);
+            logger.error("Event {}; sent to the dead-letter topic: {}", reason, describe(event, payload));
+            logger.debug("Rejected payload: {}", payload);
             outbox.enqueueRaw(AktimetrixDefaultProperties.DEAD_LETTER_BINDING,
                     event == null ? null : event.getEntityId(), payload);
         } else {
-            logger.error("Event {}; ignored: {}", reason, payload);
+            logger.error("Event {}; ignored: {}", reason, describe(event, payload));
+            logger.debug("Rejected payload: {}", payload);
         }
     }
 }

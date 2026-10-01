@@ -2,8 +2,8 @@ package com.aktimetrix.core.outbox;
 
 import com.aktimetrix.core.service.AktimetrixMetrics;
 import com.aktimetrix.core.store.OutboxStore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -33,7 +33,7 @@ public class Outbox {
         final String payload;
         try {
             payload = objectMapper.writeValueAsString(event);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Event cannot be serialized to JSON: " + event, e);
         }
         enqueueRaw(destination, messageKey, payload);

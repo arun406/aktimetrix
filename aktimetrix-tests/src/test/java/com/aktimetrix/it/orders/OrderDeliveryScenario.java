@@ -14,7 +14,7 @@ import com.aktimetrix.it.support.EventSchemas;
 import com.aktimetrix.it.support.TestBroker;
 import com.aktimetrix.it.support.TestMonitor;
 import com.aktimetrix.it.support.TestStore;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

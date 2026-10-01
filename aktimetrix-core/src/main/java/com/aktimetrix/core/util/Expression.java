@@ -10,9 +10,19 @@ import java.util.Map;
  */
 public final class Expression {
 
+    /**
+     * Longest expression accepted, in characters.
+     */
+    public static final int MAX_LENGTH = 1000;
+    /**
+     * Deepest nesting of parentheses and unary minus accepted, so that an expression cannot exhaust the stack.
+     */
+    public static final int MAX_DEPTH = 32;
+
     private final String text;
     private final Map<String, BigDecimal> values;
     private int position;
+    private int depth;
 
     private Expression(String text, Map<String, BigDecimal> values) {
         this.text = text;
@@ -24,6 +34,9 @@ public final class Expression {
      * @throws IllegalArgumentException when the expression is not well formed
      */
     public static BigDecimal evaluate(String expression, Map<String, BigDecimal> values) {
+        if (expression.length() > MAX_LENGTH) {
+            throw new IllegalArgumentException("Expression longer than " + MAX_LENGTH + " characters");
+        }
         final Expression parser = new Expression(expression, values);
         try {
             final BigDecimal result = parser.sum();
@@ -69,13 +82,18 @@ public final class Expression {
 
     private BigDecimal factor() {
         if (take('-')) {
-            return factor().negate();
+            enter();
+            final BigDecimal value = factor().negate();
+            depth--;
+            return value;
         }
         if (take('(')) {
+            enter();
             final BigDecimal value = sum();
             if (!take(')')) {
                 throw new IllegalArgumentException("Missing ')' in " + text);
             }
+            depth--;
             return value;
         }
         skipSpaces();
@@ -98,6 +116,12 @@ public final class Expression {
             throw new MissingValue();
         }
         return value;
+    }
+
+    private void enter() {
+        if (++depth > MAX_DEPTH) {
+            throw new IllegalArgumentException("Expression nested deeper than " + MAX_DEPTH + " levels");
+        }
     }
 
     private boolean take(char expected) {

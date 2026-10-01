@@ -2,7 +2,7 @@ package com.aktimetrix.core.impl;
 
 import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.api.Context;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

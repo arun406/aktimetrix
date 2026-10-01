@@ -1,4 +1,2 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.aktimetrix.autoconfigure.AktimetrixAutoConfiguration
-org.springframework.boot.env.EnvironmentPostProcessor=\
+org.springframework.boot.EnvironmentPostProcessor=\
   com.aktimetrix.autoconfigure.AktimetrixDefaultProperties

@@ -1,21 +1,18 @@
-package com.aktimetrix.core.referencedata.resource;
+package com.aktimetrix.rest;
 
 import com.aktimetrix.core.exception.InvalidDefinitionException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  * Answers a definition that fails validation with {@code 400 Bad Request} and the list of its problems.
  */
-@RestControllerAdvice(basePackageClasses = InvalidDefinitionHandler.class)
+@RestControllerAdvice(assignableTypes = {ProcessDefinitionResource.class, StepDefinitionResource.class})
 public class InvalidDefinitionHandler {
 
     @ExceptionHandler(InvalidDefinitionException.class)
-    public ResponseEntity<Map<String, List<String>>> invalid(InvalidDefinitionException e) {
-        return ResponseEntity.badRequest().body(Map.of("problems", e.getProblems()));
+    public ResponseEntity<DefinitionProblems> invalid(InvalidDefinitionException e) {
+        return ResponseEntity.badRequest().body(new DefinitionProblems(e.getProblems()));
     }
 }
