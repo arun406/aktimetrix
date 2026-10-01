@@ -19,6 +19,14 @@ version may change the public API.
   (`/v3/api-docs/aktimetrix`); Swagger UI is available by adding `springdoc-openapi-starter-webmvc-ui`.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
+**Security**
+- A metric expression is limited to 1,000 characters and 32 levels of nesting, and checked when its definition is
+  saved, so that a deeply nested expression cannot exhaust the stack when a process completes.
+- A rejected event is logged by its ids and size only; its content, which may hold personal data and untrusted line
+  breaks, goes to the dead-letter topic, and to the log at DEBUG.
+- The release workflow gives the Maven Central and signing secrets only to the steps that publish, not to the build;
+  CI runs with a read-only token. Dependabot proposes dependency and action updates every week.
+
 **Fixed**
 - Definitions posted to the REST API are validated like definition files: an invalid one is answered with
   `400 Bad Request` and its problems, and is not saved. Before, it was saved and failed only when an event used it.

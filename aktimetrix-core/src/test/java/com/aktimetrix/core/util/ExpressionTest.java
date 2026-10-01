@@ -32,4 +32,18 @@ class ExpressionTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> Expression.evaluate("(FUEL", VALUES)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void refusesExpressionsNestedOrLongEnoughToExhaustTheStack() {
+        final String nested = "(".repeat(5000) + "FUEL" + ")".repeat(5000);
+        assertThatThrownBy(() -> Expression.evaluate(nested, VALUES)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("longer than");
+        final String deep = "(".repeat(Expression.MAX_DEPTH + 1) + "FUEL" + ")".repeat(Expression.MAX_DEPTH + 1);
+        assertThatThrownBy(() -> Expression.evaluate(deep, VALUES)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("nested deeper than");
+        assertThatThrownBy(() -> Expression.evaluate("-".repeat(Expression.MAX_DEPTH + 1) + "FUEL", VALUES))
+                .isInstanceOf(IllegalArgumentException.class);
+        final String allowed = "(".repeat(Expression.MAX_DEPTH) + "FUEL" + ")".repeat(Expression.MAX_DEPTH);
+        assertThat(Expression.evaluate(allowed, VALUES)).isEqualByComparingTo("1");
+    }
 }
