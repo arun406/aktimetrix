@@ -1,5 +1,6 @@
 package com.aktimetrix.core.referencedata.service;
 
+import com.aktimetrix.core.exception.InvalidDefinitionException;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.model.ProcessInstance;
@@ -14,6 +15,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,6 +80,7 @@ class ProcessDefinitionServiceTest {
         existing.setRevision(3L);
         when(store.findProcess("AA", "ORDER_DELIVERY")).thenReturn(Optional.of(existing));
         ProcessDefinition updated = new ProcessDefinition("AA", "ORDER_DELIVERY");
+        updated.setStartEventCodes(List.of("ORDER_PLACED_EVENT"));
         updated.setPlannedWithin("P1D");
 
         service.add(updated);
@@ -88,19 +93,34 @@ class ProcessDefinitionServiceTest {
     @Test
     void aNewDefinitionIsRevisionOneAndAnUnchangedOneKeepsItsRevision() {
         ProcessDefinition created = new ProcessDefinition("AA", "ORDER_DELIVERY");
+        created.setStartEventCodes(List.of("ORDER_PLACED_EVENT"));
         when(store.findProcess("AA", "ORDER_DELIVERY")).thenReturn(Optional.empty());
         service.add(created);
         assertThat(created.getRevision()).isEqualTo(1L);
 
         ProcessDefinition stored = new ProcessDefinition("AA", "ORDER_DELIVERY");
+        stored.setStartEventCodes(List.of("ORDER_PLACED_EVENT"));
         stored.setId("42");
         stored.setRevision(2L);
         stored.setPlannedWithin("P1D");
         when(store.findProcess("AA", "ORDER_DELIVERY")).thenReturn(Optional.of(stored));
         ProcessDefinition reloaded = new ProcessDefinition("AA", "ORDER_DELIVERY");
+        reloaded.setStartEventCodes(List.of("ORDER_PLACED_EVENT"));
         reloaded.setPlannedWithin("P1D");
         service.add(reloaded);
         assertThat(reloaded.getRevision()).as("reloading an unchanged definition").isEqualTo(2L);
+    }
+
+    @Test
+    void anInvalidDefinitionIsRejectedWithItsProblemsAndNotSaved() {
+        ProcessDefinition invalid = new ProcessDefinition("AA", "ORDER_DELIVERY");
+        invalid.setPlannedWithin("one day");
+
+        assertThatThrownBy(() -> service.add(invalid))
+                .isInstanceOfSatisfying(InvalidDefinitionException.class, e -> assertThat(e.getProblems())
+                        .containsExactly("process ORDER_DELIVERY: startEventCodes is missing, so the process can never start",
+                                "process ORDER_DELIVERY: plannedWithin is not an ISO-8601 duration such as PT2H or P1D: one day"));
+        verify(store, never()).saveProcess(any());
     }
 
     @Test

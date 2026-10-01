@@ -1,5 +1,6 @@
 package com.aktimetrix.core.referencedata.service;
 
+import com.aktimetrix.core.exception.InvalidDefinitionException;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
@@ -30,8 +31,14 @@ public class ProcessDefinitionService {
     /**
      * Saves the definition, replacing the one with the same tenant and process code. Its revision is incremented if it
      * differs from the stored one, and kept otherwise, so reloading unchanged definitions creates no new revision.
+     *
+     * @throws InvalidDefinitionException if the definition is not valid; nothing is saved then
      */
     public ProcessDefinition add(ProcessDefinition definition) {
+        final List<String> problems = DefinitionValidator.problems(definition);
+        if (!problems.isEmpty()) {
+            throw new InvalidDefinitionException(problems);
+        }
         final ProcessDefinition existing = store.findProcess(definition.getTenant(), definition.getProcessCode()).orElse(null);
         if (existing == null) {
             definition.setRevision(1L);
