@@ -1,4 +1,4 @@
-package com.aktimetrix.core.referencedata.resource;
+package com.aktimetrix.rest;
 
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
@@ -28,10 +28,8 @@ class DefinitionResourceTest {
 
     @BeforeEach
     void setUp() {
-        final ProcessDefinitionResource processes = new ProcessDefinitionResource();
-        processes.service = new ProcessDefinitionService(store);
-        final StepDefinitionResource steps = new StepDefinitionResource();
-        steps.service = new StepDefinitionService(store);
+        final ProcessDefinitionResource processes = new ProcessDefinitionResource(new ProcessDefinitionService(store));
+        final StepDefinitionResource steps = new StepDefinitionResource(new StepDefinitionService(store));
         mvc = MockMvcBuilders.standaloneSetup(processes, steps)
                 .setControllerAdvice(new InvalidDefinitionHandler()).build();
     }

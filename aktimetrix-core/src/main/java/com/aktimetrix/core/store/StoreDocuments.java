@@ -1,20 +1,12 @@
 package com.aktimetrix.core.store;
 
 import com.aktimetrix.core.model.ProcessInstance;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Converts model objects to and from JSON for stores that keep them as documents, such as the JDBC and in-memory
@@ -26,30 +18,25 @@ import java.util.stream.Collectors;
  */
 public final class StoreDocuments {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(MapperFeature.USE_ANNOTATIONS, false)
-            .registerModule(new JavaTimeModule())
-            .registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
-                @Override
-                public List<BeanPropertyWriter> changeProperties(SerializationConfig config, BeanDescription bean,
-                                                                 List<BeanPropertyWriter> properties) {
-                    if (ProcessInstance.class.isAssignableFrom(bean.getBeanClass())) {
-                        return properties.stream().filter(p -> !"steps".equals(p.getName())).collect(Collectors.toList());
-                    }
-                    return properties;
-                }
-            }))
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    private static final JsonMapper MAPPER = JsonMapper.builder()
+            .disable(MapperFeature.USE_ANNOTATIONS)
+            .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .disable(DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private StoreDocuments() {
     }
 
     public static String toJson(Object value) {
         try {
+            if (value instanceof ProcessInstance) {
+                final ObjectNode document = MAPPER.valueToTree(value);
+                document.remove("steps");
+                return MAPPER.writeValueAsString(document);
+            }
             return MAPPER.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Cannot store " + value.getClass().getSimpleName() + " as JSON", e);
         }
     }
@@ -57,7 +44,7 @@ public final class StoreDocuments {
     public static <T> T fromJson(String json, Class<T> type) {
         try {
             return MAPPER.readValue(json, type);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Cannot read a stored " + type.getSimpleName(), e);
         }
     }

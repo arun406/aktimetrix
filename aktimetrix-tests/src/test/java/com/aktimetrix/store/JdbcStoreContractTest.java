@@ -4,7 +4,7 @@ import com.aktimetrix.core.configurations.AktimetrixProperties;
 import com.aktimetrix.store.jdbc.JdbcStoreAutoConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;

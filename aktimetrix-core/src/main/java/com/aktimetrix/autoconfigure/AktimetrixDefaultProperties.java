@@ -1,7 +1,7 @@
 package com.aktimetrix.autoconfigure;
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.env.EnvironmentPostProcessor;
+import org.springframework.boot.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
@@ -43,7 +43,7 @@ public class AktimetrixDefaultProperties implements EnvironmentPostProcessor {
         // invalid events go to the dead-letter channel through the outbox and the dead-letter-out-0 binding; events
         // that still fail after retries are dead-lettered by the binder, as configured by the broker module
         defaults.put("spring.cloud.stream.bindings." + DEAD_LETTER_BINDING + ".destination", DEAD_LETTER_TOPIC);
-        defaults.put("spring.jackson.serialization.write-dates-as-timestamps", "false");
+        // dates are published as ISO-8601 text: the default of Jackson 3, so nothing to set
         environment.getPropertySources().addLast(new MapPropertySource(SOURCE_NAME, defaults));
     }
 }

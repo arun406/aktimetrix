@@ -4,8 +4,8 @@ import com.aktimetrix.core.api.MeasurementType;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;

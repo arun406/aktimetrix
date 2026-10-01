@@ -657,20 +657,21 @@ What the monitor is configured to do is observable as well:
 
 This repository contains a reference implementation of the model for the JVM, released under the Apache License 2.0.
 It is packaged as libraries: an application adds the core, one store module and one broker module, supplies its
-definitions and meters, and receives the complete runtime described above through auto-configuration. Its first release is
-**0.1.0** (see the [changelog](../CHANGELOG.md)): it is tested on JDK 11, 17 and 21, and its public API may still change
-before 1.0.
+definitions and meters, and receives the complete runtime described above through auto-configuration. It runs on
+Java 17+ and Spring Boot 4.1, and is tested on JDK 17, 21 and 25; its first release, **0.1.0**, ran on Java 11+ and
+Spring Boot 2.7 (see the [changelog](../CHANGELOG.md)). Its public API may still change before 1.0.
 
 ### 9.1 Technology bindings
 
 | Module | Role | Binds to |
 |---|---|---|
-| `aktimetrix-core` | The runtime: every layer of §5.1, independent of any broker or store | Java 11+, Spring Boot 2.7; Micrometer; HTTP/JSON |
+| `aktimetrix-core` | The runtime: every layer of §5.1, independent of any broker or store | Java 17+, Spring Boot 4.1; Micrometer |
 | `aktimetrix-store-mongodb` | State store | MongoDB; atomic units of work on replica sets and sharded clusters |
 | `aktimetrix-store-jdbc` | State store | A relational database through JDBC, written for PostgreSQL; atomic units of work |
 | `aktimetrix-store-memory` | State store | The application's memory: for tests and demos, not durable |
 | `aktimetrix-broker-kafka` | Message broker | Apache Kafka, through the Spring Cloud Stream Kafka binder |
 | `aktimetrix-broker-rabbitmq` | Message broker | RabbitMQ, through the Spring Cloud Stream RabbitMQ binder |
+| `aktimetrix-rest` | Query and definitions API, optional | HTTP/JSON through Spring MVC, described with OpenAPI |
 
 These choices belong to the implementation, not the model. Every store module passes the same contract tests, and
 every combination used in the tests runs the same end-to-end scenarios, on embedded brokers and databases. Another
@@ -680,7 +681,7 @@ store or broker is added as a module of its own ([§7](#7-extensibility)).
 
 The [Order Monitor](https://github.com/arun406/aktimetrix-reference-project-order-monitor) reference project implements
 the order of §1.1 end to end, with ten sample events from *order created* to *rated*; its test checks every figure of
-§1.1. It needs **JDK 11+** and **Docker**, which starts a local message broker and state store.
+§1.1. It needs **JDK 17+** and **Docker**, which starts a local message broker and state store.
 
 ```bash
 git clone https://github.com/arun406/aktimetrix.git
@@ -710,17 +711,17 @@ reference project's.
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-core</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-store-mongodb</artifactId>   <!-- or aktimetrix-store-jdbc, aktimetrix-store-memory -->
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 <dependency>
     <groupId>com.aktimetrix</groupId>
     <artifactId>aktimetrix-broker-kafka</artifactId>    <!-- or aktimetrix-broker-rabbitmq -->
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
 </dependency>
 ```
 

@@ -9,7 +9,7 @@ import com.aktimetrix.core.postbeanprocessors.MeterPostBeanProcessor;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.stereotypes.Measurement;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.BeanInitializationException;

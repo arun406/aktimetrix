@@ -7,11 +7,11 @@ import com.aktimetrix.core.definitions.Definitions;
 import com.aktimetrix.core.definitions.RuleMeters;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +50,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DefinitionLoader implements SmartInitializingSingleton {
     private static final Logger logger = LoggerFactory.getLogger(DefinitionLoader.class);
-    private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory())
-            .registerModule(new JavaTimeModule())
-            .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    private static final ObjectMapper YAML = YAMLMapper.builder()
+            .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private final AktimetrixProperties properties;
     private final ObjectMapper objectMapper;
@@ -139,13 +139,13 @@ public class DefinitionLoader implements SmartInitializingSingleton {
     }
 
     private <T> void readJson(String location, TypeReference<List<T>> type, Map<String, List<T>> into) {
-        final ObjectMapper strict = objectMapper.copy().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        final ObjectMapper strict = objectMapper.rebuild().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
         try {
             for (Resource resource : new PathMatchingResourcePatternResolver().getResources(location)) {
                 try (InputStream in = resource.getInputStream()) {
                     into.computeIfAbsent(resource.getDescription(), s -> new ArrayList<>())
                             .addAll(strict.readValue(in, type));
-                } catch (IOException e) {
+                } catch (IOException | JacksonException e) {
                     throw new BeanInitializationException("Cannot read definitions from " + resource.getDescription()
                             + ": " + e.getMessage(), e);
                 }
@@ -171,7 +171,7 @@ public class DefinitionLoader implements SmartInitializingSingleton {
                         if (set != null) {
                             sets.put(resource.getDescription(), set);
                         }
-                    } catch (IOException e) {
+                    } catch (IOException | JacksonException e) {
                         throw new BeanInitializationException("Cannot read definitions from "
                                 + resource.getDescription() + ": " + e.getMessage(), e);
                     }

@@ -9,7 +9,7 @@ import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.transferobjects.Event;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class ActualMeasurementService {
     private static final Logger logger = LoggerFactory.getLogger(ActualMeasurementService.class);
-    private static final ObjectMapper ENTITY_READER = new ObjectMapper().findAndRegisterModules();
+    private static final ObjectMapper ENTITY_READER = new ObjectMapper();   // java.time support is built into Jackson 3
 
     private final RegistryService registryService;
     private final Clock clock;
