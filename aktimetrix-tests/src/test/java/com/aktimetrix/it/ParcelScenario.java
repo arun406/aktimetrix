@@ -136,6 +136,14 @@ public abstract class ParcelScenario {
         assertThat(parcel.getStatus()).isEqualTo("Cancelled");
         assertThat(parcel.getEndedAt()).isEqualTo(LocalDateTime.of(2024, 1, 10, 13, 0));
 
+        // the steps that needed attention were notified, after the outbox relayed them
+        final RecordingNotifier notifier = monitor.bean(RecordingNotifier.class);
+        awaitTrue(() -> notifier.received().stream().anyMatch(n -> "LATE".equals(n.getCondition())
+                && "SORT".equals(n.getStepCode())), "SORT completing late being notified");
+        assertThat(notifier.received()).filteredOn(n -> "P-1".equals(n.getEntityId()))
+                .extracting(n -> n.getStepCode() + " " + n.getCondition())
+                .contains("SORT AT_RISK", "PICKUP LATE", "SORT LATE");
+
         // every change reached the broker through the outbox
         Set<String> expected = Set.of("PICKUP CREATED", "SORT AT_RISK", "DELIVER PLANNED", "SORT COMPLETED",
                 "DELIVER CANCELLED");

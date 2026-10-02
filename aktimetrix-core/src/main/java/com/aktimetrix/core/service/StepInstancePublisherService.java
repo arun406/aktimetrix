@@ -6,6 +6,7 @@ import com.aktimetrix.core.api.PostProcessor;
 import com.aktimetrix.core.api.PublishedEvents;
 import com.aktimetrix.core.impl.StepEventGenerator;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.notification.Notifications;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.EventContext;
@@ -22,6 +23,7 @@ public class StepInstancePublisherService implements PostProcessor {
 
     final private Outbox outbox;
     final private PublishedEventContexts contexts;
+    final private Notifications notifications;
 
     @Override
     public void postProcess(Context context) {
@@ -33,11 +35,6 @@ public class StepInstancePublisherService implements PostProcessor {
     }
 
     /**
-     * Publishes a change of the step instance to {@code step-instance-out-0}.
-     *
-     * @param eventCode what happened: CREATED, STARTED, COMPLETED or OVERDUE
-     */
-    /**
      * Publishes a {@code Step_Event}, keyed by the id of the step's process instance, so that a process's step
      * events stay in order.
      *
@@ -48,5 +45,6 @@ public class StepInstancePublisherService implements PostProcessor {
                 contexts.definitionOf(step.getTenant(), step.getProcessInstanceId())).generate();
         log.debug("step instance event : {}", event);
         outbox.enqueue("step-instance-out-0", step.getProcessInstanceId(), event);
+        notifications.onStep(step, eventCode, event);
     }
 }

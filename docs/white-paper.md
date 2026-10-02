@@ -511,6 +511,7 @@ needs only the connection settings of its broker and state store. The settings g
 | **Deadlines** | Whether this instance fires alarms; how often it looks for due alarms, how many it claims at once, and for how long | On; every 5 s; 100; 30 s |
 | **Overdue sweep** | Whether the periodic safety sweep runs, and how often | On; every 10 min |
 | **Publishing** | How often the outbox is relayed, how many results per run, the lease of a claimed result, and how long sent results are kept | Every 1 s; 100; 30 s; 7 days |
+| **Notifications** | Which conditions notify (at risk, overdue, completed late), how many attempts a notification gets, and an optional webhook with its headers and timeout | All three; 10; no webhook |
 | **Storage** | Which store to use when several are available; whether units of work must be atomic, may be, or are not; whether indexes are created at startup | Detected; atomic when the store supports it; created |
 
 Two settings shape a deployment. **Alarm firing** can be switched off on some instances, so that, for example, only
@@ -565,6 +566,7 @@ discovered at startup.
 | **Event handler** | Changes how an event is interpreted, such as where its business time is read from. | Generic handling of the envelope. |
 | **Pre-processor** | Validates or enriches an entity before a process instance is created. | None. |
 | **Post-processor** | Acts on a newly created and planned process instance. | None. |
+| **Notifier** | Alerts people or tools when a step or process goes at risk, goes overdue or completes late: a chat channel, a paging service, a ticket. | A webhook, when its URL is configured; otherwise none. |
 | **State store** | Keeps definitions, instances and the outbox in another database, by implementing the state-store contract. | Chosen from the store modules on the classpath. |
 | **Message broker** | Connects to another broker, through a binder of the message-binding abstraction and its defaults. | Chosen from the broker modules on the classpath. |
 
@@ -636,6 +638,13 @@ plan, the actual, the deviation and the entity together.
 
 The last row is the purpose of the system; the others protect it. Separating them keeps business alerts with the
 people who can act on them.
+
+The last row is about trends. For one entity that needs attention now, **notifications** reach people directly: when
+a step or process goes `AT_RISK` or `OVERDUE`, or completes `LATE`, every notifier the application registers
+receives a notification naming the entity, the process, the step and its times. Notifications are queued in the
+outbox with the change that caused them, so they are delivered after it is saved, at least once, and retried while a
+notifier fails; a notifier that keeps failing delays nothing else. A webhook notifier is built in; a chat, paging or
+ticketing integration is one small component.
 
 ### 8.4 Tracing one entity
 
@@ -902,7 +911,10 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
   dated in the future is rejected, a step completed without its start event is flagged, and a missing completion
   makes its step `OVERDUE`. It cannot invent an event that never comes, nor correct a business time that is wrong
   but plausible.
-- **Monitoring only.** Aktimetrix never calls back into source systems; acting on its events is up to consumers.
+- **Monitoring, not control.** Aktimetrix tells people and tools that something needs attention, through its
+  published events and notifications (§8.3), but never calls back into the source systems to change what they do.
+  Remedial action, such as re-routing a parcel, stays with those systems or a workflow engine; this is a deliberate
+  boundary.
 - **Reference implementation.**
   - *Verification.* The modules are verified on embedded infrastructure: Kafka on an embedded Kafka broker; RabbitMQ
     on an embedded AMQP 0-9-1 broker (Apache Qpid), which does not support RabbitMQ's single-active-consumer queue

@@ -20,6 +20,11 @@ version may change the public API.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
 **Added**
+- Notifications: when a step or process goes `AT_RISK` or `OVERDUE`, or completes `LATE`, every `Notifier` bean
+  receives a `Notification`, delivered through the outbox at least once and retried up to
+  `aktimetrix.notifications.max-attempts`. A webhook notifier posts them as JSON to
+  `aktimetrix.notifications.webhook.url`.
+
 - Runs: a process declared `restartable` can run again for the same entity, such as a re-delivery. A start event with a
   new `eventId` after the latest run has ended starts the next run; events apply to the latest run. Each instance
   carries its `run` number and `startEventId`. Stores keep one instance per entity and run; MongoDB indexes and JDBC

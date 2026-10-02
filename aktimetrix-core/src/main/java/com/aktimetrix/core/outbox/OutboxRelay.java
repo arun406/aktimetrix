@@ -1,6 +1,7 @@
 package com.aktimetrix.core.outbox;
 
 import com.aktimetrix.core.configurations.AktimetrixProperties;
+import com.aktimetrix.core.notification.Notifications;
 import com.aktimetrix.core.store.OutboxStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,17 +43,21 @@ public class OutboxRelay {
     private final Sender sender;
     private final AktimetrixProperties properties;
     private final Clock clock;
+    private final Notifications notifications;
 
     @Autowired
-    public OutboxRelay(OutboxStore store, StreamBridge streamBridge, AktimetrixProperties properties, Clock clock) {
-        this(store, streamBridge::send, properties, clock);
+    public OutboxRelay(OutboxStore store, StreamBridge streamBridge, AktimetrixProperties properties, Clock clock,
+                       Notifications notifications) {
+        this(store, streamBridge::send, properties, clock, notifications);
     }
 
-    OutboxRelay(OutboxStore store, Sender sender, AktimetrixProperties properties, Clock clock) {
+    OutboxRelay(OutboxStore store, Sender sender, AktimetrixProperties properties, Clock clock,
+                Notifications notifications) {
         this.store = store;
         this.sender = sender;
         this.properties = properties;
         this.clock = clock;
+        this.notifications = notifications;
     }
 
     /**
@@ -71,7 +76,18 @@ public class OutboxRelay {
         while (sent < properties.getOutbox().getBatchSize()) {
             final Instant now = clock.instant();
             final Optional<OutboxMessage> message = store.claimNext(now, now.plus(properties.getOutbox().getLease()));
-            if (message.isEmpty() || !send(message.get())) {
+            if (message.isEmpty()) {
+                break;
+            }
+            if (Notifications.DESTINATION.equals(message.get().getDestination())) {
+                // a notifier that fails holds up nothing else: its notification is retried after its lease
+                if (notify(message.get())) {
+                    store.markSent(message.get().getId(), clock.instant());
+                }
+                sent++;
+                continue;
+            }
+            if (!send(message.get())) {
                 break;
             }
             store.markSent(message.get().getId(), clock.instant());
@@ -86,6 +102,28 @@ public class OutboxRelay {
     @Scheduled(fixedDelayString = "PT1H", initialDelayString = "PT1H")
     public long purge() {
         return store.deleteSentBefore(clock.instant().minus(properties.getOutbox().getRetention()));
+    }
+
+    /**
+     * @return whether the notification is done with: delivered, or given up after too many attempts
+     */
+    private boolean notify(OutboxMessage message) {
+        if (notifications == null) {
+            return true;
+        }
+        try {
+            notifications.deliver(message);
+            return true;
+        } catch (Exception e) {
+            if (message.getAttempts() >= properties.getNotifications().getMaxAttempts()) {
+                logger.error("Notification {} given up after {} attempts: {}", message.getId(), message.getAttempts(),
+                        e.getMessage());
+                return true;
+            }
+            logger.warn("Notification {} failed (attempt {}); retrying later: {}", message.getId(),
+                    message.getAttempts(), e.getMessage());
+            return false;
+        }
     }
 
     private boolean send(OutboxMessage message) {

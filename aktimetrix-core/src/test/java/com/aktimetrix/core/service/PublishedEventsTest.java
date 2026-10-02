@@ -5,6 +5,7 @@ import com.aktimetrix.core.api.PublishedEvents;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.notification.Notifications;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
@@ -28,6 +29,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -71,7 +73,8 @@ class PublishedEventsTest {
         rated.setId("s-7");
         rated.setSequence(6);
         rated.setRevision(2L);
-        StepInstancePublisherService publisher = new StepInstancePublisherService(outbox, contexts);
+        StepInstancePublisherService publisher = new StepInstancePublisherService(outbox, contexts,
+                mock(Notifications.class));
 
         ProcessingContext.run(new Cause(Cause.EVENT, "e-42", "ORDER_RATED_EVENT"), DELIVERED_AT,
                 () -> publisher.publish(rated, PublishedEvents.Step.COMPLETED));
@@ -125,7 +128,8 @@ class PublishedEventsTest {
 
     @Test
     void aProcessEventCarriesItsDefinitionRevisionAndIsKeyedByProcess() {
-        ProcessInstancePublisherService publisher = new ProcessInstancePublisherService(outbox, contexts);
+        ProcessInstancePublisherService publisher = new ProcessInstancePublisherService(outbox, contexts,
+                mock(Notifications.class));
 
         ProcessingContext.run(new Cause(Cause.DEADLINE, null, null), LocalDateTime.of(2024, 3, 2, 9, 1),
                 () -> publisher.publish(order, PublishedEvents.Process.OVERDUE));

@@ -17,6 +17,7 @@ carries a stereotype annotation; Aktimetrix discovers it at startup.
 | `@EventHandler(eventType)` | `AbstractMilestoneEventHandler` | the event code | `DefaultEventHandler` | Records milestones only, for events that never start a process. |
 | `@PreProcessor(code, processType, priority)` | `api.PreProcessor` | the process type, or `*` | none | Runs before a process instance is created: validate, enrich. |
 | `@PostProcessor(code, processType, priority)` | `api.PostProcessor` | the process type, or `*` | none | Runs after a process instance is created and planned: notify, integrate. |
+| a bean of type `Notifier` | `api.Notifier` | n/a: every one receives every notification | `WebhookNotifier`, when `aktimetrix.notifications.webhook.url` is set | Alerts people or tools when a step or process goes at risk, goes overdue or completes late. See [Notifications](./configuration.md#notifications). |
 | `@Loggable` | any bean with an interface | n/a | n/a | Logs entry, exit, and execution time of its methods. |
 
 **Process type.** Pre- and post-processors are selected by the process definition's `processType`, which defaults
@@ -72,6 +73,30 @@ public class LateEveningDeliveryWarning implements com.aktimetrix.core.api.PostP
 
 To react to steps becoming late or overdue, consume `step-instance-out-0` instead: see the
 [configuration reference](configuration.md#channels).
+
+### Example: page the on-call team when a delivery is overdue
+
+```java
+@Component
+public class OverduePager implements Notifier {
+    private final PagingClient pager;
+
+    public OverduePager(PagingClient pager) {
+        this.pager = pager;
+    }
+
+    @Override
+    public void notify(Notification notification) throws Exception {
+        if ("OVERDUE".equals(notification.getCondition()) && "DELIVERED".equals(notification.getStepCode())) {
+            // the id makes a retried notification a repeat, not a second page
+            pager.trigger(notification.getId(), "Order " + notification.getEntityId() + " is not delivered");
+        }
+    }
+}
+```
+
+A notifier that throws is called again later, so it should succeed or fail as a whole; it runs on the outbox relay,
+outside the unit of work that caused it.
 
 ## Accepting your own event format
 

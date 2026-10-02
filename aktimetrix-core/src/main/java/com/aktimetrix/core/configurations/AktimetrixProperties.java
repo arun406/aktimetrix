@@ -5,6 +5,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Settings of an Aktimetrix application, under the {@code aktimetrix} prefix.
@@ -25,6 +30,7 @@ public class AktimetrixProperties {
     private final Alarms alarms = new Alarms();
     private final Outbox outbox = new Outbox();
     private final Storage storage = new Storage();
+    private final Notifications notifications = new Notifications();
 
     @Data
     public static class Events {
@@ -68,6 +74,35 @@ public class AktimetrixProperties {
              * Dead-letter topic; defaults to the inbound topic followed by {@code .dlq}.
              */
             private String topic;
+        }
+    }
+
+    @Data
+    public static class Notifications {
+        /**
+         * The conditions that notify: {@code AT_RISK}, {@code OVERDUE} and {@code LATE}.
+         */
+        private Set<String> on = new LinkedHashSet<>(List.of("AT_RISK", "OVERDUE", "LATE"));
+        /**
+         * How many times a notification is attempted before it is given up.
+         */
+        private int maxAttempts = 10;
+        private final Webhook webhook = new Webhook();
+
+        @Data
+        public static class Webhook {
+            /**
+             * URL that each notification is posted to as JSON; no webhook when empty.
+             */
+            private String url;
+            /**
+             * Headers added to each request, such as {@code Authorization}.
+             */
+            private Map<String, String> headers = new LinkedHashMap<>();
+            /**
+             * How long a request may take.
+             */
+            private Duration timeout = Duration.ofSeconds(10);
         }
     }
 

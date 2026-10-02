@@ -76,6 +76,11 @@ aktimetrix:
 | `aktimetrix.outbox.batch-size` | `100` | Most events published per relay run. |
 | `aktimetrix.outbox.lease` | `PT30S` | How long a relay holds a claimed event before another instance may retry it. |
 | `aktimetrix.outbox.retention` | `P7D` | How long sent events stay in the outbox before being purged. |
+| `aktimetrix.notifications.on` | `AT_RISK,OVERDUE,LATE` | The conditions that notify: a step or process going `AT_RISK` or `OVERDUE`, or completing `LATE`. See [Notifications](#notifications). |
+| `aktimetrix.notifications.max-attempts` | `10` | How many times a notification is attempted before it is given up, with an error in the log. Attempts are an outbox lease apart. |
+| `aktimetrix.notifications.webhook.url` | none | URL each notification is posted to as JSON. No webhook when empty. |
+| `aktimetrix.notifications.webhook.headers.*` | none | Headers added to each webhook request, such as `aktimetrix.notifications.webhook.headers.Authorization`. |
+| `aktimetrix.notifications.webhook.timeout` | `PT10S` | How long a webhook request may take; a slower one, or an answer other than 2xx, is retried. |
 | `aktimetrix.storage.type` | none | The store module to use when several are on the classpath: `mongodb`, `jdbc` or `memory`. |
 | `aktimetrix.storage.transactions` | `auto` | Process each event, and each overdue step or process, in a transaction: `auto` when the store supports it (MongoDB as a replica set or sharded cluster; always with JDBC), `always`, or `never`. |
 | `aktimetrix.storage.create-indexes` | `true` | Create the indexes (MongoDB) or the tables and indexes (JDBC) Aktimetrix relies on at startup. |
@@ -235,6 +240,38 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `plannedValue`, `deviation`, `conformance` | For an actual: the plan it is compared with, actual minus planned (a number, or an ISO-8601 duration for `TIME`), and `WITHIN_TOLERANCE` / `OUT_OF_TOLERANCE` when a tolerance is declared. |
 
 Times inside `entity` are local date-times in `aktimetrix.time-zone`.
+
+## Notifications
+
+When a step or process goes `AT_RISK` or `OVERDUE`, or completes `LATE`, Aktimetrix hands a notification to every
+`Notifier` bean, such as the built-in webhook (`aktimetrix.notifications.webhook.url`) or your own. A notification is
+queued in the outbox in the unit of work of the change, so it is delivered once the change is saved, and at least
+once: a notifier that throws is called again after the outbox lease, up to `aktimetrix.notifications.max-attempts`.
+With several notifiers, a retry calls each of them again; use `id` to recognise a repeat. Nothing is queued while the
+application has no notifier.
+
+```json
+{
+  "id": "6c1f...",
+  "subject": "STEP",
+  "condition": "OVERDUE",
+  "tenant": "AA",
+  "processCode": "ORDER_DELIVERY",
+  "processInstanceId": "p-1",
+  "entityType": "com.ecom.order",
+  "entityId": "1234",
+  "stepCode": "DELIVERED",
+  "stepInstanceId": "s-6",
+  "plannedAt": "2024-03-01T18:00:00",
+  "lateAfter": "2024-03-01T18:30:00",
+  "expectedAt": null,
+  "actualAt": null,
+  "occurredAt": "2024-03-01T18:30:04"
+}
+```
+
+`subject` is `STEP` or `PROCESS`; a process notification has its `run` and no step fields. `id` is the `eventId` of
+the published event that caused it.
 
 ## Storage
 
