@@ -237,6 +237,7 @@ public class OrderDefinitions {
 | `restartable()` on a process | `restartable: true` |
 | `on` on a step (a milestone); `startsOn` and `endsOn` (a step with a duration); `progressOn` | `startEventCodes`; `startEventCodes` and `endEventCodes`; `progressEventCodes` |
 | `after`, `within`, `tolerance`, `optional()` | `plannedAfter`, `plannedWithin`, `tolerance`, `"optionalInd": "Y"` |
+| `repeatable()`, `alternative(name)` | `repeatable: true`, `alternative: name` |
 | `plan(code, m -> ...)`, `actual(code, valueFrom, unit)`, `measure(code, valueFrom, m -> ...)` | a planned (`P`) measurement; an actual (`A`) one; both |
 | `planTime(rule)`, `plan(code, unit, rule)` | a planned measurement without a value, and a meter that computes it |
 | `metric(code, expression, m -> ...)` | an entry of `metrics` |

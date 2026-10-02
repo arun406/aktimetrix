@@ -205,6 +205,27 @@ public abstract class ParcelScenario {
                 .isEqualTo("Cancelled");
     }
 
+    /**
+     * A return's inspection is repeatable, and it is settled by a refund or a replacement: each inspection is an
+     * attempt, and the refund skips the replacement, so the return completes without it.
+     */
+    @Test
+    @Order(Integer.MAX_VALUE - 2)   // after the scenario whose counters it would change
+    void recordsRepeatedStepsAndTakesOneOfTheAlternatives() {
+        sendFor("return", "R-1", "return-1", "RETURN_REQUESTED", "2024-01-12 09:00:00", "{}");
+        await(() -> monitor.process("RETURN", "R-1"), p -> p.getId() != null, "the return starting");
+        sendFor("return", "R-1", "inspect-1", "RETURN_INSPECTED", "2024-01-12 10:00:00", null);
+        sendFor("return", "R-1", "inspect-2", "RETURN_INSPECTED", "2024-01-12 11:00:00", null);
+        sendFor("return", "R-1", "refund-1", "RETURN_REFUNDED", "2024-01-12 12:00:00", null);
+
+        final StepInstance inspect = await(() -> monitor.step("R-1", "INSPECT"), s -> s.getAttempts() == 2,
+                "the second inspection");
+        assertThat(inspect.getActualAt()).isEqualTo(LocalDateTime.of(2024, 1, 12, 10, 0));
+        assertThat(inspect.getLastAttemptAt()).isEqualTo(LocalDateTime.of(2024, 1, 12, 11, 0));
+        await(() -> monitor.step("R-1", "REPLACE"), s -> "Skipped".equals(s.getStatus()), "the replacement skipped");
+        await(() -> monitor.process("RETURN", "R-1"), ProcessInstance::isComplete, "the return completing");
+    }
+
     private List<ProcessInstance> runs(String entityId) {
         return monitor.bean(ProcessInstanceStore.class).findByEntityId("T1", entityId).stream()
                 .filter(p -> "PARCEL".equals(p.getProcessCode()))
@@ -218,8 +239,13 @@ public abstract class ParcelScenario {
     }
 
     private void sendFor(String entityId, String eventId, String eventCode, String utcTime, String entity) {
+        sendFor("parcel", entityId, eventId, eventCode, utcTime, entity);
+    }
+
+    private void sendFor(String entityType, String entityId, String eventId, String eventCode, String utcTime,
+                         String entity) {
         broker.send(TOPIC, entityId, "{\"tenantKey\":\"T1\",\"eventId\":\"" + eventId + "\",\"eventCode\":\""
-                + eventCode + "\",\"entityType\":\"parcel\",\"entityId\":\"" + entityId + "\",\"eventUTCTime\":\""
+                + eventCode + "\",\"entityType\":\"" + entityType + "\",\"entityId\":\"" + entityId + "\",\"eventUTCTime\":\""
                 + utcTime + "\"" + (entity == null ? "" : ",\"entity\":" + entity) + "}");
     }
 

@@ -2,6 +2,7 @@ package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.api.Conformance;
 import com.aktimetrix.core.api.Constants;
+import com.aktimetrix.core.api.PublishedEvents;
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.impl.DefaultContext;
 import com.aktimetrix.core.model.MeasurementInstance;
@@ -35,7 +36,9 @@ import java.util.stream.Collectors;
  * event matches the step definition's start or end event codes, captures an actual TIME measurement when a step
  * completes, and judges the step against its plan.
  * <p>
- * A step whose definition has no end event codes is a single milestone and completes on its start event. An event in
+ * A step whose definition has no end event codes is a single milestone and completes on its start event. A repeatable
+ * step may happen again after it completed: each further occurrence is an attempt, published as {@code REPEATED}. The
+ * first of a set of alternative steps to start or complete is the branch taken; the others are skipped. An event in
  * the process definition's cancel event codes cancels the process instead. When all mandatory steps have completed,
  * the process completes, and is judged against its own deadline if it has one.
  *
@@ -146,8 +149,21 @@ public class StepProgressService {
             logger.info("Step {} of process instance {}: {} -> {}", step.getStepCode(), processInstance.getId(),
                     step.getStatus(), nextStatus);
             final String previousStatus = step.getStatus();
+            // completed before: a further attempt of a repeatable step, recorded but not judged again
+            final boolean repeat = step.getActualAt() != null;
+            String published = nextStatus.toUpperCase();
             step.setStatus(nextStatus);
             if (Constants.STATUS_COMPLETED.equals(nextStatus)) {
+                step.setAttempts(Math.max(step.getAttempts(), repeat ? 1 : 0) + 1);
+                step.setLastAttemptAt(occurredAt);
+            }
+            if (Constants.STATUS_COMPLETED.equals(nextStatus) && repeat) {
+                logger.info("Step {} of process instance {} happened again: attempt {}", step.getStepCode(),
+                        processInstance.getId(), step.getAttempts());
+                published = PublishedEvents.Step.REPEATED;
+                actuals.add(actualTime(step, occurredAt, false));
+                actuals.addAll(actualMeasurementService.forStep(step, definition.getMeasurements(), event));
+            } else if (Constants.STATUS_COMPLETED.equals(nextStatus)) {
                 if (!isEmpty(definition.getEndEventCodes()) && !isEmpty(definition.getStartEventCodes())
                         && Constants.STATUS_CREATED.equals(previousStatus)) {
                     logger.warn("Step {} of process instance {} completed without its start event",
@@ -157,13 +173,16 @@ public class StepProgressService {
                 }
                 step.setActualAt(occurredAt);
                 step.setTimeliness(stepPlanner.judge(step, occurredAt));
-                actuals.add(actualTime(step, occurredAt));
+                actuals.add(actualTime(step, occurredAt, true));
                 actuals.addAll(actualMeasurementService.forStep(step, definition.getMeasurements(), event));
                 completed.add(step);
                 metrics.stepCompleted(step);
             }
             stepInstanceService.save(step);
-            stepInstancePublisherService.publish(step, nextStatus.toUpperCase());
+            stepInstancePublisherService.publish(step, published);
+            if (!repeat && Constants.STATUS_CREATED.equals(previousStatus)) {
+                skipAlternatives(step, steps, definitions);
+            }
         }
 
         for (StepInstance step : completed) {
@@ -195,6 +214,27 @@ public class StepProgressService {
             }
         }
         return actuals;
+    }
+
+    /**
+     * The step is the branch taken among its alternatives: the others, not started, are skipped.
+     */
+    private void skipAlternatives(StepInstance taken, List<StepInstance> steps, Map<String, StepDefinition> definitions) {
+        final String alternative = definitions.get(taken.getStepCode()).getAlternative();
+        if (alternative == null) {
+            return;
+        }
+        for (StepInstance other : steps) {
+            final StepDefinition definition = definitions.get(other.getStepCode());
+            if (other != taken && definition != null && alternative.equals(definition.getAlternative())
+                    && Constants.STATUS_CREATED.equals(other.getStatus())) {
+                logger.info("Step {} of process instance {} is skipped: its alternative {} was taken",
+                        other.getStepCode(), other.getProcessInstanceId(), taken.getStepCode());
+                other.setStatus(Constants.STATUS_SKIPPED);
+                stepInstanceService.save(other);
+                stepInstancePublisherService.publish(other, PublishedEvents.Step.SKIPPED);
+            }
+        }
     }
 
     /**
@@ -265,7 +305,19 @@ public class StepProgressService {
      * Returns the status the step moves to on this event, or {@code null} when the event does not advance it.
      */
     String nextStatus(StepDefinition definition, String currentStatus, String eventCode) {
+        if (Constants.STATUS_SKIPPED.equals(currentStatus) && definition.getAlternative() != null) {
+            return null;   // another branch was taken
+        }
         if (Constants.STATUS_COMPLETED.equals(currentStatus)) {
+            if (!definition.repeats()) {
+                return null;
+            }
+            if (contains(definition.getEndEventCodes(), eventCode)) {
+                return Constants.STATUS_COMPLETED;
+            }
+            if (contains(definition.getStartEventCodes(), eventCode)) {
+                return isEmpty(definition.getEndEventCodes()) ? Constants.STATUS_COMPLETED : Constants.STATUS_STARTED;
+            }
             return null;
         }
         if (contains(definition.getEndEventCodes(), eventCode)) {
@@ -282,14 +334,15 @@ public class StepProgressService {
 
     /**
      * The step's actual TIME, compared with its planned time like any other measurement: the deviation is a
-     * duration, and the conformance follows from its timeliness.
+     * duration, and the conformance follows from its timeliness. A further attempt of a repeatable step is not
+     * compared: the plan was for its first.
      */
-    private MeasurementInstance actualTime(StepInstance step, LocalDateTime occurredAt) {
+    private MeasurementInstance actualTime(StepInstance step, LocalDateTime occurredAt, boolean compare) {
         final MeasurementInstance actual = new MeasurementInstance(step.getTenant(), Constants.MEASUREMENT_CODE_TIME,
                 String.valueOf(occurredAt), Constants.MEASUREMENT_UNIT_TIMESTAMP, step.getProcessInstanceId(),
                 step.getId(), step.getStepCode(), Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(),
                 ZonedDateTime.now(clock));
-        if (step.getPlannedAt() != null) {
+        if (compare && step.getPlannedAt() != null) {
             actual.setPlannedValue(String.valueOf(step.getPlannedAt()));
             actual.setDeviation(Duration.between(step.getPlannedAt(), occurredAt).toString());
             actual.setConformance(step.getTimeliness() == Timeliness.ON_TIME
@@ -351,7 +404,8 @@ public class StepProgressService {
         }
         final boolean done = steps.stream()
                 .filter(step -> !isOptional(definitions.get(step.getStepCode())))
-                .allMatch(step -> Constants.STATUS_COMPLETED.equals(step.getStatus()));
+                .allMatch(step -> Constants.STATUS_COMPLETED.equals(step.getStatus())
+                        || Constants.STATUS_SKIPPED.equals(step.getStatus()));
         return done ? complete(processInstance, definition, occurredAt, event) : List.of();
     }
 

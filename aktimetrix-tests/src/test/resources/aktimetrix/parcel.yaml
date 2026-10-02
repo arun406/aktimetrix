@@ -20,3 +20,17 @@ processes:
         startEventCodes: [PARCEL_DELIVERED]
         plannedAfter: SORT
         plannedWithin: PT5H
+  - processCode: RETURN
+    entityType: return
+    status: CONFIRMED
+    startEventCodes: [RETURN_REQUESTED]
+    steps:
+      - stepCode: INSPECT
+        startEventCodes: [RETURN_INSPECTED]
+        repeatable: true          # a returned item may be inspected more than once
+      - stepCode: REFUND
+        startEventCodes: [RETURN_REFUNDED]
+        alternative: SETTLEMENT   # refunded or replaced, whichever happens first
+      - stepCode: REPLACE
+        startEventCodes: [RETURN_REPLACED]
+        alternative: SETTLEMENT

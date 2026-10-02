@@ -20,6 +20,11 @@ version may change the public API.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
 **Added**
+- Alternatives and repeats: steps that share an `alternative` are branches, of which the first to start or complete
+  is taken and the others are `Skipped`; a `repeatable` step may happen again, each time recorded as an attempt
+  (`attempts`, `lastAttemptAt`, step event `REPEATED`) while keeping the timeliness of its first. The DSL has
+  `repeatable()` and `alternative(name)`.
+
 - Notifications: when a step or process goes `AT_RISK` or `OVERDUE`, or completes `LATE`, every `Notifier` bean
   receives a `Notification`, delivered through the outbox at least once and retried up to
   `aktimetrix.notifications.max-attempts`. A webhook notifier posts them as JSON to

@@ -287,11 +287,19 @@ optional ones stay open.
 | `Created` | the process instance is created | it is created, by one of its start events |
 | `Started` | one of the step's start events arrives, and the step also has end events | n/a |
 | `Completed` | one of the step's end events arrives; a step with no end events is a single milestone and completes on its start event | implicitly, its last mandatory step completes; or explicitly, one of the process's end events arrives |
-| `Skipped` | it is mandatory and still open when its process ends explicitly | n/a |
+| `Skipped` | it is mandatory and still open when its process ends explicitly; or an alternative to it was taken | n/a |
 | `Cancelled` | its process is cancelled before it completed | an event in the process's cancel events arrives, e.g. *order cancelled* |
 
 A cancelled process is no longer monitored: a cancelled order does not leave steps to go overdue. A completed
 process still records its optional steps, which may happen later: the customer's rating the day after delivery.
+
+**Alternatives and repeats.** The steps of a process follow one another, with two departures from a straight line.
+Steps that share an *alternative* are branches, of which one happens: an order is handed over at the door or at a
+locker. The first of them to start or complete is the branch taken; the others become `Skipped`, are no longer
+awaited, and do not hold up the completion of the process. A *repeatable* step may happen again after it completed,
+such as a second inspection of a returned item: each further occurrence is an attempt, counted on the step and
+recorded with its actual measurements, while the step keeps the timeliness of its first occurrence, which the plan
+was for.
 
 **Runs.** By default an entity runs a process once: a start event that arrives again, for an instance that exists, is
 a replay and starts nothing. A process declared *restartable* can run again for the same entity, such as an order
@@ -385,9 +393,10 @@ fixed catalogue:
 | | `PLANNED` | the step got its planned time, when the step it is planned after completed |
 | | `STARTED` | a step with end events was started by one of its start events |
 | | `COMPLETED` | the step completed, and was judged `ON_TIME` or `LATE` |
+| | `REPEATED` | a repeatable step happened again: one more attempt |
 | | `AT_RISK` | an earlier delay pushed its forecast past its deadline; again whenever the forecast moves later |
 | | `OVERDUE` | its deadline passed before it completed |
-| | `SKIPPED`, `CANCELLED` | its process ended explicitly, or was cancelled, while it was open |
+| | `SKIPPED`, `CANCELLED` | its process ended explicitly, an alternative to it was taken, or its process was cancelled, while it was open |
 | `Measurement_Event` | `PLANNED` | a planned value was set, for the process or a step |
 | | `RECORDED` | a final actual value was recorded and compared with its plan |
 | | `READING` | an interim reading of a step in progress was compared with its plan |
@@ -901,8 +910,9 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 
 ### 10.3 Known limitations
 
-- **Ordered milestones.** A process is a sequence of steps, each completed once. Branches, loops and repeated
-  attempts of a step are not modelled.
+- **Milestones, not a flow chart.** A process is a sequence of steps, with alternatives (one of several branches)
+  and repeatable steps (counted attempts). Nested branches, parallel paths that join, and loops over several steps
+  are not modelled; such a process is monitored by its milestones rather than by every path through it.
 - **No migration between revisions.** A running instance keeps the definition it started with; there is no way to
   move it to a newer revision, for example to apply a corrected plan to orders already under way.
 - **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
@@ -953,6 +963,8 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 | **Interim reading** | A value of a step's measurement reported while the step is still in progress, compared with the plan at once. |
 | **Meter** | Application code that computes a planned or actual measurement, typically a planning rule. |
 | **Metadata** | Domain data kept on an instance, such as an order's customer, used by meters and passed to consumers. |
+| **Alternative** | Steps of a process of which one happens, such as handover at the door or at a locker: the first to start or complete is taken, and the others are skipped. |
+| **Attempt** | One occurrence of a repeatable step; the step is judged on its first. |
 | **Deadline** | The planned time plus the tolerance: the moment after which a step or process is late. |
 | **Alarm** | A durable timer at the deadline of a step or process, set when it is planned; when it fires and the event has not arrived, the step or process becomes `OVERDUE`. |
 | **Timeliness** | How a step or process compares with its planned time: `ON_TIME`, `LATE`, `AT_RISK` (steps only) or `OVERDUE`. |

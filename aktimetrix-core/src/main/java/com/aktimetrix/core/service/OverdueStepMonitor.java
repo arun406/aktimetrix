@@ -1,7 +1,5 @@
 package com.aktimetrix.core.service;
 
-import com.aktimetrix.core.api.Constants;
-import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.store.StepInstanceStore;
 import com.aktimetrix.core.transferobjects.EventContext.Cause;
@@ -74,8 +72,6 @@ public class OverdueStepMonitor {
     }
 
     private static boolean isStillOverdue(StepInstance step, LocalDateTime now) {
-        return !Constants.STATUS_COMPLETED.equals(step.getStatus()) && !Constants.STATUS_CANCELLED.equals(step.getStatus())
-                && !Constants.STATUS_SKIPPED.equals(step.getStatus()) && step.getTimeliness() != Timeliness.OVERDUE
-                && step.getLateAfter() != null && step.getLateAfter().isBefore(now);
+        return DeadlineAlarms.isAwaited(step) && step.getLateAfter() != null && step.getLateAfter().isBefore(now);
     }
 }

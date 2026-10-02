@@ -73,6 +73,24 @@ public final class StepBuilder extends MeasurementsBuilder<StepBuilder> {
     }
 
     /**
+     * The step may happen again after it completed: each further occurrence is recorded as an attempt, while the
+     * step stays judged on its first.
+     */
+    public StepBuilder repeatable() {
+        definition.setRepeatable(true);
+        return this;
+    }
+
+    /**
+     * The step is one of the alternatives named {@code choice}: the first of them to start or complete is the branch
+     * taken, and the others are skipped.
+     */
+    public StepBuilder alternative(String choice) {
+        definition.setAlternative(choice);
+        return this;
+    }
+
+    /**
      * Plans the step after another step completes; without it, after the process starts. See {@link #within}.
      */
     public StepBuilder after(String stepCode) {

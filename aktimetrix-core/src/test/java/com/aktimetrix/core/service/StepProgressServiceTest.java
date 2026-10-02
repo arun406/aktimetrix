@@ -474,6 +474,84 @@ class StepProgressServiceTest {
         assertThat(registry.find("aktimetrix.steps.at.risk").counter()).isNull();
     }
 
+    @Test
+    void aRepeatableStepRecordsEachFurtherAttemptWithoutBeingJudgedAgain() {
+        StepInstance inspect = planned(step("INSPECT", Constants.STATUS_CREATED), SHIPPED_AT.plusHours(1));
+        givenSteps(inspect);
+        givenDefinition("INSPECT", List.of("INSPECTED_EVENT"), List.of()).setRepeatable(true);
+
+        service.recordMilestone("INSPECTED_EVENT", process, SHIPPED_AT);
+        List<MeasurementInstance> again = service.recordMilestone("INSPECTED_EVENT", process, SHIPPED_AT.plusHours(5));
+
+        assertThat(inspect.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
+        assertThat(inspect.getAttempts()).isEqualTo(2);
+        assertThat(inspect.getActualAt()).as("judged on its first attempt").isEqualTo(SHIPPED_AT);
+        assertThat(inspect.getLastAttemptAt()).isEqualTo(SHIPPED_AT.plusHours(5));
+        assertThat(inspect.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
+        verify(stepInstancePublisherService).publish(inspect, "COMPLETED");
+        verify(stepInstancePublisherService).publish(inspect, "REPEATED");
+        assertThat(again).singleElement().satisfies(time -> {
+            assertThat(time.getCode()).isEqualTo("TIME");
+            assertThat(time.getValue()).isEqualTo(String.valueOf(SHIPPED_AT.plusHours(5)));
+            assertThat(time.getPlannedValue()).as("the plan was for the first attempt").isNull();
+        });
+    }
+
+    @Test
+    void aRepeatableStepWithEndEventsStartsAgainForEachAttempt() {
+        StepInstance repair = step("REPAIR", Constants.STATUS_CREATED);
+        givenSteps(repair);
+        givenDefinition("REPAIR", List.of("REPAIR_STARTED"), List.of("REPAIR_DONE")).setRepeatable(true);
+
+        service.recordMilestone("REPAIR_STARTED", process, SHIPPED_AT);
+        service.recordMilestone("REPAIR_DONE", process, SHIPPED_AT.plusHours(1));
+        service.recordMilestone("REPAIR_STARTED", process, SHIPPED_AT.plusHours(2));
+        assertThat(repair.getStatus()).isEqualTo(Constants.STATUS_STARTED);
+        assertThat(repair.getAttempts()).isEqualTo(1);
+
+        service.recordMilestone("REPAIR_DONE", process, SHIPPED_AT.plusHours(3));
+        assertThat(repair.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
+        assertThat(repair.getAttempts()).isEqualTo(2);
+        assertThat(repair.getActualAt()).isEqualTo(SHIPPED_AT.plusHours(1));
+        assertThat(repair.isStartMissing()).isFalse();
+    }
+
+    @Test
+    void theFirstAlternativeTakenSkipsTheOthersAndTheProcessCompletesWithoutThem() {
+        StepInstance door = step("AT_DOOR", Constants.STATUS_CREATED);
+        StepInstance locker = step("AT_LOCKER", Constants.STATUS_CREATED);
+        givenSteps(step("PLACE", Constants.STATUS_COMPLETED), door, locker);
+        givenDefinition("PLACE", List.of("ORDER_PLACED_EVENT"), List.of());
+        givenDefinition("AT_DOOR", List.of("DELIVERED_AT_DOOR"), List.of()).setAlternative("HANDOVER");
+        givenDefinition("AT_LOCKER", List.of("DELIVERED_TO_LOCKER"), List.of()).setAlternative("HANDOVER");
+
+        service.recordMilestone("DELIVERED_TO_LOCKER", process, SHIPPED_AT);
+
+        assertThat(locker.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
+        assertThat(door.getStatus()).isEqualTo(Constants.STATUS_SKIPPED);
+        verify(stepInstancePublisherService).publish(door, "SKIPPED");
+        assertThat(process.isComplete()).isTrue();
+
+        assertThat(service.recordMilestone("DELIVERED_AT_DOOR", process, SHIPPED_AT.plusHours(1)))
+                .as("a branch not taken stays skipped").isEmpty();
+        assertThat(door.getStatus()).isEqualTo(Constants.STATUS_SKIPPED);
+    }
+
+    @Test
+    void anAlternativeIsTakenWhenItStarts() {
+        StepInstance courier = step("COURIER", Constants.STATUS_CREATED);
+        StepInstance post = step("POST", Constants.STATUS_CREATED);
+        givenSteps(courier, post);
+        givenDefinition("COURIER", List.of("COURIER_COLLECTED"), List.of("COURIER_DELIVERED")).setAlternative("CARRIER");
+        givenDefinition("POST", List.of("POSTED"), List.of("POST_DELIVERED")).setAlternative("CARRIER");
+
+        service.recordMilestone("COURIER_COLLECTED", process, SHIPPED_AT);
+
+        assertThat(courier.getStatus()).isEqualTo(Constants.STATUS_STARTED);
+        assertThat(post.getStatus()).isEqualTo(Constants.STATUS_SKIPPED);
+        assertThat(process.isComplete()).isFalse();
+    }
+
     private static StepInstance planned(StepInstance step, LocalDateTime plannedAt) {
         step.setPlannedAt(plannedAt);
         step.setLateAfter(plannedAt);

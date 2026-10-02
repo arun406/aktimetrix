@@ -15,7 +15,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Internal: checks definitions before they are saved, whether loaded at startup or sent to the REST API, so that a
@@ -78,6 +80,14 @@ final class DefinitionValidator {
                             + ", which is not a step of the process");
                 }
             }
+            process.getSteps().stream().filter(step -> step.getAlternative() != null)
+                    .collect(Collectors.groupingBy(StepDefinition::getAlternative, TreeMap::new, Collectors.counting()))
+                    .forEach((alternative, count) -> {
+                        if (count < 2) {
+                            problems.add(where + ": alternative " + alternative
+                                    + " has a single step; alternatives need two or more");
+                        }
+                    });
         }
         return problems;
     }

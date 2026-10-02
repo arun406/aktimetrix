@@ -29,7 +29,7 @@ Every step instance moves through a simple lifecycle, driven by the business eve
 | `Created` | The process instance is created. |
 | `Started` | An event in the step's `startEventCodes` arrives, and the step also has `endEventCodes`. |
 | `Completed` | An event in the step's `endEventCodes` arrives. A step without end codes is a single milestone and completes on its start event. |
-| `Skipped` | The step is mandatory and still open when its process ends on an explicit end event. |
+| `Skipped` | The step is mandatory and still open when its process ends on an explicit end event, or another step of its `alternative` was taken first. |
 | `Cancelled` | Its process is cancelled before the step completed. |
 
 ### Planning a step

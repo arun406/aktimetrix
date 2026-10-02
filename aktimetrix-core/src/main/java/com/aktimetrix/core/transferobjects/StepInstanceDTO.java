@@ -42,4 +42,6 @@ public class StepInstanceDTO implements Serializable {
     private LocalDateTime actualAt;
     private Timeliness timeliness;
     private boolean startMissing;
+    private int attempts;
+    private LocalDateTime lastAttemptAt;
 }

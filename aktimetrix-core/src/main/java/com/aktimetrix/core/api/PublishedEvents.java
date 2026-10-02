@@ -55,7 +55,12 @@ public final class PublishedEvents {
         public static final String AT_RISK = "AT_RISK";
         /** The step's deadline passed before it completed. */
         public static final String OVERDUE = "OVERDUE";
-        /** The process ended on an explicit end event while this mandatory step was open. */
+        /** A repeatable step happened again: its {@code attempts} grew; its timeliness stays that of the first. */
+        public static final String REPEATED = "REPEATED";
+        /**
+         * The process ended on an explicit end event while this mandatory step was open, or an alternative to this
+         * step was taken.
+         */
         public static final String SKIPPED = "SKIPPED";
         /** The process was cancelled while this step was open. */
         public static final String CANCELLED = "CANCELLED";

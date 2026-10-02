@@ -117,7 +117,7 @@ The alarm scheduler, the overdue sweep and the outbox relay are `@Scheduled` tas
 |---|---|---|
 | `processor-in-0` (`aktimetrix.events.topic`) | in | Your business events; see [the event format](getting-started.md#the-event-format). |
 | `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps. |
-| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED` (`AT_RISK` again whenever its forecast moves later): a step instance. |
+| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `REPEATED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED` (`AT_RISK` again whenever its forecast moves later): a step instance. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `PLANNED`, `RECORDED`, `READING` or `METRIC`: a planned value, a final actual, an interim reading, or a process metric. |
 | `dead-letter-out-0` (`aktimetrix.events.dead-letter.topic`) | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
@@ -225,6 +225,7 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `actualAt` | Business time of the event that completed it. |
 | `timeliness` | `ON_TIME`, `LATE`, `AT_RISK` or `OVERDUE`; empty until it can be judged. |
 | `startMissing` | `true` when the step completed without its start event. |
+| `attempts`, `lastAttemptAt` | How many times the step has completed, and when it last did: more than once only for a `repeatable` step, whose `actualAt` and `timeliness` stay those of its first attempt. |
 | `metadata` | The step metadata. |
 
 **`Measurement_Event`** (`entityType` `com.aktimetrix.measurement.instance`)
@@ -375,6 +376,8 @@ instead of the shared plan, and `DROP_AT_LOCKER` exists only in this process. Li
 | `tenant`, `stepCode`, `stepName`, `status` | Identity; only `CONFIRMED` definitions are used. |
 | `startEventCodes`, `endEventCodes` | The events that start and complete the step; see [the step lifecycle](concepts.md#step-lifecycle-plan-and-actual). |
 | `optionalInd` | `Y` if the process can complete without the step. |
+| `repeatable` | `true` if the step may happen again after it completed: each further start or completion is an attempt, published as `REPEATED` with its actual measurements; the step stays judged on its first. |
+| `alternative` | A name shared by two or more steps of a process, of which one happens, e.g. `HANDOVER`: the first to start or complete is taken, and the others become `Skipped`. |
 | `measurements` | The step's measurements; see [Measurement fields](#measurement-fields). The actual `TIME` is always recorded. |
 | `progressEventCodes` | Events that report progress while the step is open, e.g. `LOCATION_UPDATED`: each records interim readings (`interim: true`) of the step's actual measurements it carries (`valueFrom`), compared with the plan, without completing the step. |
 | `plannedWithin`, `plannedAfter` | Plan the step by an ISO-8601 duration from the process start, or from the completion of `plannedAfter`. |

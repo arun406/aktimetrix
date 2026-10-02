@@ -113,6 +113,7 @@ class DefinitionLoaderTest {
                 .hasMessageContaining("process PARCEL: startEventCodes is missing")
                 .hasMessageContaining("step PICKUP: plannedWithin is not an ISO-8601 duration")
                 .hasMessageContaining("step DELIVER: plannedAfter names SORT, which is not a step of the process")
+                .hasMessageContaining("process PARCEL: alternative HANDOVER has a single step")
                 .hasMessageContaining("measurement WEIGHT: tolerance must be an amount")
                 .hasMessageContaining("measurement WEIGHT: worseWhen must be HIGHER or LOWER");
         verify(processes, never()).add(org.mockito.ArgumentMatchers.any());

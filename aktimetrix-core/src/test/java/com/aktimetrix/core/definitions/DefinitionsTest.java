@@ -48,6 +48,15 @@ class DefinitionsTest {
             "        measurements:",
             "          - {measurementCode: DISTANCE, type: P, value: '5', unit: KM, tolerance: 20%, worseWhen: HIGHER}",
             "          - {measurementCode: DISTANCE, type: A, valueFrom: route.distanceKm, unit: KM}",
+            "      - stepCode: INSPECTED",
+            "        startEventCodes: [INSPECTED]",
+            "        repeatable: true",
+            "      - stepCode: AT_DOOR",
+            "        startEventCodes: [DELIVERED_AT_DOOR]",
+            "        alternative: HANDOVER",
+            "      - stepCode: AT_LOCKER",
+            "        startEventCodes: [DELIVERED_TO_LOCKER]",
+            "        alternative: HANDOVER",
             "      - stepCode: RATED",
             "        startEventCodes: [RATED]",
             "        optionalInd: Y",
@@ -71,6 +80,9 @@ class DefinitionsTest {
                                 .progressOn("LOCATION_UPDATED").after("PACK").within("PT30M").tolerance("PT5M")
                                 .measure("DISTANCE", "route.distanceKm", km -> km.value(5).unit("KM")
                                         .tolerance("20%").worseWhenHigher()))
+                        .step("INSPECTED", inspected -> inspected.on("INSPECTED").repeatable())
+                        .step("AT_DOOR", door -> door.on("DELIVERED_AT_DOOR").alternative("HANDOVER"))
+                        .step("AT_LOCKER", locker -> locker.on("DELIVERED_TO_LOCKER").alternative("HANDOVER"))
                         .step("RATED", rated -> rated.on("RATED").optional()))
                 .build();
         final Definitions yaml = new ObjectMapper(new YAMLFactory()).readValue(YAML, Definitions.class);

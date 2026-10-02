@@ -61,6 +61,8 @@ public class StepEventGenerator implements EventGenerator {
                 .actualAt(instance.getActualAt())
                 .timeliness(instance.getTimeliness())
                 .startMissing(instance.isStartMissing())
+                .attempts(instance.getAttempts())
+                .lastAttemptAt(instance.getLastAttemptAt())
                 .build();
     }
 

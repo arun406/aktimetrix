@@ -54,6 +54,14 @@ public class StepInstance {
      */
     private boolean startMissing;
     /**
+     * How many times the step has completed: 1 once it happened, more for a repeatable step that happened again.
+     */
+    private int attempts;
+    /**
+     * When the step last completed; differs from {@code actualAt} for a repeatable step that happened again.
+     */
+    private LocalDateTime lastAttemptAt;
+    /**
      * Incremented on every save; a save based on a stale copy fails instead of overwriting a newer state.
      */
     @Version

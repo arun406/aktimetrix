@@ -67,7 +67,7 @@ public class StepPlanner {
             final StepDefinition definition = definitions.get(step.getStepCode());
             if (definition == null || !completed.getStepCode().equals(definition.getPlannedAfter())
                     || definition.plannedWithinDuration() == null
-                    || Constants.STATUS_COMPLETED.equals(step.getStatus()) || step.getPlannedAt() != null) {
+                    || isClosed(step) || step.getPlannedAt() != null) {
                 continue;
             }
             step.setPlannedAt(completed.getActualAt().plus(definition.plannedWithinDuration()));
@@ -96,7 +96,7 @@ public class StepPlanner {
         for (StepInstance step : steps) {
             final StepDefinition definition = definitions.get(step.getStepCode());
             if (step.getSequence() <= source.getSequence() || step.getPlannedAt() == null
-                    || Constants.STATUS_COMPLETED.equals(step.getStatus())
+                    || isClosed(step)
                     || (definition != null && source.getStepCode().equals(definition.getPlannedAfter()))) {
                 continue;
             }
@@ -121,6 +121,14 @@ public class StepPlanner {
             return null;
         }
         return actualAt.isAfter(deadline(step)) ? Timeliness.LATE : Timeliness.ON_TIME;
+    }
+
+    /**
+     * Completed, or skipped as an alternative not taken: nothing left to plan or forecast.
+     */
+    private static boolean isClosed(StepInstance step) {
+        return Constants.STATUS_COMPLETED.equals(step.getStatus()) || Constants.STATUS_SKIPPED.equals(step.getStatus())
+                || step.getActualAt() != null;
     }
 
     private static LocalDateTime deadline(StepInstance step) {
