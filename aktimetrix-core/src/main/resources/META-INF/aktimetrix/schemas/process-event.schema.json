@@ -30,7 +30,8 @@
         "CREATED",
         "COMPLETED",
         "CANCELLED",
-        "OVERDUE"
+        "OVERDUE",
+        "MIGRATED"
       ]
     },
     "eventName": {
@@ -387,7 +388,8 @@
             "type": {
               "enum": [
                 "EVENT",
-                "DEADLINE"
+                "DEADLINE",
+                "MIGRATION"
               ]
             },
             "eventId": {
@@ -404,7 +406,7 @@
             }
           },
           "additionalProperties": false,
-          "description": "The business event, by id and code, or the deadline check that caused the change."
+          "description": "The business event, by id and code, the deadline check, or the migration that caused the change."
         }
       },
       "additionalProperties": false

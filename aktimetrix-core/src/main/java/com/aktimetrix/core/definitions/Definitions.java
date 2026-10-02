@@ -35,7 +35,8 @@ import java.util.function.Function;
  * <p>
  * Aktimetrix loads every {@code Definitions} bean at startup, like the definition files, and registers its planning
  * rules as meters. The definitions are saved by tenant and code: a change makes a new revision, and running instances
- * keep the revision they started with.
+ * keep the revision they started with unless they are migrated, see
+ * {@link com.aktimetrix.core.service.ProcessMigrationService}.
  */
 @Data
 public class Definitions {

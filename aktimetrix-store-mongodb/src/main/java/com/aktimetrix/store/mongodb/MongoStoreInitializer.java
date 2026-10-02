@@ -97,6 +97,7 @@ public class MongoStoreInitializer implements InitializingBean {
                 "entityId", "run").unique());
         ensure(PROCESS_INSTANCES, index("aktimetrix_entity", "tenant", "entityId"));
         ensure(PROCESS_INSTANCES, index("aktimetrix_process_deadlines", "lateAfter", "complete"));
+        ensure(PROCESS_INSTANCES, index("aktimetrix_process_running", "tenant", "processCode", "complete"));
         ensure(STEP_INSTANCES, index("aktimetrix_process_steps", "tenant", "processInstanceId"));
         ensure(STEP_INSTANCES, index("aktimetrix_deadlines", "lateAfter", "status"));
         ensure(MEASUREMENT_INSTANCES, index("aktimetrix_process_measurements", "tenant", "processInstanceId"));

@@ -5,6 +5,10 @@ import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.referencedata.model.ProcessDefinition;
+import com.aktimetrix.core.referencedata.model.StepDefinition;
+import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
+import com.aktimetrix.core.service.ProcessMigrationService;
 import com.aktimetrix.core.store.ProcessInstanceStore;
 import com.aktimetrix.core.store.StepInstanceStore;
 import com.aktimetrix.it.support.TestBroker;
@@ -22,6 +26,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Comparator;
@@ -203,6 +208,39 @@ public abstract class ParcelScenario {
                 "PICKUP of run 2 completing");
         assertThat(stepOf(runs.get(0), "PICKUP").orElseThrow().getStatus()).as("run 1 has ended")
                 .isEqualTo("Cancelled");
+    }
+
+    /**
+     * A revision of the return process adds a labelling step: the return already running is migrated to it, and gets
+     * the new step, planned from its start.
+     */
+    @Test
+    @Order(Integer.MAX_VALUE - 3)   // before the return scenario, which then follows the new revision
+    void migratesARunningInstanceToTheCurrentRevision() {
+        sendFor("return", "R-2", "return-2", "RETURN_REQUESTED", "2024-01-13 09:00:00", "{}");
+        final ProcessInstance started = await(() -> monitor.process("RETURN", "R-2"), p -> p.getId() != null,
+                "the return starting");
+        final ProcessDefinitionService definitions = monitor.bean(ProcessDefinitionService.class);
+        final ProcessDefinition revised = definitions.currentDefinition("T1", "RETURN");
+        final StepDefinition label = new StepDefinition();
+        label.setStepCode("LABEL");
+        label.setStartEventCodes(List.of("RETURN_LABELLED"));
+        label.setOptionalInd("Y");
+        label.setPlannedWithin("PT2H");
+        final List<StepDefinition> steps = new ArrayList<>(revised.getSteps());
+        steps.add(label);
+        revised.setSteps(steps);
+        final long revision = definitions.add(revised).getRevision();
+
+        final ProcessMigrationService.Migration migration = monitor.bean(ProcessMigrationService.class)
+                .migrate("T1", "RETURN");
+
+        assertThat(migration.getMigrated()).containsExactly(started.getId());
+        assertThat(migration.getRevision()).isEqualTo(revision);
+        assertThat(monitor.process("RETURN", "R-2").orElseThrow().getDefinitionRevision()).isEqualTo(revision);
+        assertThat(monitor.step("R-2", "LABEL").orElseThrow().getPlannedAt())
+                .isEqualTo(LocalDateTime.of(2024, 1, 13, 11, 0));
+        assertThat(monitor.bean(ProcessMigrationService.class).migrate("T1", "RETURN").getUpToDate()).isEqualTo(1);
     }
 
     /**

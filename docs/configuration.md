@@ -116,7 +116,7 @@ The alarm scheduler, the overdue sweep and the outbox relay are `@Scheduled` tas
 | Binding | Direction | Messages |
 |---|---|---|
 | `processor-in-0` (`aktimetrix.events.topic`) | in | Your business events; see [the event format](getting-started.md#the-event-format). |
-| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps. |
+| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED`, `OVERDUE` or `MIGRATED`: a process instance with its steps. |
 | `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `REPEATED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED` (`AT_RISK` again whenever its forecast moves later): a step instance. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `PLANNED`, `RECORDED`, `READING` or `METRIC`: a planned value, a final actual, an interim reading, or a process metric. |
 | `dead-letter-out-0` (`aktimetrix.events.dead-letter.topic`) | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
@@ -195,7 +195,7 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `stepCode`, `stepInstanceId` | The step, for step events and step measurements. |
 | `revision` | The revision of the process or step instance after the change: of two events about one instance, the higher is the more recent. |
 | `occurredAt` | When the change happened in the business, in `aktimetrix.time-zone`: the time of the business event that caused it, or of the deadline check. |
-| `cause` | `type` `EVENT`, with the `eventId` and `eventCode` of the business event; or `type` `DEADLINE`, for a change made when a deadline passed: an alarm or the overdue sweep. |
+| `cause` | `type` `EVENT`, with the `eventId` and `eventCode` of the business event; or `type` `DEADLINE`, for a change made when a deadline passed: an alarm or the overdue sweep; or `type` `MIGRATION`, for a change made by migrating the instance to a newer revision. |
 
 **`Process_Event`** (`entityType` `com.aktimetrix.process.instance`)
 
@@ -429,6 +429,7 @@ configured with the rest of Aktimetrix.
 |---|---|---|
 | `GET` | `/process-instances?tenant=&entityId=[&entityType=]` | The entity's process instances, each with its steps' status, `plannedAt`, `actualAt` and `timeliness`. |
 | `GET` / `POST` | `/reference-data/process-definitions` | List process definitions, or create or replace one (by tenant and code). |
+| `POST` | `/reference-data/process-definitions/{tenant}/{processCode}/migrations` | Migrate the process's running instances to its current revision; answers which were `migrated`, how many were `upToDate`, and which `failed` (they keep their revision). `404` when the tenant has no such process. |
 | `GET` / `POST` | `/reference-data/step-definitions` | List step definitions, or create or replace one (by tenant and code). |
 | `GET` / `POST` | `/reference-data/measurement-type-definitions` | List or create measurement types. |
 
@@ -439,6 +440,16 @@ curl -X POST http://localhost:8080/reference-data/step-definitions \
   -H 'Content-Type: application/json' \
   -d '{"tenant":"AA","stepCode":"CONFIRM","status":"CONFIRMED","startEventCodes":["ORDER_CONFIRMED_EVENT"],
        "measurements":[{"measurementCode":"TIME","type":"P"}]}'
+```
+
+Running instances keep the revision they started with. To apply a revision to them, such as a corrected plan,
+migrate them, from the API or with `ProcessMigrationService.migrate(tenant, processCode)`: steps the revision adds are
+created and planned, steps it removes are skipped while open, and steps still awaited are planned again from the new
+durations and tolerances; what already happened is kept.
+
+```bash
+curl -X POST http://localhost:8080/reference-data/process-definitions/AA/ORDER_DELIVERY/migrations
+# {"processCode":"ORDER_DELIVERY","revision":4,"migrated":["66b2…"],"upToDate":12,"failed":[]}
 ```
 
 A posted definition is checked as strictly as a definition file. When it is not valid, nothing is saved and the answer

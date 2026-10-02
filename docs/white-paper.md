@@ -236,7 +236,8 @@ management follows a few rules.
 | **Validation** | A definition is checked before it is saved, whatever its form: codes and tenant present, every duration and tolerance well formed, steps not repeated, a step planned only after a step of the same process. Files are read strictly, so a misspelt field is an error rather than ignored. Invalid files stop the application at startup with every problem and where it is; an invalid definition sent to the API is refused with its problems. Nothing is saved from a set that has errors. |
 | **Status** | Only a process definition with status `CONFIRMED` starts process instances. Others are drafts: stored and listed, but inactive. |
 | **Revisions** | Saving a process definition that differs from the stored one makes a new revision; saving an identical one keeps the revision, so reloading unchanged files at every start creates no history. |
-| **Rollout** | A process instance keeps the revision it started with, its steps resolved, until it ends. A change, to a process or to a shared step, therefore applies to entities that start afterwards, and never moves the plan of one under way. |
+| **Rollout** | A process instance keeps the revision it started with, its steps resolved, until it ends. A change, to a process or to a shared step, therefore applies to entities that start afterwards, and never silently moves the plan of one under way. |
+| **Migration** | When a change must reach entities already under way, such as a corrected plan, the running instances of a process are migrated to its current revision, on request. Steps the revision adds are created and planned; steps it removes are skipped while open; steps still awaited are planned again from the new durations and tolerances, so an overdue step whose new deadline is still ahead is awaited again. What already happened is kept: actual times, measurements and their judgement. Each migrated instance publishes a `MIGRATED` event. |
 | **Catalogue** | Measurement types, each with a code, name and unit, can be registered as a catalogue for tools and consumers. The runtime does not require them: a measurement is defined by its code and unit where it is used. |
 
 Definitions can be listed, each with its tenant, code, status and revision. Every published event names the
@@ -377,7 +378,7 @@ analytics subscribe to these instead of querying the state store. Each event has
 |---|---|---|
 | **Envelope** | `eventId`, `eventType`, `eventCode`, `eventName`, `eventTime`, `source` (`aktimetrix`), `tenantKey`, and the instance it is about: `entityType`, `entityId` | *What happened, and to which instance?* |
 | **Entity** | The process, step or measurement instance after the change | *What is its state now?* |
-| **Context** (`eventDetails`) | `schemaVersion`; the `businessEntity` (e.g. order 1234); `processCode`, `processInstanceId` and `definitionRevision`; for a step or its measurement, `stepCode` and `stepInstanceId`; the instance's `revision` after the change; `occurredAt`, the business time of the change; and its `cause`: the business event, by `eventId` and `eventCode`, or the deadline check | *Which entity and process does it belong to, when did it happen in the business, and why?* |
+| **Context** (`eventDetails`) | `schemaVersion`; the `businessEntity` (e.g. order 1234); `processCode`, `processInstanceId` and `definitionRevision`; for a step or its measurement, `stepCode` and `stepInstanceId`; the instance's `revision` after the change; `occurredAt`, the business time of the change; and its `cause`: the business event, by `eventId` and `eventCode`, the deadline check, or a migration | *Which entity and process does it belong to, when did it happen in the business, and why?* |
 
 With the context, a consumer can relate any step or measurement to its order without a lookup, apply changes in the
 order of their `revision`, and trace every change back to the business event that caused it. The event codes form a
@@ -389,6 +390,7 @@ fixed catalogue:
 | | `COMPLETED` | the process completed: implicitly with its last mandatory step, or on an end event |
 | | `CANCELLED` | a cancel event cancelled the process and its open steps |
 | | `OVERDUE` | the process's own deadline passed before it completed |
+| | `MIGRATED` | the running process was moved to the current revision of its definition, and replanned |
 | `Step_Event` | `CREATED` | the step was created with its process |
 | | `PLANNED` | the step got its planned time, when the step it is planned after completed |
 | | `STARTED` | a step with end events was started by one of its start events |
@@ -913,8 +915,6 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 - **Milestones, not a flow chart.** A process is a sequence of steps, with alternatives (one of several branches)
   and repeatable steps (counted attempts). Nested branches, parallel paths that join, and loops over several steps
   are not modelled; such a process is monitored by its milestones rather than by every path through it.
-- **No migration between revisions.** A running instance keeps the definition it started with; there is no way to
-  move it to a newer revision, for example to apply a corrected plan to orders already under way.
 - **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
 - **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
   each milestone. Aktimetrix guards against what it can detect: a duplicate is ignored by its `eventId`, an event
@@ -952,7 +952,7 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 |---|---|
 | **Business entity** | The real-world object followed, such as an order; identified by entity type and entity id. |
 | **Business event** | A message from a source system saying something happened to an entity, such as *order delivered*. |
-| **Process definition** | The declaration of a business process: its steps in order, the events that start, end and cancel it, and optionally its own deadline and measurements. Versioned: each change is a new revision, and an instance keeps the revision it started with. |
+| **Process definition** | The declaration of a business process: its steps in order, the events that start, end and cancel it, and optionally its own deadline and measurements. Versioned: each change is a new revision, and an instance keeps the revision it started with unless it is migrated. |
 | **Step definition** | The declaration of a milestone: the events that start and complete it, its plan, tolerance and measurements. Shared by a tenant's processes, and adaptable per process. |
 | **Process instance** / **step instance** | A process, or one of its steps, for one business entity. |
 | **Measurement** | A user-defined dimension observed at a process or step, such as time, distance or rating. |

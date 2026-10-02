@@ -221,6 +221,23 @@ public abstract class StoreContractTest {
     }
 
     @Test
+    void runningInstancesOfAProcessAreFoundForEveryEntity() {
+        final String tenant = unique();
+        final ProcessInstance first = processes.save(process(tenant, "1"));
+        final ProcessInstance second = processes.save(process(tenant, "2"));
+        final ProcessInstance done = process(tenant, "3");
+        done.setComplete(true);
+        processes.save(done);
+        final ProcessInstance other = process(tenant, "4");
+        other.setProcessCode("RETURNS");
+        processes.save(other);
+        processes.save(process(unique(), "1"));
+
+        assertThat(processes.findRunning(tenant, "ORDER_DELIVERY")).extracting(ProcessInstance::getId)
+                .containsExactlyInAnyOrder(first.getId(), second.getId());
+    }
+
+    @Test
     void overdueProcessesAreThoseRunningPastTheirDeadline() {
         final String tenant = unique();
         final ProcessInstance late = process(tenant, "late");

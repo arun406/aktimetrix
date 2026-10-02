@@ -69,6 +69,11 @@ final class MongoInstanceStores {
         }
 
         @Override
+        public List<ProcessInstance> findRunning(String tenant, String processCode) {
+            return all(where("tenant").is(tenant).and("processCode").is(processCode).and("complete").is(false));
+        }
+
+        @Override
         public List<ProcessInstance> findOverdue(LocalDateTime now) {
             return all(where("complete").is(false).and("lateAfter").lt(now).and("timeliness").ne(Timeliness.OVERDUE.name()));
         }

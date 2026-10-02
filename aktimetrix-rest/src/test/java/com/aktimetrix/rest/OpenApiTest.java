@@ -5,6 +5,7 @@ import com.aktimetrix.core.referencedata.service.MeasurementTypeDefinitionServic
 import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
 import com.aktimetrix.core.service.ProcessInstanceService;
+import com.aktimetrix.core.service.ProcessMigrationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -37,6 +38,8 @@ class OpenApiTest {
     @MockitoBean
     private StepDefinitionService stepDefinitionService;
     @MockitoBean
+    private ProcessMigrationService processMigrationService;
+    @MockitoBean
     private MeasurementTypeDefinitionService measurementTypeDefinitionService;
 
     @Autowired
@@ -50,6 +53,8 @@ class OpenApiTest {
                 .andExpect(jsonPath("$.paths['/process-instances'].get").exists())
                 .andExpect(jsonPath("$.paths['/reference-data/process-definitions'].get").exists())
                 .andExpect(jsonPath("$.paths['/reference-data/process-definitions'].post.responses['400']").exists())
+                .andExpect(jsonPath("$.paths['/reference-data/process-definitions/{tenant}/{processCode}/migrations'].post")
+                        .exists())
                 .andExpect(jsonPath("$.paths['/reference-data/step-definitions'].post").exists())
                 .andExpect(jsonPath("$.paths['/reference-data/measurement-type-definitions'].get").exists())
                 .andExpect(jsonPath("$.components.schemas.ProcessDefinition").exists())

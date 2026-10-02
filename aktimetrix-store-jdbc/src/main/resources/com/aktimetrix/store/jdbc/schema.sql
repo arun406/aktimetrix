@@ -42,6 +42,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS aktimetrix_process_entity_run
     ON aktimetrix_process_instance (tenant, process_code, entity_type, entity_id, run_number);
 CREATE INDEX IF NOT EXISTS aktimetrix_process_by_entity ON aktimetrix_process_instance (tenant, entity_id);
 CREATE INDEX IF NOT EXISTS aktimetrix_process_deadlines ON aktimetrix_process_instance (late_after, complete);
+CREATE INDEX IF NOT EXISTS aktimetrix_process_running ON aktimetrix_process_instance (tenant, process_code, complete);
 CREATE TABLE IF NOT EXISTS aktimetrix_step_instance (
     id                  VARCHAR(64)  PRIMARY KEY,
     tenant              VARCHAR(255) NOT NULL,

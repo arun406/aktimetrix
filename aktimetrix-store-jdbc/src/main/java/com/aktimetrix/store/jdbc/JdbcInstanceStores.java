@@ -108,6 +108,12 @@ final class JdbcInstanceStores {
         }
 
         @Override
+        public List<ProcessInstance> findRunning(String tenant, String processCode) {
+            return jdbc.query("SELECT " + COLUMNS + " FROM aktimetrix_process_instance WHERE tenant = ? AND process_code = ? "
+                    + "AND complete = FALSE", rows, tenant, processCode);
+        }
+
+        @Override
         public List<ProcessInstance> findOverdue(LocalDateTime now) {
             return jdbc.query("SELECT " + COLUMNS + " FROM aktimetrix_process_instance WHERE complete = FALSE "
                     + "AND late_after < ? AND (timeliness IS NULL OR timeliness <> ?)", rows, now, OVERDUE);

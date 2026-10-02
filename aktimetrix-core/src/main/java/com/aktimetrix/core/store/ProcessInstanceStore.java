@@ -36,6 +36,11 @@ public interface ProcessInstanceStore {
     List<ProcessInstance> findNotCancelled(String tenant, String entityType, String entityId);
 
     /**
+     * The instances of the process that are not complete, every entity and run.
+     */
+    List<ProcessInstance> findRunning(String tenant, String processCode);
+
+    /**
      * Instances of every tenant that are not complete, whose {@code lateAfter} is before {@code now}, and whose
      * timeliness is not {@code OVERDUE} yet.
      */

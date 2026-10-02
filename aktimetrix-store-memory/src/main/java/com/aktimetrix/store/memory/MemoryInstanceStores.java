@@ -97,6 +97,11 @@ final class MemoryInstanceStores {
         }
 
         @Override
+        public synchronized List<ProcessInstance> findRunning(String tenant, String processCode) {
+            return find(i -> tenant.equals(i.getTenant()) && processCode.equals(i.getProcessCode()) && !i.isComplete());
+        }
+
+        @Override
         public synchronized List<ProcessInstance> findOverdue(LocalDateTime now) {
             return find(i -> !i.isComplete() && i.getLateAfter() != null && i.getLateAfter().isBefore(now)
                     && i.getTimeliness() != Timeliness.OVERDUE);

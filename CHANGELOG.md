@@ -20,6 +20,12 @@ version may change the public API.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
 **Added**
+- Migration: the running instances of a process can be moved to the current revision of its definition, with
+  `ProcessMigrationService` or `POST /reference-data/process-definitions/{tenant}/{processCode}/migrations`. Added
+  steps are created and planned, removed ones skipped while open, and steps still awaited planned again; what already
+  happened is kept. Each migrated instance publishes `MIGRATED`, with the cause `MIGRATION`. Stores implement
+  `ProcessInstanceStore.findRunning`.
+
 - Alternatives and repeats: steps that share an `alternative` are branches, of which the first to start or complete
   is taken and the others are `Skipped`; a `repeatable` step may happen again, each time recorded as an attempt
   (`attempts`, `lastAttemptAt`, step event `REPEATED`) while keeping the timeliness of its first. The DSL has

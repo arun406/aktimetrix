@@ -32,6 +32,8 @@ public final class PublishedEvents {
         public static final String CANCELLED = "CANCELLED";
         /** The process's own deadline passed before it completed. */
         public static final String OVERDUE = "OVERDUE";
+        /** The running process was moved to a newer revision of its definition, and replanned. */
+        public static final String MIGRATED = "MIGRATED";
 
         private Process() {
         }

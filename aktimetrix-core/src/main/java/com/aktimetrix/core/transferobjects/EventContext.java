@@ -84,9 +84,13 @@ public class EventContext {
          * A deadline check: the overdue monitors.
          */
         public static final String DEADLINE = "DEADLINE";
+        /**
+         * A migration of running instances to a newer revision of their definition.
+         */
+        public static final String MIGRATION = "MIGRATION";
 
         /**
-         * {@value #EVENT} or {@value #DEADLINE}.
+         * {@value #EVENT}, {@value #DEADLINE} or {@value #MIGRATION}.
          */
         private String type;
         /**

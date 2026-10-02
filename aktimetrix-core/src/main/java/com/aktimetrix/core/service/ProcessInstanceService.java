@@ -104,6 +104,13 @@ public class ProcessInstanceService {
     }
 
     /**
+     * The instances of the process that are still running, for every entity.
+     */
+    public List<ProcessInstance> getRunning(String tenant, String processCode) {
+        return store.findRunning(tenant, processCode);
+    }
+
+    /**
      * Returns the process instance by id, or {@code null}.
      */
     public ProcessInstance getProcessInstance(String tenant, String processInstanceId) {
