@@ -16,14 +16,18 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Computes a completed process's {@link MetricDefinition metrics} from its measurements, e.g. fuel per kilometre: once
  * from the actual values and once from the planned ones, which are then compared. A measurement code in an expression
- * stands for the sum of that measurement's final values across the process instance and its steps.
+ * stands for the sum of that measurement's final values across the process instance and its steps; a function such as
+ * {@code max(TEMPERATURE)} sees each value. A metric is computed again when a measurement it uses is recorded after
+ * the process completed, such as a rating the next day; the latest value supersedes the earlier one.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,12 +42,21 @@ public class DerivedMetricService {
      * @return the metrics, as process-level actual measurements with their plan, deviation and conformance
      */
     public List<MeasurementInstance> compute(ProcessInstance process, ProcessDefinition definition) {
+        return compute(process, definition, null);
+    }
+
+    /**
+     * The metrics that use any of the measurement codes, such as one recorded after the process completed.
+     *
+     * @param codes measurement codes; {@code null} for every metric
+     */
+    public List<MeasurementInstance> compute(ProcessInstance process, ProcessDefinition definition, Set<String> codes) {
         final List<MeasurementInstance> results = new ArrayList<>();
         if (definition == null || definition.getMetrics() == null || definition.getMetrics().isEmpty()) {
             return results;
         }
-        final Map<String, BigDecimal> actual = new HashMap<>();
-        final Map<String, BigDecimal> planned = new HashMap<>();
+        final Map<String, List<BigDecimal>> actual = new HashMap<>();
+        final Map<String, List<BigDecimal>> planned = new HashMap<>();
         for (MeasurementInstance measurement : store.findByProcessInstance(process.getTenant(), process.getId())) {
             if (measurement.isInterim() || measurement.getDerivedFrom() != null) {
                 continue;
@@ -52,15 +65,19 @@ public class DerivedMetricService {
             if (value == null) {
                 continue;
             }
-            final Map<String, BigDecimal> sums = Constants.PLAN_MEASUREMENT_TYPE.equals(measurement.getType()) ? planned : actual;
-            sums.merge(measurement.getCode(), value, BigDecimal::add);
+            final Map<String, List<BigDecimal>> values =
+                    Constants.PLAN_MEASUREMENT_TYPE.equals(measurement.getType()) ? planned : actual;
+            values.computeIfAbsent(measurement.getCode(), code -> new ArrayList<>()).add(value);
         }
         for (MetricDefinition metric : definition.getMetrics()) {
+            if (codes != null && Collections.disjoint(codes, Expression.names(metric.getExpression()))) {
+                continue;
+            }
             final BigDecimal value;
             final BigDecimal plan;
             try {
-                value = Expression.evaluate(metric.getExpression(), actual);
-                plan = Expression.evaluate(metric.getExpression(), planned);
+                value = Expression.evaluateAll(metric.getExpression(), actual);
+                plan = Expression.evaluateAll(metric.getExpression(), planned);
             } catch (IllegalArgumentException e) {
                 logger.warn("Metric {} of the {} process cannot be computed: {}", metric.getCode(),
                         definition.getProcessCode(), e.getMessage());

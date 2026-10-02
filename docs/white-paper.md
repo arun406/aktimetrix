@@ -171,7 +171,10 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `F
 **Metrics** are computed from the measurements. A process declares its own, as arithmetic over measurement codes,
 such as *fuel per kilometre = FUEL / DISTANCE*: when the process completes, each code stands for the sum of that
 measurement's final values across the process and its steps, and the metric is computed from the plan and from the
-actuals and compared like any measurement. The runtime also reports metrics for the whole population, such as how
+actuals and compared like any measurement. Functions see each value instead of the sum: `max(TEMPERATURE)` is the
+warmest reading of any step, and `avg`, `min`, `count` and `abs` work alike. A measurement recorded after the process
+completed, such as a rating the next day, computes again the metrics that use it; the newer value supersedes the
+earlier one. The runtime also reports metrics for the whole population, such as how
 many actuals were within tolerance and the distribution of deviations ([§8](#8-observability)); anything else can
 be computed by consumers of the published measurement events.
 
@@ -889,9 +892,6 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 
 - **Ordered milestones.** A process is a sequence of steps, each completed once. Branches, loops and repeated
   attempts of a step are not modelled.
-- **Metrics at completion.** A process's metrics are computed once, when it completes, from sums of its
-  measurements; values recorded afterwards, such as a later rating, are not included, and the expressions are plain
-  arithmetic.
 - **No migration between revisions.** A running instance keeps the definition it started with; there is no way to
   move it to a newer revision, for example to apply a corrected plan to orders already under way.
 - **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
@@ -932,7 +932,7 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 | **Planned** / **actual** (`P` / `A`) | What a measurement should be, set when the instance is created; and what it was, recorded when it completes, or read as an interim reading while it is in progress. |
 | **Deviation** | Actual minus planned value of a measurement. |
 | **Tolerance** / **conformance** | How far an actual may deviate from its plan; and whether it did (`WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`). |
-| **Metric** | A figure computed from measurements: declared on a process as arithmetic over its measurements, such as fuel per kilometre, and compared with the same figure computed from the plan; or reported by the runtime across all entities, such as the share within tolerance. |
+| **Metric** | A figure computed from measurements: declared on a process as an expression over its measurements, such as fuel per kilometre or the highest temperature, and compared with the same figure computed from the plan; or reported by the runtime across all entities, such as the share within tolerance. |
 | **Interim reading** | A value of a step's measurement reported while the step is still in progress, compared with the plan at once. |
 | **Meter** | Application code that computes a planned or actual measurement, typically a planning rule. |
 | **Metadata** | Domain data kept on an instance, such as an order's customer, used by meters and passed to consumers. |

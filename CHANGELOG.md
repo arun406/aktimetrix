@@ -25,6 +25,10 @@ version may change the public API.
   carries its `run` number and `startEventId`. Stores keep one instance per entity and run; MongoDB indexes and JDBC
   tables are upgraded in place.
 
+- Metric expressions take the functions `sum`, `avg`, `min`, `max`, `count` and `abs`; a function sees each value of a
+  measurement, such as `max(TEMPERATURE)` across the steps. A measurement recorded after the process completed, such
+  as a rating, computes again the metrics that use it.
+
 **Security**
 - A metric expression is limited to 1,000 characters and 32 levels of nesting, and checked when its definition is
   saved, so that a deeply nested expression cannot exhaust the stack when a process completes.

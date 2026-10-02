@@ -27,6 +27,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Records what actually happens to a process instance: moves its steps through their lifecycle when a business
@@ -175,7 +177,14 @@ public class StepProgressService {
             saveAndPublish(tenant, actuals);
         }
         if (!wasComplete && processInstance.isComplete()) {
-            actuals.addAll(recordMetrics(processInstance));
+            actuals.addAll(recordMetrics(processInstance, null));
+        } else if (wasComplete) {
+            // a measurement recorded after the process completed, such as a rating: the metrics using it again
+            final Set<String> late = actuals.stream().filter(measurement -> !measurement.isInterim())
+                    .map(MeasurementInstance::getCode).collect(Collectors.toSet());
+            if (!late.isEmpty()) {
+                actuals.addAll(recordMetrics(processInstance, late));
+            }
         }
         return actuals;
     }
@@ -360,7 +369,7 @@ public class StepProgressService {
         if (!actuals.isEmpty()) {
             saveAndPublish(processInstance.getTenant(), actuals);
         }
-        actuals.addAll(recordMetrics(processInstance));
+        actuals.addAll(recordMetrics(processInstance, null));
         return actuals;
     }
 
@@ -385,11 +394,15 @@ public class StepProgressService {
     }
 
     /**
-     * The metrics of a process that has just completed, computed from all its measurements, saved and published.
+     * The metrics of a completed process, computed from all its measurements, saved and published.
+     *
+     * @param codes only the metrics using one of these measurement codes; {@code null} for all
      */
-    private List<MeasurementInstance> recordMetrics(ProcessInstance processInstance) {
-        final List<MeasurementInstance> results = derivedMetricService.compute(processInstance,
-                processDefinitionService.definitionOf(processInstance));
+    private List<MeasurementInstance> recordMetrics(ProcessInstance processInstance, Set<String> codes) {
+        final List<MeasurementInstance> results = codes == null
+                ? derivedMetricService.compute(processInstance, processDefinitionService.definitionOf(processInstance))
+                : derivedMetricService.compute(processInstance, processDefinitionService.definitionOf(processInstance),
+                codes);
         if (!results.isEmpty()) {
             saveAndPublish(processInstance.getTenant(), results);
         }

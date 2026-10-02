@@ -31,6 +31,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -229,6 +230,8 @@ class StepProgressServiceTest {
 
         assertThat(rated.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
         verify(processInstancePublisherService, never()).publish(process, "COMPLETED");
+        // the rating's time is a late measurement: the metrics that use it are computed again
+        verify(derivedMetricService).compute(eq(process), any(), eq(Set.of(Constants.MEASUREMENT_CODE_TIME)));
     }
 
     @Test

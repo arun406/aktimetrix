@@ -3,6 +3,7 @@ package com.aktimetrix.core.util;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,5 +46,31 @@ class ExpressionTest {
                 .isInstanceOf(IllegalArgumentException.class);
         final String allowed = "(".repeat(Expression.MAX_DEPTH) + "FUEL" + ")".repeat(Expression.MAX_DEPTH);
         assertThat(Expression.evaluate(allowed, VALUES)).isEqualByComparingTo("1");
+    }
+
+    @Test
+    void functionsAggregateEachValueOfAName() {
+        final Map<String, List<BigDecimal>> values = Map.of(
+                "TEMPERATURE", List.of(new BigDecimal("21"), new BigDecimal("34"), new BigDecimal("28")),
+                "RATING", List.of(new BigDecimal("4")));
+        assertThat(Expression.evaluateAll("TEMPERATURE", values)).as("a bare name is the sum").isEqualByComparingTo("83");
+        assertThat(Expression.evaluateAll("max(TEMPERATURE)", values)).isEqualByComparingTo("34");
+        assertThat(Expression.evaluateAll("min(TEMPERATURE)", values)).isEqualByComparingTo("21");
+        assertThat(Expression.evaluateAll("avg(TEMPERATURE)", values)).isEqualByComparingTo("27.66666666666667");
+        assertThat(Expression.evaluateAll("count(TEMPERATURE)", values)).isEqualByComparingTo("3");
+        assertThat(Expression.evaluateAll("count(DISTANCE)", values)).as("no values").isEqualByComparingTo("0");
+        assertThat(Expression.evaluateAll("max(TEMPERATURE, RATING * 10)", values)).isEqualByComparingTo("40");
+        assertThat(Expression.evaluateAll("abs(RATING - max(TEMPERATURE))", values)).isEqualByComparingTo("30");
+        assertThat(Expression.evaluateAll("max(DISTANCE)", values)).as("a missing measurement").isNull();
+    }
+
+    @Test
+    void rejectsUnknownFunctionsAndListsTheNamesAnExpressionUses() {
+        assertThatThrownBy(() -> Expression.evaluate("median(FUEL)", VALUES)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown function median");
+        assertThatThrownBy(() -> Expression.evaluate("abs(FUEL, DISTANCE)", VALUES))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(Expression.names("max(TEMPERATURE) / avg(TEMPERATURE) + FUEL_2 * abs ( DISTANCE )"))
+                .containsExactly("TEMPERATURE", "FUEL_2", "DISTANCE");
     }
 }
