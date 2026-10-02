@@ -16,7 +16,7 @@ settings with the standard Spring Boot properties.
 | `aktimetrix-store-jdbc` | `spring.datasource.url`, `.username`, `.password`, and the database's JDBC driver | Written for PostgreSQL; atomic units of work. |
 | `aktimetrix-store-memory` | none | Not durable, not shared between instances, not atomic: for tests and demos. |
 | `aktimetrix-broker-kafka` | `spring.kafka.properties.bootstrap.servers` (or `spring.cloud.stream.kafka.binder.brokers`) | Events of one entity are processed in order through partitions keyed by entity id. |
-| `aktimetrix-broker-rabbitmq` | `spring.rabbitmq.host`, `.port`, `.username`, `.password` | Events are processed in order by a single active consumer; see [RabbitMQ](#rabbitmq). |
+| `aktimetrix-broker-rabbitmq` | `spring.rabbitmq.host`, `.port`, `.username`, `.password` | Events are processed in order by a single active consumer, or split by entity into partitions; see [RabbitMQ](#rabbitmq). |
 
 For example, MongoDB and Kafka:
 
@@ -58,7 +58,11 @@ aktimetrix:
 | `aktimetrix.events.group` | `aktimetrix` | Consumer group of the inbound business events. |
 | `aktimetrix.events.dead-letter.enabled` | `true` | Send events that cannot be processed to a dead-letter topic instead of dropping them. |
 | `aktimetrix.events.dead-letter.topic` | *events topic*`.dlq` | The dead-letter topic. |
-| `aktimetrix.time-zone` | `UTC` | Zone of all planned and actual times. Event times are converted to it, and alarms compare deadlines with the current time in it. |
+| `aktimetrix.events.deduplication.enabled` | `true` | Ignore an event whose `eventId` was already processed, such as a message delivered twice. Events without an `eventId` are never deduplicated. |
+| `aktimetrix.events.deduplication.retention` | `P7D` | How long processed event ids are remembered. |
+| `aktimetrix.events.max-future-skew` | `PT5M` | How far in the future an event's business time may be; an event dated later is invalid, and sent to the dead-letter topic. |
+| `aktimetrix.events.partitions` | `1` | RabbitMQ: how many partitions the inbound events are split into, by entity; see [RabbitMQ](#rabbitmq). |
+| `aktimetrix.events.partition` | none | RabbitMQ: the partition this instance consumes, from `0`; required with several partitions. |
 | `aktimetrix.definitions.load-on-startup` | `true` | Load process and step definitions from the classpath at startup. |
 | `aktimetrix.definitions.processes` | `classpath*:aktimetrix/process-definitions.json` | Location of the process definitions: a JSON array. |
 | `aktimetrix.definitions.steps` | `classpath*:aktimetrix/step-definitions.json` | Location of the step definitions: a JSON array. |
@@ -73,6 +77,11 @@ aktimetrix:
 | `aktimetrix.outbox.batch-size` | `100` | Most events published per relay run. |
 | `aktimetrix.outbox.lease` | `PT30S` | How long a relay holds a claimed event before another instance may retry it. |
 | `aktimetrix.outbox.retention` | `P7D` | How long sent events stay in the outbox before being purged. |
+| `aktimetrix.notifications.on` | `AT_RISK,OVERDUE,LATE` | The conditions that notify: a step or process going `AT_RISK` or `OVERDUE`, or completing `LATE`. See [Notifications](#notifications). |
+| `aktimetrix.notifications.max-attempts` | `10` | How many times a notification is attempted before it is given up, with an error in the log. Attempts are an outbox lease apart. |
+| `aktimetrix.notifications.webhook.url` | none | URL each notification is posted to as JSON. No webhook when empty. |
+| `aktimetrix.notifications.webhook.headers.*` | none | Headers added to each webhook request, such as `aktimetrix.notifications.webhook.headers.Authorization`. |
+| `aktimetrix.notifications.webhook.timeout` | `PT10S` | How long a webhook request may take; a slower one, or an answer other than 2xx, is retried. |
 | `aktimetrix.storage.type` | none | The store module to use when several are on the classpath: `mongodb`, `jdbc` or `memory`. |
 | `aktimetrix.storage.transactions` | `auto` | Process each event, and each overdue step or process, in a transaction: `auto` when the store supports it (MongoDB as a replica set or sharded cluster; always with JDBC), `always`, or `never`. |
 | `aktimetrix.storage.create-indexes` | `true` | Create the indexes (MongoDB) or the tables and indexes (JDBC) Aktimetrix relies on at startup. |
@@ -108,8 +117,8 @@ The alarm scheduler, the overdue sweep and the outbox relay are `@Scheduled` tas
 | Binding | Direction | Messages |
 |---|---|---|
 | `processor-in-0` (`aktimetrix.events.topic`) | in | Your business events; see [the event format](getting-started.md#the-event-format). |
-| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED` or `OVERDUE`: a process instance with its steps. |
-| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED` (`AT_RISK` again whenever its forecast moves later): a step instance. |
+| `process-instance-out-0` | out | `Process_Event` / `CREATED`, `COMPLETED`, `CANCELLED`, `OVERDUE` or `MIGRATED`: a process instance with its steps. |
+| `step-instance-out-0` | out | `Step_Event` / `CREATED`, `PLANNED`, `STARTED`, `COMPLETED`, `REPEATED`, `AT_RISK`, `OVERDUE`, `SKIPPED` or `CANCELLED` (`AT_RISK` again whenever its forecast moves later): a step instance. |
 | `measurement-instance-out-0` | out | `Measurement_Event` / `PLANNED`, `RECORDED`, `READING` or `METRIC`: a planned value, a final actual, an interim reading, or a process metric. |
 | `dead-letter-out-0` (`aktimetrix.events.dead-letter.topic`) | out | Inbound events that could not be processed, unchanged: invalid ones at once, failing ones after 3 attempts. |
 
@@ -124,8 +133,14 @@ or on `COMPLETED` with `timeliness` `LATE`.
 - **Events exchange and queue.** Source systems publish to the topic exchange `aktimetrix.events.topic`; Aktimetrix
   consumes from the queue `<topic>.<group>`, for example `order-events.aktimetrix`, bound to it with `#`.
 - **Order.** The queue has a single active consumer: whichever instance holds it processes the events in order, and
-  another takes over if it stops. To process in parallel while keeping each entity's events in order, use Spring
-  Cloud Stream partitioning on `processor-in-0`, keyed by the entity id.
+  another takes over if it stops.
+- **Partitions.** To process in parallel while keeping each entity's events in order, split the events by entity:
+  set `aktimetrix.events.partitions` to the number of partitions, and give each instance the partition it consumes,
+  `aktimetrix.events.partition`, from `0`. Partition `N` is the queue `<topic>.<group>-N`, bound with the routing key
+  `<topic>-N`, and has a single active consumer, so a second instance with the same partition stands by. Source
+  systems publish an entity's events with the routing key of its partition: the CRC-32 of the entity id, as UTF-8,
+  modulo the number of partitions, which `RabbitEventPartitions.routingKey(topic, entityId, partitions)` computes.
+  Kafka needs none of this: events are partitioned by their message key, the entity id.
 - **Dead letters.** The RabbitMQ module declares a durable direct exchange and a durable queue, both named
   `aktimetrix.events.dead-letter.topic`, bound by that name. Failing events are republished there by the binder, and
   invalid ones are published there by Aktimetrix. Only standard AMQP 0-9-1 features are used for this, not RabbitMQ's
@@ -186,8 +201,8 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `processCode`, `processInstanceId`, `definitionRevision` | The process, its instance, and the revision of the definition it follows. |
 | `stepCode`, `stepInstanceId` | The step, for step events and step measurements. |
 | `revision` | The revision of the process or step instance after the change: of two events about one instance, the higher is the more recent. |
-| `occurredAt` | When the change happened in the business, in `aktimetrix.time-zone`: the time of the business event that caused it, or of the deadline check. |
-| `cause` | `type` `EVENT`, with the `eventId` and `eventCode` of the business event; or `type` `DEADLINE`, for a change made when a deadline passed: an alarm or the overdue sweep. |
+| `occurredAt` | When the change happened in the business, a UTC instant: the time of the business event that caused it, or of the deadline check. |
+| `cause` | `type` `EVENT`, with the `eventId` and `eventCode` of the business event; or `type` `DEADLINE`, for a change made when a deadline passed: an alarm or the overdue sweep; or `type` `MIGRATION`, for a change made by migrating the instance to a newer revision. |
 
 **`Process_Event`** (`entityType` `com.aktimetrix.process.instance`)
 
@@ -200,6 +215,7 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `plannedAt`, `lateAfter` | Its own deadline, if the definition has `plannedWithin` or a planned `TIME` set by a meter: planned completion, and that plus the tolerance. |
 | `endedAt` | Business time of the event that completed or cancelled it. |
 | `timeliness` | `ON_TIME` or `LATE` at completion, or `OVERDUE`; empty without a deadline. |
+| `run` | Which run of the process this is for the entity: 1, then 2 and on for a restartable process started again. |
 | `definitionRevision` | The revision of the process definition the instance follows: the one it started with. |
 | `metadata` | The process metadata. |
 | `steps` | Its steps, as in `Step_Event` (on `CREATED`). |
@@ -215,6 +231,8 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `expectedAt` | Forecast, when an earlier step ran late. |
 | `actualAt` | Business time of the event that completed it. |
 | `timeliness` | `ON_TIME`, `LATE`, `AT_RISK` or `OVERDUE`; empty until it can be judged. |
+| `startMissing` | `true` when the step completed without its start event. |
+| `attempts`, `lastAttemptAt` | How many times the step has completed, and when it last did: more than once only for a `repeatable` step, whose `actualAt` and `timeliness` stay those of its first attempt. |
 | `metadata` | The step metadata. |
 
 **`Measurement_Event`** (`entityType` `com.aktimetrix.measurement.instance`)
@@ -229,7 +247,39 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `derivedFrom` | For a process metric, its expression, e.g. `FUEL / DISTANCE`. |
 | `plannedValue`, `deviation`, `conformance` | For an actual: the plan it is compared with, actual minus planned (a number, or an ISO-8601 duration for `TIME`), and `WITHIN_TOLERANCE` / `OUT_OF_TOLERANCE` when a tolerance is declared. |
 
-Times inside `entity` are local date-times in `aktimetrix.time-zone`.
+Every time Aktimetrix sets, inside `entity` and in `eventDetails`, is a UTC instant such as `2024-03-01T12:45:00Z`, and so is the value of a `TIME` measurement; consumers convert them for display. Metadata keeps the values the source system sent.
+
+## Notifications
+
+When a step or process goes `AT_RISK` or `OVERDUE`, or completes `LATE`, Aktimetrix hands a notification to every
+`Notifier` bean, such as the built-in webhook (`aktimetrix.notifications.webhook.url`) or your own. A notification is
+queued in the outbox in the unit of work of the change, so it is delivered once the change is saved, and at least
+once: a notifier that throws is called again after the outbox lease, up to `aktimetrix.notifications.max-attempts`.
+With several notifiers, a retry calls each of them again; use `id` to recognise a repeat. Nothing is queued while the
+application has no notifier.
+
+```json
+{
+  "id": "6c1f...",
+  "subject": "STEP",
+  "condition": "OVERDUE",
+  "tenant": "AA",
+  "processCode": "ORDER_DELIVERY",
+  "processInstanceId": "p-1",
+  "entityType": "com.ecom.order",
+  "entityId": "1234",
+  "stepCode": "DELIVERED",
+  "stepInstanceId": "s-6",
+  "plannedAt": "2024-03-01T18:00:00Z",
+  "lateAfter": "2024-03-01T18:30:00Z",
+  "expectedAt": null,
+  "actualAt": null,
+  "occurredAt": "2024-03-01T18:30:04Z"
+}
+```
+
+`subject` is `STEP` or `PROCESS`; a process notification has its `run` and no step fields. `id` is the `eventId` of
+the published event that caused it.
 
 ## Storage
 
@@ -278,7 +328,8 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 
 | Metric | Type | Tags |
 |---|---|---|
-| `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `ignored`, `invalid`, `failed`) |
+| `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `ignored`, `duplicate`, `invalid`, `failed`) |
+| `aktimetrix.events.quality` | counter | `tenant`, `step`, `issue` (`start_missing`) |
 | `aktimetrix.processes.started` / `.completed` / `.cancelled` / `.overdue` | counter | `tenant`, `process` |
 | `aktimetrix.steps.completed` | counter | `tenant`, `step`, `timeliness` |
 | `aktimetrix.steps.lateness` | timer | `tenant`, `step`: how long after its planned time a step completed |
@@ -301,10 +352,11 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 | `startEventCodes` | The events that create a process instance: a business event such as *order created*, which can also complete the first step, or a dedicated start event. |
 | `endEventCodes` | Optional. Events that explicitly end a running instance (*order closed*): it completes on them, not when its last mandatory step completes; mandatory steps still open become `Skipped`, optional ones stay open. Without them, the process ends implicitly with its last mandatory step. |
 | `cancelEventCodes` | The events that cancel a running instance: the process and its open steps become `Cancelled` and are no longer monitored. |
+| `restartable` | `true` to let an entity run the process again: a start event, with a new `eventId`, after the latest run has completed or been cancelled starts the next run. Default `false`: one run per entity. |
 | `plannedWithin`, `tolerance` | The whole process's own deadline: an ISO-8601 duration from its start, plus the time it may run over before it counts as late or overdue. For a deadline set by a rule, such as 1 day for priority customers and 3 otherwise, declare a planned `TIME` measurement on the process and a process-level meter for it instead. |
 | `steps` | The steps, in order. Each names a `stepCode` and may set any step definition field, which then applies to this process only: see below. |
 | `measurements` | Measurements of the process as a whole, e.g. its planned `TIME` (its deadline, set by a meter) or the order's cost; see [Measurement fields](#measurement-fields). Planned ones are set when the process starts, actual ones recorded when it completes. |
-| `metrics` | Optional. Metrics computed when the process completes, e.g. `{ "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" }`. In the expression, arithmetic over measurement codes (`+ - * /`, parentheses), each code is the sum of that measurement's final values across the process and its steps. It is computed from the actuals and from the plans, and published as a process-level actual measurement with `derivedFrom`. |
+| `metrics` | Optional. Metrics computed when the process completes, e.g. `{ "code": "FUEL_PER_KM", "expression": "FUEL / DISTANCE", "unit": "L/KM", "tolerance": "10%", "worseWhen": "HIGHER" }`. In the expression, arithmetic over measurement codes (`+ - * /`, parentheses), each code is the sum of that measurement's final values across the process and its steps; the functions `sum`, `avg`, `min`, `max` and `count` see each value instead, e.g. `max(TEMPERATURE)`, and `abs` gives an absolute value. It is computed from the actuals and from the plans, and published as a process-level actual measurement with `derivedFrom`; a measurement recorded after the process completed computes again the metrics that use it, and the newer value supersedes the earlier one. |
 
 ## Step definition fields
 
@@ -331,6 +383,8 @@ instead of the shared plan, and `DROP_AT_LOCKER` exists only in this process. Li
 | `tenant`, `stepCode`, `stepName`, `status` | Identity; only `CONFIRMED` definitions are used. |
 | `startEventCodes`, `endEventCodes` | The events that start and complete the step; see [the step lifecycle](concepts.md#step-lifecycle-plan-and-actual). |
 | `optionalInd` | `Y` if the process can complete without the step. |
+| `repeatable` | `true` if the step may happen again after it completed: each further start or completion is an attempt, published as `REPEATED` with its actual measurements; the step stays judged on its first. |
+| `alternative` | A name shared by two or more steps of a process, of which one happens, e.g. `HANDOVER`: the first to start or complete is taken, and the others become `Skipped`. |
 | `measurements` | The step's measurements; see [Measurement fields](#measurement-fields). The actual `TIME` is always recorded. |
 | `progressEventCodes` | Events that report progress while the step is open, e.g. `LOCATION_UPDATED`: each records interim readings (`interim: true`) of the step's actual measurements it carries (`valueFrom`), compared with the plan, without completing the step. |
 | `plannedWithin`, `plannedAfter` | Plan the step by an ISO-8601 duration from the process start, or from the completion of `plannedAfter`. |
@@ -382,6 +436,7 @@ configured with the rest of Aktimetrix.
 |---|---|---|
 | `GET` | `/process-instances?tenant=&entityId=[&entityType=]` | The entity's process instances, each with its steps' status, `plannedAt`, `actualAt` and `timeliness`. |
 | `GET` / `POST` | `/reference-data/process-definitions` | List process definitions, or create or replace one (by tenant and code). |
+| `POST` | `/reference-data/process-definitions/{tenant}/{processCode}/migrations` | Migrate the process's running instances to its current revision; answers which were `migrated`, how many were `upToDate`, and which `failed` (they keep their revision). `404` when the tenant has no such process. |
 | `GET` / `POST` | `/reference-data/step-definitions` | List step definitions, or create or replace one (by tenant and code). |
 | `GET` / `POST` | `/reference-data/measurement-type-definitions` | List or create measurement types. |
 
@@ -393,6 +448,30 @@ curl -X POST http://localhost:8080/reference-data/step-definitions \
   -d '{"tenant":"AA","stepCode":"CONFIRM","status":"CONFIRMED","startEventCodes":["ORDER_CONFIRMED_EVENT"],
        "measurements":[{"measurementCode":"TIME","type":"P"}]}'
 ```
+
+Running instances keep the revision they started with. To apply a revision to them, such as a corrected plan,
+migrate them, from the API or with `ProcessMigrationService.migrate(tenant, processCode)`: steps the revision adds are
+created and planned, steps it removes are skipped while open, and steps still awaited are planned again from the new
+durations and tolerances; what already happened is kept.
+
+```bash
+curl -X POST http://localhost:8080/reference-data/process-definitions/AA/ORDER_DELIVERY/migrations
+# {"processCode":"ORDER_DELIVERY","revision":4,"migrated":["66b2…"],"upToDate":12,"failed":[]}
+```
+
+**Security.** When the application uses Spring Security, every endpoint requires a role: a reader may query, a
+writer may also create and change definitions and migrate instances. A user without the role is answered `403`.
+How users sign in, with a password, a token or a certificate, is the application's own security configuration, which
+keeps securing its other endpoints. The roles are granted authorities, named with or without the `ROLE_` prefix, so a
+token's scope works too.
+
+| Property | Default | Purpose |
+|---|---|---|
+| `aktimetrix.rest.security.enabled` | `true` | Require the roles; `false` lets in any user the application authenticates. |
+| `aktimetrix.rest.security.reader-role` | `AKTIMETRIX_READER` | Role, or authority, that may query. |
+| `aktimetrix.rest.security.writer-role` | `AKTIMETRIX_WRITER` | Role, or authority, that may also change definitions and migrate instances. |
+
+Without Spring Security, the API is open to whoever can reach it: keep it on an internal network.
 
 A posted definition is checked as strictly as a definition file. When it is not valid, nothing is saved and the answer
 is `400 Bad Request` listing every problem, such as

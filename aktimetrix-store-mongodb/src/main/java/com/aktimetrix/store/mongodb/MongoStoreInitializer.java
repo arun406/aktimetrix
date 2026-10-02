@@ -21,6 +21,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import static com.aktimetrix.store.mongodb.MongoCollections.ALARMS;
 import static com.aktimetrix.store.mongodb.MongoCollections.MEASUREMENT_INSTANCES;
 import static com.aktimetrix.store.mongodb.MongoCollections.OUTBOX;
+import static com.aktimetrix.store.mongodb.MongoCollections.PROCESSED_EVENTS;
 import static com.aktimetrix.store.mongodb.MongoCollections.PROCESS_DEFINITIONS;
 import static com.aktimetrix.store.mongodb.MongoCollections.PROCESS_INSTANCES;
 import static com.aktimetrix.store.mongodb.MongoCollections.STEP_DEFINITIONS;
@@ -36,8 +37,8 @@ import static com.aktimetrix.store.mongodb.MongoCollections.STEP_INSTANCES;
  *     Disable with {@code aktimetrix.storage.create-indexes=false} to manage them yourself.</li>
  * </ul>
  * <p>
- * The process instance index is unique: at most one instance per tenant, process and entity, even when two events
- * start the same process at the same time.
+ * The process instance index is unique: at most one instance per tenant, process, entity and run, even when two
+ * events start the same process at the same time. It replaces the earlier index of one instance per entity.
  */
 public class MongoStoreInitializer implements InitializingBean {
     private static final Logger logger = LoggerFactory.getLogger(MongoStoreInitializer.class);
@@ -90,14 +91,19 @@ public class MongoStoreInitializer implements InitializingBean {
     }
 
     public void createIndexes() {
-        ensure(PROCESS_INSTANCES, index("aktimetrix_process_entity", "tenant", "processCode", "entityType", "entityId").unique());
+        // one instance per run of a process for an entity; replaces the index of one instance per entity
+        dropIndex(PROCESS_INSTANCES, "aktimetrix_process_entity");
+        ensure(PROCESS_INSTANCES, index("aktimetrix_process_entity_run", "tenant", "processCode", "entityType",
+                "entityId", "run").unique());
         ensure(PROCESS_INSTANCES, index("aktimetrix_entity", "tenant", "entityId"));
         ensure(PROCESS_INSTANCES, index("aktimetrix_process_deadlines", "lateAfter", "complete"));
+        ensure(PROCESS_INSTANCES, index("aktimetrix_process_running", "tenant", "processCode", "complete"));
         ensure(STEP_INSTANCES, index("aktimetrix_process_steps", "tenant", "processInstanceId"));
         ensure(STEP_INSTANCES, index("aktimetrix_deadlines", "lateAfter", "status"));
         ensure(MEASUREMENT_INSTANCES, index("aktimetrix_process_measurements", "tenant", "processInstanceId"));
         ensure(OUTBOX, index("aktimetrix_pending", "sentAt", "createdAt"));
         ensure(ALARMS, index("aktimetrix_due", "dueAt"));
+        ensure(PROCESSED_EVENTS, index("aktimetrix_processed_at", "processedAt"));
         ensure(PROCESS_DEFINITIONS, index("aktimetrix_process_code", "tenant", "processCode").unique());
         ensure(PROCESS_DEFINITIONS, index("aktimetrix_start_events", "tenant", "startEventCodes"));
         ensure(STEP_DEFINITIONS, index("aktimetrix_step_code", "tenant", "stepCode").unique());
@@ -109,6 +115,15 @@ public class MongoStoreInitializer implements InitializingBean {
             index.on(key, Direction.ASC);
         }
         return index;
+    }
+
+    private void dropIndex(String collection, String name) {
+        final boolean exists = mongoTemplate.indexOps(collection).getIndexInfo().stream()
+                .anyMatch(info -> name.equals(info.getName()));
+        if (exists) {
+            mongoTemplate.indexOps(collection).dropIndex(name);
+            logger.info("Dropped index {} on {}", name, collection);
+        }
     }
 
     private void ensure(String collection, Index index) {

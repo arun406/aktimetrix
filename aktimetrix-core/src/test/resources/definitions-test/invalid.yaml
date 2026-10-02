@@ -9,5 +9,6 @@ processes:
       - stepCode: DELIVER
         startEventCodes: [DELIVERED]
         plannedAfter: SORT
+        alternative: HANDOVER
         measurements:
           - { measurementCode: WEIGHT, type: P, value: "2", tolerance: ten percent, worseWhen: BIGGER }

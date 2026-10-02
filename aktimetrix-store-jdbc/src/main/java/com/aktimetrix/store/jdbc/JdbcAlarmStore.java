@@ -20,7 +20,7 @@ final class JdbcAlarmStore implements AlarmStore {
     private final JdbcTemplate jdbc;
     private final RowMapper<Alarm> rows = (rs, n) -> new Alarm(rs.getString("id"), rs.getString("tenant"),
             rs.getString("kind"), rs.getString("target_id"), rs.getString("process_instance_id"),
-            rs.getObject("due_at", LocalDateTime.class), instant(rs.getObject("locked_until", Long.class)),
+            JdbcTimes.instant(rs.getObject("due_at", LocalDateTime.class)), instant(rs.getObject("locked_until", Long.class)),
             rs.getInt("attempts"));
 
     JdbcAlarmStore(JdbcTemplate jdbc) {
@@ -39,7 +39,7 @@ final class JdbcAlarmStore implements AlarmStore {
         try {
             jdbc.update("INSERT INTO aktimetrix_alarm (id, tenant, kind, target_id, process_instance_id, due_at, "
                             + "locked_until, attempts) VALUES (?, ?, ?, ?, ?, ?, NULL, ?)", alarm.getId(), alarm.getTenant(),
-                    alarm.getKind(), alarm.getTargetId(), alarm.getProcessInstanceId(), alarm.getDueAt(), alarm.getAttempts());
+                    alarm.getKind(), alarm.getTargetId(), alarm.getProcessInstanceId(), JdbcTimes.utc(alarm.getDueAt()), alarm.getAttempts());
         } catch (DuplicateKeyException e) {
             // set at the same moment by another unit of work: replace it
             update(alarm);
@@ -48,7 +48,7 @@ final class JdbcAlarmStore implements AlarmStore {
 
     private int update(Alarm alarm) {
         return jdbc.update("UPDATE aktimetrix_alarm SET due_at = ?, locked_until = NULL WHERE id = ?",
-                alarm.getDueAt(), alarm.getId());
+                JdbcTimes.utc(alarm.getDueAt()), alarm.getId());
     }
 
     @Override
@@ -57,9 +57,9 @@ final class JdbcAlarmStore implements AlarmStore {
     }
 
     @Override
-    public List<Alarm> claimDue(LocalDateTime now, Instant claimedAt, Instant leaseUntil, int limit) {
+    public List<Alarm> claimDue(Instant now, Instant claimedAt, Instant leaseUntil, int limit) {
         final List<String> candidates = jdbc.queryForList("SELECT id FROM aktimetrix_alarm WHERE due_at < ? "
-                        + "AND (locked_until IS NULL OR locked_until < ?) ORDER BY due_at LIMIT ?", String.class, now,
+                        + "AND (locked_until IS NULL OR locked_until < ?) ORDER BY due_at LIMIT ?", String.class, JdbcTimes.utc(now),
                 claimedAt.toEpochMilli(), limit);
         final List<Alarm> claimed = new ArrayList<>();
         for (String id : candidates) {

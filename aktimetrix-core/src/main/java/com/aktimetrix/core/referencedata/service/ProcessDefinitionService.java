@@ -69,6 +69,17 @@ public class ProcessDefinitionService {
     }
 
     /**
+     * The current revision of the process definition, with its steps resolved; {@code null} if there is none.
+     */
+    public ProcessDefinition currentDefinition(String tenant, String processCode) {
+        final ProcessDefinition current = findByCode(tenant, processCode);
+        if (current != null) {
+            current.setSteps(resolveSteps(tenant, current.getSteps()));
+        }
+        return current;
+    }
+
+    /**
      * The definition the process instance follows: the one it started with, or, for an instance started by a version
      * that did not keep it, the current one, with its steps resolved. {@code null} if there is none.
      */
@@ -76,11 +87,7 @@ public class ProcessDefinitionService {
         if (instance.getDefinition() != null) {
             return instance.getDefinition();
         }
-        final ProcessDefinition current = findByCode(instance.getTenant(), instance.getProcessCode());
-        if (current != null) {
-            current.setSteps(resolveSteps(instance.getTenant(), current.getSteps()));
-        }
-        return current;
+        return currentDefinition(instance.getTenant(), instance.getProcessCode());
     }
 
     /**

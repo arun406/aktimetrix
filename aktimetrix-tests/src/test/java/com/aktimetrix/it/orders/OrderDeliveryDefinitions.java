@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Configuration;
 
 import static com.aktimetrix.core.definitions.Planning.metadataTime;
 
+import java.time.Duration;
+
 /**
  * The order delivery process of the white paper (section 1.1), defined with the Java DSL, with its planning rules:
  * a priority customer's order is delivered within 4 hours of being created and completes within 1 day; others within
@@ -21,7 +23,7 @@ public class OrderDeliveryDefinitions {
                         .entityType("order")
                         .startsOn("ORDER_CREATED")
                         .cancelledOn("ORDER_CANCELLED")
-                        .planTime(o -> metadataTime(o, "createdAt").plusDays(priority(o.getMetadata()) ? 1 : 3))
+                        .planTime(o -> metadataTime(o, "createdAt").plus(Duration.ofDays(priority(o.getMetadata()) ? 1 : 3)))
                         .measure("COST", "deliveryCost", cost -> cost.value(8).unit("EUR").tolerance("10%")
                                 .worseWhenHigher())
                         .metric("FUEL_PER_KM", "FUEL / DISTANCE", m -> m.unit("L/KM").tolerance("10%")
@@ -39,8 +41,8 @@ public class OrderDeliveryDefinitions {
                                         .tolerance("25%").worseWhenHigher()))
                         .step("DELIVERED", step -> step.on("DELIVERED")
                                 .planTime(s -> priority(s.getMetadata())
-                                        ? metadataTime(s, "createdAt").plusHours(4)
-                                        : metadataTime(s, "createdAt").plusDays(2))
+                                        ? metadataTime(s, "createdAt").plus(Duration.ofHours(4))
+                                        : metadataTime(s, "createdAt").plus(Duration.ofDays(2)))
                                 .measure("TEMPERATURE", "parcelTemperatureC", c -> c.value(30).unit("C")
                                         .tolerance("5").worseWhenHigher()))
                         .step("RATED", step -> step.on("RATED").optional()

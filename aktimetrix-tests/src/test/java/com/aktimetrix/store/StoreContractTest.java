@@ -16,6 +16,7 @@ import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
+import com.aktimetrix.core.store.ProcessedEventStore;
 import com.aktimetrix.core.store.ProcessInstanceStore;
 import com.aktimetrix.core.store.StepInstanceStore;
 import org.junit.jupiter.api.AfterAll;
@@ -26,8 +27,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -47,7 +49,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class StoreContractTest {
 
-    private static final LocalDateTime NOW = LocalDateTime.of(2024, 3, 1, 12, 0);
+    private static final Instant NOW = LocalDateTime.of(2024, 3, 1, 12, 0).toInstant(ZoneOffset.UTC);
 
     private ConfigurableApplicationContext context;
     protected ProcessInstanceStore processes;
@@ -56,6 +58,7 @@ public abstract class StoreContractTest {
     protected DefinitionStore definitions;
     protected OutboxStore outbox;
     protected AlarmStore alarms;
+    protected ProcessedEventStore processedEvents;
     protected AktimetrixTransactions transactions;
 
     /**
@@ -72,6 +75,7 @@ public abstract class StoreContractTest {
         definitions = context.getBean(DefinitionStore.class);
         outbox = context.getBean(OutboxStore.class);
         alarms = context.getBean(AlarmStore.class);
+        processedEvents = context.getBean(ProcessedEventStore.class);
         transactions = context.getBean(AktimetrixTransactions.class);
     }
 
@@ -103,7 +107,7 @@ public abstract class StoreContractTest {
         definition.setSteps(List.of(travel));
         final ProcessInstance instance = new ProcessInstance(definition);
         instance.setEntityId(entityId);
-        instance.setStartedAt(NOW.minusHours(3));
+        instance.setStartedAt(NOW.minus(Duration.ofHours(3)));
         instance.setMetadata(Map.of("priority", true, "orderId", entityId));
         return instance;
     }
@@ -127,7 +131,7 @@ public abstract class StoreContractTest {
         assertThat(processes.findById(tenant, saved.getId())).get().satisfies(found -> {
             assertThat(found.getEntityId()).isEqualTo("1234");
             assertThat(found.getMetadata()).containsEntry("orderId", "1234").containsEntry("priority", true);
-            assertThat(found.getStartedAt()).isEqualTo(NOW.minusHours(3));
+            assertThat(found.getStartedAt()).isEqualTo(NOW.minus(Duration.ofHours(3)));
         });
         assertThat(processes.findById(unique(), saved.getId())).as("another tenant's").isEmpty();
         assertThat(processes.findByEntity(tenant, "ORDER_DELIVERY", "com.ecom.order", "1234")).isPresent();
@@ -167,11 +171,41 @@ public abstract class StoreContractTest {
     }
 
     @Test
-    void thereIsAtMostOneInstanceOfAProcessPerEntity() {
+    void thereIsAtMostOneInstanceOfAProcessPerEntityAndRun() {
         final String tenant = unique();
-        processes.save(process(tenant, "1234"));
+        final ProcessInstance first = processes.save(process(tenant, "1234"));
 
         assertThatThrownBy(() -> processes.save(process(tenant, "1234"))).isInstanceOf(DuplicateKeyException.class);
+
+        final ProcessInstance second = process(tenant, "1234");
+        second.setRun(2);
+        processes.save(second);
+        assertThat(processes.findByEntity(tenant, "ORDER_DELIVERY", "com.ecom.order", "1234")).get()
+                .as("the latest run").satisfies(found -> {
+                    assertThat(found.getId()).isEqualTo(second.getId());
+                    assertThat(found.getRun()).isEqualTo(2);
+                });
+        assertThat(processes.findById(tenant, first.getId())).get().extracting(ProcessInstance::getRun).isEqualTo(1);
+        assertThat(processes.findByEntityId(tenant, "1234")).hasSize(2);
+    }
+
+    @Test
+    void anEventIsProcessedOncePerTenantAndForgottenAfterItsRetention() {
+        final String tenant = unique();
+        final Instant at = Instant.parse("2024-01-10T09:00:00Z");
+        assertThat(processedEvents.isProcessed(tenant, "e1")).isFalse();
+
+        processedEvents.markProcessed(tenant, "e1", at);
+
+        assertThat(processedEvents.isProcessed(tenant, "e1")).isTrue();
+        assertThat(processedEvents.isProcessed(unique(), "e1")).as("another tenant's").isFalse();
+        assertThatThrownBy(() -> processedEvents.markProcessed(tenant, "e1", at))
+                .isInstanceOf(DuplicateKeyException.class);
+        processedEvents.markProcessed(tenant, "e2", at.plusSeconds(3600));
+
+        assertThat(processedEvents.deleteProcessedBefore(at.plusSeconds(60))).isGreaterThanOrEqualTo(1);
+        assertThat(processedEvents.isProcessed(tenant, "e1")).isFalse();
+        assertThat(processedEvents.isProcessed(tenant, "e2")).isTrue();
     }
 
     @Test
@@ -188,20 +222,37 @@ public abstract class StoreContractTest {
     }
 
     @Test
+    void runningInstancesOfAProcessAreFoundForEveryEntity() {
+        final String tenant = unique();
+        final ProcessInstance first = processes.save(process(tenant, "1"));
+        final ProcessInstance second = processes.save(process(tenant, "2"));
+        final ProcessInstance done = process(tenant, "3");
+        done.setComplete(true);
+        processes.save(done);
+        final ProcessInstance other = process(tenant, "4");
+        other.setProcessCode("RETURNS");
+        processes.save(other);
+        processes.save(process(unique(), "1"));
+
+        assertThat(processes.findRunning(tenant, "ORDER_DELIVERY")).extracting(ProcessInstance::getId)
+                .containsExactlyInAnyOrder(first.getId(), second.getId());
+    }
+
+    @Test
     void overdueProcessesAreThoseRunningPastTheirDeadline() {
         final String tenant = unique();
         final ProcessInstance late = process(tenant, "late");
-        late.setLateAfter(NOW.minusMinutes(1));
+        late.setLateAfter(NOW.minus(Duration.ofMinutes(1)));
         processes.save(late);
         final ProcessInstance notYet = process(tenant, "not-yet");
-        notYet.setLateAfter(NOW.plusMinutes(1));
+        notYet.setLateAfter(NOW.plus(Duration.ofMinutes(1)));
         processes.save(notYet);
         final ProcessInstance done = process(tenant, "done");
-        done.setLateAfter(NOW.minusMinutes(1));
+        done.setLateAfter(NOW.minus(Duration.ofMinutes(1)));
         done.setComplete(true);
         processes.save(done);
         final ProcessInstance marked = process(tenant, "marked");
-        marked.setLateAfter(NOW.minusMinutes(1));
+        marked.setLateAfter(NOW.minus(Duration.ofMinutes(1)));
         marked.setTimeliness(Timeliness.OVERDUE);
         processes.save(marked);
 
@@ -234,18 +285,18 @@ public abstract class StoreContractTest {
         final String tenant = unique();
         final String processId = unique();
         final StepInstance late = step(tenant, processId, "LATE", 0);
-        late.setLateAfter(NOW.minusMinutes(1));
+        late.setLateAfter(NOW.minus(Duration.ofMinutes(1)));
         final StepInstance completed = step(tenant, processId, "COMPLETED", 1);
-        completed.setLateAfter(NOW.minusMinutes(1));
+        completed.setLateAfter(NOW.minus(Duration.ofMinutes(1)));
         completed.setStatus(Constants.STATUS_COMPLETED);
         final StepInstance skipped = step(tenant, processId, "SKIPPED", 2);
-        skipped.setLateAfter(NOW.minusMinutes(1));
+        skipped.setLateAfter(NOW.minus(Duration.ofMinutes(1)));
         skipped.setStatus(Constants.STATUS_SKIPPED);
         final StepInstance marked = step(tenant, processId, "MARKED", 3);
-        marked.setLateAfter(NOW.minusMinutes(1));
+        marked.setLateAfter(NOW.minus(Duration.ofMinutes(1)));
         marked.setTimeliness(Timeliness.OVERDUE);
         final StepInstance notYet = step(tenant, processId, "NOT_YET", 4);
-        notYet.setLateAfter(NOW.plusMinutes(1));
+        notYet.setLateAfter(NOW.plus(Duration.ofMinutes(1)));
         steps.saveAll(new ArrayList<>(List.of(late, completed, skipped, marked, notYet)));
 
         assertThat(steps.findOverdue(NOW)).filteredOn(s -> tenant.equals(s.getTenant()))
@@ -260,13 +311,13 @@ public abstract class StoreContractTest {
         final String processId = unique();
         final String stepId = unique();
         final MeasurementInstance planned = new MeasurementInstance(tenant, "DISTANCE", "5", "KM", processId, stepId,
-                "TRAVEL", Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.of(NOW, ZoneOffset.UTC));
+                "TRAVEL", Constants.PLAN_MEASUREMENT_TYPE, null, NOW.atZone(ZoneOffset.UTC));
         final MeasurementInstance actual = new MeasurementInstance(tenant, "DISTANCE", "12", "KM", processId, stepId,
-                "TRAVEL", Constants.ACTUAL_MEASUREMENT_TYPE, null, ZonedDateTime.of(NOW, ZoneOffset.UTC));
+                "TRAVEL", Constants.ACTUAL_MEASUREMENT_TYPE, null, NOW.atZone(ZoneOffset.UTC));
         actual.setPlannedValue("5");
         actual.setDeviation("7");
         final MeasurementInstance cost = new MeasurementInstance(tenant, "COST", "8", "EUR", processId, null, null,
-                Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.of(NOW, ZoneOffset.UTC));
+                Constants.PLAN_MEASUREMENT_TYPE, null, NOW.atZone(ZoneOffset.UTC));
         measurements.saveAll(new ArrayList<>(List.of(planned, actual, cost)));
 
         assertThat(planned.getId()).isNotNull();
@@ -386,14 +437,14 @@ public abstract class StoreContractTest {
 
     @Test
     void dueAlarmsAreClaimedEarliestFirstAndOnceWhileTheirLeaseHolds() {
-        final LocalDateTime base = LocalDateTime.of(1990, 1, 1, 0, 0);
-        final LocalDateTime now = base.plusMinutes(5);
+        final Instant base = LocalDateTime.of(1990, 1, 1, 0, 0).toInstant(ZoneOffset.UTC);
+        final Instant now = base.plus(Duration.ofMinutes(5));
         final Instant at = Instant.parse("2024-03-01T12:00:00Z");
         alarms.claimDue(now, at, at.plusSeconds(3600), 10_000); // leases any alarm left by another test
         final String tenant = unique();
-        final Alarm later = Alarm.of(Alarm.STEP, tenant, unique(), "p1", base.plusMinutes(2));
-        final Alarm earlier = Alarm.of(Alarm.PROCESS, tenant, unique(), "p2", base.plusMinutes(1));
-        final Alarm notYet = Alarm.of(Alarm.STEP, tenant, unique(), "p1", base.plusMinutes(10));
+        final Alarm later = Alarm.of(Alarm.STEP, tenant, unique(), "p1", base.plus(Duration.ofMinutes(2)));
+        final Alarm earlier = Alarm.of(Alarm.PROCESS, tenant, unique(), "p2", base.plus(Duration.ofMinutes(1)));
+        final Alarm notYet = Alarm.of(Alarm.STEP, tenant, unique(), "p1", base.plus(Duration.ofMinutes(10)));
         final long pending = alarms.countPending();
         alarms.schedule(later);
         alarms.schedule(earlier);
@@ -412,17 +463,17 @@ public abstract class StoreContractTest {
                 .as("claimed again once the lease expired").containsExactly(earlier.getId(), later.getId());
 
         // moving an alarm releases its claim; cancelling one removes it
-        alarms.schedule(Alarm.of(Alarm.STEP, tenant, later.getTargetId(), "p1", base.plusMinutes(3)));
-        alarms.schedule(Alarm.of(Alarm.STEP, tenant, later.getTargetId(), "p1", base.plusMinutes(4)));
+        alarms.schedule(Alarm.of(Alarm.STEP, tenant, later.getTargetId(), "p1", base.plus(Duration.ofMinutes(3))));
+        alarms.schedule(Alarm.of(Alarm.STEP, tenant, later.getTargetId(), "p1", base.plus(Duration.ofMinutes(4))));
         alarms.cancel(earlier.getId());
         alarms.cancel(Alarm.idOf(Alarm.STEP, unique()));
         assertThat(alarms.countPending()).isEqualTo(pending + 2);
         final List<Alarm> moved = alarms.claimDue(now, at.plusSeconds(32), at.plusSeconds(62), 10);
         assertThat(ids(moved)).containsExactly(later.getId());
-        assertThat(moved.get(0).getDueAt()).isEqualTo(base.plusMinutes(4));
+        assertThat(moved.get(0).getDueAt()).isEqualTo(base.plus(Duration.ofMinutes(4)));
 
         alarms.cancel(later.getId());
-        assertThat(ids(alarms.claimDue(base.plusMinutes(11), at.plusSeconds(63), at.plusSeconds(93), 10)))
+        assertThat(ids(alarms.claimDue(base.plus(Duration.ofMinutes(11)), at.plusSeconds(63), at.plusSeconds(93), 10)))
                 .as("due once its time has passed").containsExactly(notYet.getId());
         alarms.cancel(notYet.getId());
         assertThat(alarms.countPending()).isEqualTo(pending);

@@ -4,7 +4,7 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -73,6 +73,24 @@ public final class StepBuilder extends MeasurementsBuilder<StepBuilder> {
     }
 
     /**
+     * The step may happen again after it completed: each further occurrence is recorded as an attempt, while the
+     * step stays judged on its first.
+     */
+    public StepBuilder repeatable() {
+        definition.setRepeatable(true);
+        return this;
+    }
+
+    /**
+     * The step is one of the alternatives named {@code choice}: the first of them to start or complete is the branch
+     * taken, and the others are skipped.
+     */
+    public StepBuilder alternative(String choice) {
+        definition.setAlternative(choice);
+        return this;
+    }
+
+    /**
      * Plans the step after another step completes; without it, after the process starts. See {@link #within}.
      */
     public StepBuilder after(String stepCode) {
@@ -107,10 +125,10 @@ public final class StepBuilder extends MeasurementsBuilder<StepBuilder> {
     }
 
     /**
-     * Plans the step's time by a rule, e.g. {@code planTime(step -> metadataTime(step, "createdAt").plusHours(4))}.
+     * Plans the step's time by a rule, e.g. {@code planTime(step -> metadataTime(step, "createdAt").plus(Duration.ofHours(4)))}.
      * It replaces a plan by duration.
      */
-    public StepBuilder planTime(Function<StepInstance, LocalDateTime> rule) {
+    public StepBuilder planTime(Function<StepInstance, Instant> rule) {
         return plan("TIME", "TIMESTAMP", rule::apply);
     }
 

@@ -2,7 +2,7 @@ package com.aktimetrix.core.store;
 
 import com.aktimetrix.core.model.StepInstance;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,5 +29,5 @@ public interface StepInstanceStore {
      * Steps of every tenant that are not completed, cancelled or skipped, whose {@code lateAfter} is before
      * {@code now}, and whose timeliness is not {@code OVERDUE} yet.
      */
-    List<StepInstance> findOverdue(LocalDateTime now);
+    List<StepInstance> findOverdue(Instant now);
 }

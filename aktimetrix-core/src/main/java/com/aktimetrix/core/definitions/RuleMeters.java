@@ -7,6 +7,7 @@ import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 /**
@@ -25,7 +26,7 @@ public final class RuleMeters {
                 return value == null ? null : new MeasurementInstance(tenant, rule.getMeasurementCode(),
                         String.valueOf(value), rule.getUnit(), step.getProcessInstanceId(), step.getId(),
                         step.getStepCode(), Constants.PLAN_MEASUREMENT_TYPE, step.getLocationCode(),
-                        ZonedDateTime.now());
+                        ZonedDateTime.now(ZoneOffset.UTC));
             }
 
             @Override
@@ -42,7 +43,7 @@ public final class RuleMeters {
                 final Object value = rule.getProcessRule().apply(process);
                 return value == null ? null : new MeasurementInstance(tenant, rule.getMeasurementCode(),
                         String.valueOf(value), rule.getUnit(), process.getId(), null, null,
-                        Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.now());
+                        Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.now(ZoneOffset.UTC));
             }
 
             @Override

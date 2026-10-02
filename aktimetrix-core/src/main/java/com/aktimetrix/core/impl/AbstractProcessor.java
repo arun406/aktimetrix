@@ -11,6 +11,7 @@ import com.aktimetrix.core.api.MeasurementType;
 import com.aktimetrix.core.meter.api.ProcessMeter;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
+import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
@@ -21,13 +22,15 @@ import com.aktimetrix.core.service.MeasurementInstanceService;
 import com.aktimetrix.core.service.ProcessInstanceService;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.service.StepInstanceService;
+import com.aktimetrix.core.util.Times;
 import com.aktimetrix.core.service.StepPlanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -133,7 +136,7 @@ public abstract class AbstractProcessor implements Processor {
             } else if (measurement.getValue() != null) {
                 measurements.add(new MeasurementInstance(context.getTenant(), measurement.getMeasurementCode(),
                         measurement.getValue(), measurement.getUnit(), processInstance.getId(), null, null,
-                        Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.now()));
+                        Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.now(ZoneOffset.UTC)));
             } else {
                 logger.warn("No process-level meter, and no planned value, for {} of the {} process",
                         measurement.getMeasurementCode(), definition.getProcessCode());
@@ -159,7 +162,7 @@ public abstract class AbstractProcessor implements Processor {
         for (MeasurementInstance measurement : measurements) {
             if (Constants.MEASUREMENT_CODE_TIME.equals(measurement.getCode()) && measurement.getValue() != null) {
                 try {
-                    processInstance.setPlannedAt(LocalDateTime.parse(measurement.getValue()));
+                    processInstance.setPlannedAt(Times.parse(measurement.getValue()));
                 } catch (DateTimeParseException e) {
                     logger.warn("Planned TIME of the {} process is not an ISO date-time: {}",
                             definition.getProcessCode(), measurement.getValue());
@@ -240,22 +243,43 @@ public abstract class AbstractProcessor implements Processor {
                 .save(tenant, stepDefinitions, metadata, processInstanceId);
     }
 
+    /**
+     * The run this start event belongs to: the entity's latest run, when the event replays its start or the run is
+     * still open; otherwise a new run, the first one or, for a restartable process, the next one.
+     */
     private ProcessInstance getProcessInstance(Context context) {
         ProcessDefinition definition = (ProcessDefinition) context.getProperty(Constants.PROCESS_DEFINITION);
         String entityId = (String) context.getProperty(Constants.ENTITY_ID);
-        // check process instance already exists for this entity type, entity id, process code combination
-        ProcessInstance processInstance = processInstanceService.getProcessInstance(context.getTenant(),
+        final Event<?, ?> event = (Event<?, ?>) context.getProperty(Constants.EVENT);
+        final String eventId = event == null ? null : event.getEventId();
+        final ProcessInstance latest = processInstanceService.getProcessInstance(context.getTenant(),
                 definition.getProcessCode(), definition.getEntityType(), entityId);
-        if (processInstance == null) {
-            processInstance = new ProcessInstance(definition);
-            processInstance.setMetadata(getProcessMetadata(context));
-            processInstance.setEntityId(entityId);
-            processInstance.setStartedAt((LocalDateTime) context.getProperty(Constants.OCCURRED_AT));
-            if (definition.plannedWithinDuration() != null && processInstance.getStartedAt() != null) {
-                processInstance.setPlannedAt(processInstance.getStartedAt().plus(definition.plannedWithinDuration()));
-                processInstance.setLateAfter(processInstance.getPlannedAt().plus(definition.toleranceDuration()));
-            }
+        if (latest != null && !startsNewRun(context.getTenant(), definition, entityId, latest, eventId)) {
+            return latest;
+        }
+        final ProcessInstance processInstance = new ProcessInstance(definition);
+        processInstance.setRun(latest == null ? 1 : latest.getRun() + 1);
+        processInstance.setStartEventId(eventId);
+        processInstance.setMetadata(getProcessMetadata(context));
+        processInstance.setEntityId(entityId);
+        processInstance.setStartedAt((Instant) context.getProperty(Constants.OCCURRED_AT));
+        if (definition.plannedWithinDuration() != null && processInstance.getStartedAt() != null) {
+            processInstance.setPlannedAt(processInstance.getStartedAt().plus(definition.plannedWithinDuration()));
+            processInstance.setLateAfter(processInstance.getPlannedAt().plus(definition.toleranceDuration()));
         }
         return processInstance;
+    }
+
+    /**
+     * A restartable process starts a new run when its latest run has ended and the start event is not a replay of
+     * one that already started a run.
+     */
+    private boolean startsNewRun(String tenant, ProcessDefinition definition, String entityId, ProcessInstance latest,
+                                 String eventId) {
+        if (!definition.isRestartable() || !latest.isComplete() || eventId == null) {
+            return false;
+        }
+        return processInstanceService.getRuns(tenant, definition.getProcessCode(), definition.getEntityType(), entityId)
+                .stream().noneMatch(run -> eventId.equals(run.getStartEventId()));
     }
 }

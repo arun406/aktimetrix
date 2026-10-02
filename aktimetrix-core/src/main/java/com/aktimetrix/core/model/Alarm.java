@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 /**
  * An alarm at the deadline of a step or process: if the step or process is still open when it fires, it is marked
@@ -33,9 +32,9 @@ public class Alarm {
     private String targetId;
     private String processInstanceId;
     /**
-     * When the alarm is due: the target's deadline ({@code lateAfter}), in {@code aktimetrix.time-zone}.
+     * When the alarm is due: the target's deadline ({@code lateAfter}), a UTC instant.
      */
-    private LocalDateTime dueAt;
+    private Instant dueAt;
     /**
      * Until when an instance has claimed the alarm; {@code null} while unclaimed.
      */
@@ -46,7 +45,7 @@ public class Alarm {
         return kind + ":" + targetId;
     }
 
-    public static Alarm of(String kind, String tenant, String targetId, String processInstanceId, LocalDateTime dueAt) {
+    public static Alarm of(String kind, String tenant, String targetId, String processInstanceId, Instant dueAt) {
         return new Alarm(idOf(kind, targetId), tenant, kind, targetId, processInstanceId, dueAt, null, 0);
     }
 }

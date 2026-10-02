@@ -112,7 +112,7 @@ public class Constants {
      */
     public final static String ENTITY = "entity";
     /**
-     * Context property: when the event being processed happened in the business, a {@code LocalDateTime}.
+     * Context property: when the event being processed happened in the business, a {@code Instant}.
      */
     public final static String OCCURRED_AT = "occurredAt";
 }

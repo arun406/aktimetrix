@@ -11,9 +11,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.OptimisticLockingFailureException;
 
+import java.time.LocalDateTime;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 class OverdueProcessMonitorTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC);
-    private static final LocalDateTime NOW = LocalDateTime.of(2022, 5, 23, 12, 0);
+    private static final Instant NOW = LocalDateTime.of(2022, 5, 23, 12, 0).toInstant(ZoneOffset.UTC);
 
     @Mock
     private ProcessInstanceStore processInstanceStore;

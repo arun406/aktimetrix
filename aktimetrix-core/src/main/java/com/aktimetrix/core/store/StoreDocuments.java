@@ -1,12 +1,20 @@
 package com.aktimetrix.core.store;
 
 import com.aktimetrix.core.model.ProcessInstance;
+import com.aktimetrix.core.util.Times;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.cfg.DateTimeFeature;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.node.ObjectNode;
+
+import java.time.Instant;
 
 /**
  * Converts model objects to and from JSON for stores that keep them as documents, such as the JDBC and in-memory
@@ -23,6 +31,7 @@ public final class StoreDocuments {
             .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
             .disable(DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .addModule(new SimpleModule().addDeserializer(Instant.class, new LenientInstant()))
             .build();
 
     private StoreDocuments() {
@@ -46,6 +55,19 @@ public final class StoreDocuments {
             return MAPPER.readValue(json, type);
         } catch (JacksonException e) {
             throw new IllegalStateException("Cannot read a stored " + type.getSimpleName(), e);
+        }
+    }
+
+    /**
+     * Reads an instant, and a date-time without an offset, as stored by earlier versions, as UTC.
+     */
+    private static final class LenientInstant extends ValueDeserializer<Instant> {
+        @Override
+        public Instant deserialize(JsonParser parser, DeserializationContext context) {
+            if (parser.currentToken() == JsonToken.VALUE_NUMBER_INT) {
+                return Instant.ofEpochMilli(parser.getLongValue());
+            }
+            return Times.parse(parser.getString());
         }
     }
 

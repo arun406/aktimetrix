@@ -2,7 +2,7 @@ package com.aktimetrix.core.service;
 
 import com.aktimetrix.core.transferobjects.EventContext.Cause;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.function.Supplier;
 
 /**
@@ -21,7 +21,7 @@ public final class ProcessingContext {
     /**
      * Runs the work with the given cause and business time as the current ones.
      */
-    public static void run(Cause cause, LocalDateTime occurredAt, Runnable work) {
+    public static void run(Cause cause, Instant occurredAt, Runnable work) {
         final Current previous = CURRENT.get();
         CURRENT.set(new Current(cause, occurredAt));
         try {
@@ -43,16 +43,16 @@ public final class ProcessingContext {
     /**
      * The business time of the current unit of work, or {@code fallback} outside of one.
      */
-    public static LocalDateTime occurredAt(Supplier<LocalDateTime> fallback) {
+    public static Instant occurredAt(Supplier<Instant> fallback) {
         final Current current = CURRENT.get();
         return current == null || current.occurredAt == null ? fallback.get() : current.occurredAt;
     }
 
     private static final class Current {
         private final Cause cause;
-        private final LocalDateTime occurredAt;
+        private final Instant occurredAt;
 
-        private Current(Cause cause, LocalDateTime occurredAt) {
+        private Current(Cause cause, Instant occurredAt) {
             this.cause = cause;
             this.occurredAt = occurredAt;
         }

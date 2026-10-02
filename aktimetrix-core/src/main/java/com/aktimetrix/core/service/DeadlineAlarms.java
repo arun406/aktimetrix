@@ -9,7 +9,7 @@ import com.aktimetrix.core.store.AlarmStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,8 +31,7 @@ public class DeadlineAlarms {
      * Sets, moves or cancels the step's alarm, before the step is saved. The step must have an id.
      */
     public void reconcile(StepInstance step) {
-        final LocalDateTime due = !CLOSED_STEP.contains(step.getStatus()) && step.getTimeliness() != Timeliness.OVERDUE
-                ? step.getLateAfter() : null;
+        final Instant due = isAwaited(step) ? step.getLateAfter() : null;
         if (!Objects.equals(due, step.getAlarmAt())) {
             apply(Alarm.STEP, step.getTenant(), step.getId(), step.getProcessInstanceId(), due);
             step.setAlarmAt(due);
@@ -43,7 +42,7 @@ public class DeadlineAlarms {
      * Sets, moves or cancels the process's alarm, before the process is saved. The process must have an id.
      */
     public void reconcile(ProcessInstance process) {
-        final LocalDateTime due = !process.isComplete() && process.getTimeliness() != Timeliness.OVERDUE
+        final Instant due = !process.isComplete() && process.getTimeliness() != Timeliness.OVERDUE
                 ? process.getLateAfter() : null;
         if (!Objects.equals(due, process.getAlarmAt())) {
             apply(Alarm.PROCESS, process.getTenant(), process.getId(), process.getId(), due);
@@ -55,8 +54,16 @@ public class DeadlineAlarms {
      * Whether the instance needs an alarm it does not have yet: then it must be saved again once it has an id.
      */
     public static boolean needsAlarm(StepInstance step) {
-        return step.getLateAfter() != null && step.getAlarmAt() == null && !CLOSED_STEP.contains(step.getStatus())
-                && step.getTimeliness() != Timeliness.OVERDUE;
+        return step.getLateAfter() != null && step.getAlarmAt() == null && isAwaited(step);
+    }
+
+    /**
+     * Whether the step is still awaited against its deadline: open, not overdue yet, and never completed. A repeatable
+     * step open again for a further attempt was already judged on its first.
+     */
+    public static boolean isAwaited(StepInstance step) {
+        return !CLOSED_STEP.contains(step.getStatus()) && step.getTimeliness() != Timeliness.OVERDUE
+                && step.getActualAt() == null;
     }
 
     public static boolean needsAlarm(ProcessInstance process) {
@@ -64,7 +71,7 @@ public class DeadlineAlarms {
                 && process.getTimeliness() != Timeliness.OVERDUE;
     }
 
-    private void apply(String kind, String tenant, String targetId, String processInstanceId, LocalDateTime due) {
+    private void apply(String kind, String tenant, String targetId, String processInstanceId, Instant due) {
         if (due == null) {
             alarms.cancel(Alarm.idOf(kind, targetId));
         } else {

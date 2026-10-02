@@ -12,6 +12,7 @@ public final class MongoCollections {
     public static final String MEASUREMENT_TYPE_DEFINITIONS = "measurementTypeDefinitions";
     public static final String OUTBOX = "outbox";
     public static final String ALARMS = "alarms";
+    public static final String PROCESSED_EVENTS = "processedEvents";
 
     private MongoCollections() {
     }

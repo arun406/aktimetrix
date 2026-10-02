@@ -5,8 +5,10 @@ import com.aktimetrix.core.meter.api.ProcessMeter;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.transferobjects.Event;
+import com.aktimetrix.core.util.Times;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 /**
@@ -22,7 +24,7 @@ public abstract class AbstractProcessMeter implements ProcessMeter {
     public MeasurementInstance measure(String tenant, ProcessInstance process) {
         return new MeasurementInstance(tenant, code(), getMeasurementValue(tenant, process),
                 getMeasurementUnit(tenant, process), process.getId(), null, null, Constants.PLAN_MEASUREMENT_TYPE,
-                null, ZonedDateTime.now());
+                null, ZonedDateTime.now(ZoneOffset.UTC));
     }
 
     @Override
@@ -32,7 +34,7 @@ public abstract class AbstractProcessMeter implements ProcessMeter {
             return null;
         }
         return new MeasurementInstance(tenant, code(), value, getMeasurementUnit(tenant, process), process.getId(),
-                null, null, Constants.ACTUAL_MEASUREMENT_TYPE, null, ZonedDateTime.now());
+                null, null, Constants.ACTUAL_MEASUREMENT_TYPE, null, ZonedDateTime.now(ZoneOffset.UTC));
     }
 
     /**
@@ -54,8 +56,8 @@ public abstract class AbstractProcessMeter implements ProcessMeter {
      *
      * @return the value, or {@code null} when the key is absent
      */
-    protected LocalDateTime metadataTime(ProcessInstance process, String key) {
-        return AbstractMeter.toLocalDateTime(process.getMetadata() == null ? null : process.getMetadata().get(key));
+    protected Instant metadataTime(ProcessInstance process, String key) {
+        return Times.toInstant(process.getMetadata() == null ? null : process.getMetadata().get(key));
     }
 
     public String code() {

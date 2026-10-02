@@ -171,7 +171,10 @@ the user, each with a code and a unit: `TIME` (a timestamp), `DISTANCE` (km), `F
 **Metrics** are computed from the measurements. A process declares its own, as arithmetic over measurement codes,
 such as *fuel per kilometre = FUEL / DISTANCE*: when the process completes, each code stands for the sum of that
 measurement's final values across the process and its steps, and the metric is computed from the plan and from the
-actuals and compared like any measurement. The runtime also reports metrics for the whole population, such as how
+actuals and compared like any measurement. Functions see each value instead of the sum: `max(TEMPERATURE)` is the
+warmest reading of any step, and `avg`, `min`, `count` and `abs` work alike. A measurement recorded after the process
+completed, such as a rating the next day, computes again the metrics that use it; the newer value supersedes the
+earlier one. The runtime also reports metrics for the whole population, such as how
 many actuals were within tolerance and the distribution of deviations ([§8](#8-observability)); anything else can
 be computed by consumers of the published measurement events.
 
@@ -214,8 +217,13 @@ Every inbound event uses one envelope, whatever its source. The fields the model
 | `tenantKey` | Selects the tenant's definitions and instances. |
 | `eventCode` | Determines which processes the event starts and which steps it starts or completes. |
 | `entityType`, `entityId` | Identify the business entity. All events of order `1234` carry `1234`. |
-| `eventTime` | When the event happened in the business; it becomes the actual time of the step. |
+| `eventTime` | When the event happened in the business, with its offset; it becomes the actual time of the step. |
 | `entity` | The domain object, which becomes metadata. |
+
+**Time.** Every time the model keeps or publishes, planned, actual or forecast, is an instant in UTC: event times
+are converted on arrival, deadlines are compared with the current instant, and consumers convert to a local time
+for display. A plan expressed in local time, such as *deliver by 18:00 in Paris*, is converted to UTC when it is
+computed.
 
 The full envelope is specified in the [event format](./getting-started.md#the-event-format). Source systems do not
 need to adopt it: an **event mapper** translates each system's own messages into this envelope as they are consumed
@@ -233,7 +241,8 @@ management follows a few rules.
 | **Validation** | A definition is checked before it is saved, whatever its form: codes and tenant present, every duration and tolerance well formed, steps not repeated, a step planned only after a step of the same process. Files are read strictly, so a misspelt field is an error rather than ignored. Invalid files stop the application at startup with every problem and where it is; an invalid definition sent to the API is refused with its problems. Nothing is saved from a set that has errors. |
 | **Status** | Only a process definition with status `CONFIRMED` starts process instances. Others are drafts: stored and listed, but inactive. |
 | **Revisions** | Saving a process definition that differs from the stored one makes a new revision; saving an identical one keeps the revision, so reloading unchanged files at every start creates no history. |
-| **Rollout** | A process instance keeps the revision it started with, its steps resolved, until it ends. A change, to a process or to a shared step, therefore applies to entities that start afterwards, and never moves the plan of one under way. |
+| **Rollout** | A process instance keeps the revision it started with, its steps resolved, until it ends. A change, to a process or to a shared step, therefore applies to entities that start afterwards, and never silently moves the plan of one under way. |
+| **Migration** | When a change must reach entities already under way, such as a corrected plan, the running instances of a process are migrated to its current revision, on request. Steps the revision adds are created and planned; steps it removes are skipped while open; steps still awaited are planned again from the new durations and tolerances, so an overdue step whose new deadline is still ahead is awaited again. What already happened is kept: actual times, measurements and their judgement. Each migrated instance publishes a `MIGRATED` event. |
 | **Catalogue** | Measurement types, each with a code, name and unit, can be registered as a catalogue for tools and consumers. The runtime does not require them: a measurement is defined by its code and unit where it is used. |
 
 Definitions can be listed, each with its tenant, code, status and revision. Every published event names the
@@ -284,11 +293,26 @@ optional ones stay open.
 | `Created` | the process instance is created | it is created, by one of its start events |
 | `Started` | one of the step's start events arrives, and the step also has end events | n/a |
 | `Completed` | one of the step's end events arrives; a step with no end events is a single milestone and completes on its start event | implicitly, its last mandatory step completes; or explicitly, one of the process's end events arrives |
-| `Skipped` | it is mandatory and still open when its process ends explicitly | n/a |
+| `Skipped` | it is mandatory and still open when its process ends explicitly; or an alternative to it was taken | n/a |
 | `Cancelled` | its process is cancelled before it completed | an event in the process's cancel events arrives, e.g. *order cancelled* |
 
 A cancelled process is no longer monitored: a cancelled order does not leave steps to go overdue. A completed
 process still records its optional steps, which may happen later: the customer's rating the day after delivery.
+
+**Alternatives and repeats.** The steps of a process follow one another, with two departures from a straight line.
+Steps that share an *alternative* are branches, of which one happens: an order is handed over at the door or at a
+locker. The first of them to start or complete is the branch taken; the others become `Skipped`, are no longer
+awaited, and do not hold up the completion of the process. A *repeatable* step may happen again after it completed,
+such as a second inspection of a returned item: each further occurrence is an attempt, counted on the step and
+recorded with its actual measurements, while the step keeps the timeliness of its first occurrence, which the plan
+was for.
+
+**Runs.** By default an entity runs a process once: a start event that arrives again, for an instance that exists, is
+a replay and starts nothing. A process declared *restartable* can run again for the same entity, such as an order
+delivered a second time after a failed attempt: a start event that arrives after the latest run has completed or been
+cancelled starts run 2, then 3. Business events then apply to the latest run only; earlier runs keep their results.
+A replay of the event that started a run, recognised by its `eventId`, starts nothing; an event without an `eventId`
+never starts a new run.
 
 ### 4.2 Planning
 
@@ -359,7 +383,7 @@ analytics subscribe to these instead of querying the state store. Each event has
 |---|---|---|
 | **Envelope** | `eventId`, `eventType`, `eventCode`, `eventName`, `eventTime`, `source` (`aktimetrix`), `tenantKey`, and the instance it is about: `entityType`, `entityId` | *What happened, and to which instance?* |
 | **Entity** | The process, step or measurement instance after the change | *What is its state now?* |
-| **Context** (`eventDetails`) | `schemaVersion`; the `businessEntity` (e.g. order 1234); `processCode`, `processInstanceId` and `definitionRevision`; for a step or its measurement, `stepCode` and `stepInstanceId`; the instance's `revision` after the change; `occurredAt`, the business time of the change; and its `cause`: the business event, by `eventId` and `eventCode`, or the deadline check | *Which entity and process does it belong to, when did it happen in the business, and why?* |
+| **Context** (`eventDetails`) | `schemaVersion`; the `businessEntity` (e.g. order 1234); `processCode`, `processInstanceId` and `definitionRevision`; for a step or its measurement, `stepCode` and `stepInstanceId`; the instance's `revision` after the change; `occurredAt`, the business time of the change; and its `cause`: the business event, by `eventId` and `eventCode`, the deadline check, or a migration | *Which entity and process does it belong to, when did it happen in the business, and why?* |
 
 With the context, a consumer can relate any step or measurement to its order without a lookup, apply changes in the
 order of their `revision`, and trace every change back to the business event that caused it. The event codes form a
@@ -371,13 +395,15 @@ fixed catalogue:
 | | `COMPLETED` | the process completed: implicitly with its last mandatory step, or on an end event |
 | | `CANCELLED` | a cancel event cancelled the process and its open steps |
 | | `OVERDUE` | the process's own deadline passed before it completed |
+| | `MIGRATED` | the running process was moved to the current revision of its definition, and replanned |
 | `Step_Event` | `CREATED` | the step was created with its process |
 | | `PLANNED` | the step got its planned time, when the step it is planned after completed |
 | | `STARTED` | a step with end events was started by one of its start events |
 | | `COMPLETED` | the step completed, and was judged `ON_TIME` or `LATE` |
+| | `REPEATED` | a repeatable step happened again: one more attempt |
 | | `AT_RISK` | an earlier delay pushed its forecast past its deadline; again whenever the forecast moves later |
 | | `OVERDUE` | its deadline passed before it completed |
-| | `SKIPPED`, `CANCELLED` | its process ended explicitly, or was cancelled, while it was open |
+| | `SKIPPED`, `CANCELLED` | its process ended explicitly, an alternative to it was taken, or its process was cancelled, while it was open |
 | `Measurement_Event` | `PLANNED` | a planned value was set, for the process or a step |
 | | `RECORDED` | a final actual value was recorded and compared with its plan |
 | | `READING` | an interim reading of a step in progress was compared with its plan |
@@ -398,7 +424,7 @@ moves to 12:55, after its 12:15 deadline, and the step is published as at risk:
   "entity": {
     "id": "65e1a8c09d2a4e1f5c3b7a91", "processInstanceId": "65e1a8c09d2a4e1f5c3b7a8a", "tenant": "AA",
     "stepCode": "DELIVERED", "stepName": "Delivered", "optional": false, "sequence": 5, "status": "Created",
-    "plannedAt": "2024-03-01T12:15:00", "lateAfter": "2024-03-01T12:15:00", "expectedAt": "2024-03-01T12:55:00",
+    "plannedAt": "2024-03-01T12:15:00Z", "lateAfter": "2024-03-01T12:15:00Z", "expectedAt": "2024-03-01T12:55:00Z",
     "actualAt": null, "timeliness": "AT_RISK",
     "metadata": { "orderId": "1234", "priority": true, "createdAt": "2024-03-01T09:00:00" }
   },
@@ -407,7 +433,7 @@ moves to 12:55, after its 12:15 deadline, and the step is published as at risk:
     "businessEntity": { "entityType": "com.ecom.order", "entityId": "1234" },
     "processCode": "ORDER_DELIVERY", "processInstanceId": "65e1a8c09d2a4e1f5c3b7a8a", "definitionRevision": 1,
     "stepCode": "DELIVERED", "stepInstanceId": "65e1a8c09d2a4e1f5c3b7a91", "revision": 2,
-    "occurredAt": "2024-03-01T11:40:00",
+    "occurredAt": "2024-03-01T11:40:00Z",
     "cause": { "type": "EVENT", "eventId": "0000…0004", "eventCode": "HANDED_TO_AGENT_EVENT" }
   }
 }
@@ -495,12 +521,12 @@ needs only the connection settings of its broker and state store. The settings g
 
 | Concern | Settings | Default |
 |---|---|---|
-| **Time** | The time zone of all planned and actual times | UTC |
 | **Inbound events** | The destination events are read from, the consumer group, and whether events that cannot be processed go to a dead-letter destination, and which | Dead-lettering on |
 | **Definitions** | Whether definitions are loaded at startup, and from which files | Loaded, from the application's `aktimetrix` folder |
 | **Deadlines** | Whether this instance fires alarms; how often it looks for due alarms, how many it claims at once, and for how long | On; every 5 s; 100; 30 s |
 | **Overdue sweep** | Whether the periodic safety sweep runs, and how often | On; every 10 min |
 | **Publishing** | How often the outbox is relayed, how many results per run, the lease of a claimed result, and how long sent results are kept | Every 1 s; 100; 30 s; 7 days |
+| **Notifications** | Which conditions notify (at risk, overdue, completed late), how many attempts a notification gets, and an optional webhook with its headers and timeout | All three; 10; no webhook |
 | **Storage** | Which store to use when several are available; whether units of work must be atomic, may be, or are not; whether indexes are created at startup | Detected; atomic when the store supports it; created |
 
 Two settings shape a deployment. **Alarm firing** can be switched off on some instances, so that, for example, only
@@ -555,6 +581,7 @@ discovered at startup.
 | **Event handler** | Changes how an event is interpreted, such as where its business time is read from. | Generic handling of the envelope. |
 | **Pre-processor** | Validates or enriches an entity before a process instance is created. | None. |
 | **Post-processor** | Acts on a newly created and planned process instance. | None. |
+| **Notifier** | Alerts people or tools when a step or process goes at risk, goes overdue or completes late: a chat channel, a paging service, a ticket. | A webhook, when its URL is configured; otherwise none. |
 | **State store** | Keeps definitions, instances and the outbox in another database, by implementing the state-store contract. | Chosen from the store modules on the classpath. |
 | **Message broker** | Connects to another broker, through a binder of the message-binding abstraction and its defaults. | Chosen from the broker modules on the classpath. |
 
@@ -605,7 +632,8 @@ plan, the actual, the deviation and the entity together.
 
 | Metric | Type | Tags | Meaning |
 |---|---|---|---|
-| `aktimetrix.events` | counter | tenant, event, outcome | Business events received: `handled`, `ignored` (skipped by the event mapper), `invalid` (rejected, sent to the dead-letter channel) or `failed` (an error while processing; retried, then dead-lettered). |
+| `aktimetrix.events` | counter | tenant, event, outcome | Business events received: `handled`, `ignored` (skipped by the event mapper), `duplicate` (its `eventId` was already processed), `invalid` (rejected, sent to the dead-letter channel, e.g. dated in the future) or `failed` (an error while processing; retried, then dead-lettered). |
+| `aktimetrix.events.quality` | counter | tenant, step, issue | Signs that a source misses events: `start_missing`, a step completed without its start event. |
 | `aktimetrix.alarms.pending` | gauge | | Alarms set at deadlines and not fired yet. |
 | `aktimetrix.alarms.fired` | counter | tenant, kind | Alarms that found their step or process still open and marked it overdue. |
 | `aktimetrix.alarms.delay` | timer | kind | How long after its due time each alarm fired. |
@@ -620,10 +648,18 @@ plan, the actual, the deviation and the entity together.
 | `events{outcome=invalid}` or `{outcome=failed}` rises | A source system changed its message format, or sends events without an entity id or code | Inspect the dead-letter channel; fix the source or the event mapper; replay. |
 | A start event is `handled` but `processes.started` stays flat | No confirmed definition starts on that event: missing, or its start event code misspelt | Check the tenant's definitions. |
 | `events` drops to zero for an event code | The source system stopped publishing | Investigate upstream; deadlines keep firing, so steps go `OVERDUE` meanwhile. |
+| `events{outcome=duplicate}` or `events.quality` rises | A source system resends events, or misses some | Fix the source's delivery; results stay correct, since duplicates are ignored and missing starts flagged. |
 | Share of `ON_TIME` steps falls, or `steps.overdue` rises | A business problem: the commitments are not kept | This is what the monitor is for: alert the business owner, not the platform team. |
 
 The last row is the purpose of the system; the others protect it. Separating them keeps business alerts with the
 people who can act on them.
+
+The last row is about trends. For one entity that needs attention now, **notifications** reach people directly: when
+a step or process goes `AT_RISK` or `OVERDUE`, or completes `LATE`, every notifier the application registers
+receives a notification naming the entity, the process, the step and its times. Notifications are queued in the
+outbox with the change that caused them, so they are delivered after it is saved, at least once, and retried while a
+notifier fails; a notifier that keeps failing delays nothing else. A webhook notifier is built in; a chat, paging or
+ticketing integration is one small component.
 
 ### 8.4 Tracing one entity
 
@@ -741,7 +777,7 @@ public class OrderDefinitions {
                         .startsOn("ORDER_CREATED_EVENT")
                         .cancelledOn("ORDER_CANCELLED_EVENT")
                         // priority customers within one day, others within three: the order's deadline
-                        .planTime(o -> metadataTime(o, "createdAt").plusDays(priority(o.getMetadata()) ? 1 : 3))
+                        .planTime(o -> metadataTime(o, "createdAt").plus(Duration.ofDays(priority(o.getMetadata()) ? 1 : 3)))
                         .measure("COST", "deliveryCost", cost -> cost.value(8).unit("EUR").tolerance("10%")
                                 .worseWhenHigher())
                         .metric("FUEL_PER_KM", "FUEL / DISTANCE", m -> m.unit("L/KM").tolerance("10%")
@@ -759,8 +795,8 @@ public class OrderDefinitions {
                                 .on("DELIVERED_EVENT")
                                 // priority customers within 3 h 15 min of the order, others within 2 days
                                 .planTime(d -> priority(d.getMetadata())
-                                        ? metadataTime(d, "createdAt").plusHours(3).plusMinutes(15)
-                                        : metadataTime(d, "createdAt").plusDays(2)))
+                                        ? metadataTime(d, "createdAt").plus(Duration.ofMinutes(195))
+                                        : metadataTime(d, "createdAt").plus(Duration.ofDays(2))))
                         // ... RATED
                 )
                 .build();
@@ -823,8 +859,8 @@ public class DeliveryPlanMeter extends AbstractMeter {
     protected String getMeasurementValue(String tenant, StepInstance step) {
         boolean priority = Boolean.TRUE.equals(step.getMetadata().get("priority"));
         return String.valueOf(priority
-                ? metadataTime(step, "createdAt").plusHours(3).plusMinutes(15)
-                : metadataTime(step, "createdAt").plusDays(2));
+                ? metadataTime(step, "createdAt").plus(Duration.ofMinutes(195))
+                : metadataTime(step, "createdAt").plus(Duration.ofDays(2)));
     }
 }
 ```
@@ -880,28 +916,32 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 
 ### 10.3 Known limitations
 
-- **Ordered milestones.** A process is a sequence of steps, each completed once. Branches, loops and repeated
-  attempts of a step are not modelled.
-- **One run per entity.** There is one instance of a process per tenant, process and entity. A second run for the
-  same entity, for example a re-delivery, needs a different entity id or process.
-- **Metrics at completion.** A process's metrics are computed once, when it completes, from sums of its
-  measurements; values recorded afterwards, such as a later rating, are not included, and the expressions are plain
-  arithmetic.
-- **No migration between revisions.** A running instance keeps the definition it started with; there is no way to
-  move it to a newer revision, for example to apply a corrected plan to orders already under way.
-- **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
+- **Milestones, not a flow chart.** A process is a sequence of steps, with alternatives (one of several branches)
+  and repeatable steps (counted attempts). Nested branches, parallel paths that join, and loops over several steps
+  are not modelled; such a process is monitored by its milestones rather than by every path through it.
 - **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
-  each milestone. An event mapper can translate formats, but cannot supply missing events.
-- **Monitoring only.** Aktimetrix never calls back into source systems; acting on its events is up to consumers.
+  each milestone. Aktimetrix guards against what it can detect: a duplicate is ignored by its `eventId`, an event
+  dated in the future is rejected, a step completed without its start event is flagged, and a missing completion
+  makes its step `OVERDUE`. It cannot invent an event that never comes, nor correct a business time that is wrong
+  but plausible.
+- **Monitoring, not control.** Aktimetrix tells people and tools that something needs attention, through its
+  published events and notifications (§8.3), but never calls back into the source systems to change what they do.
+  Remedial action, such as re-routing a parcel, stays with those systems or a workflow engine; this is a deliberate
+  boundary.
 - **Reference implementation.**
-  - *Verification.* The modules are verified on embedded infrastructure: Kafka on an embedded Kafka broker; RabbitMQ
-    on an embedded AMQP 0-9-1 broker (Apache Qpid), which does not support RabbitMQ's single-active-consumer queue
-    argument; the JDBC store on H2 in PostgreSQL mode; MongoDB on an in-memory server without transactions.
-  - *Ordering on RabbitMQ.* The events queue has a single active consumer, so one instance processes events at a
-    time; processing in parallel while keeping each entity's events in order needs partitioned bindings.
-  - *Atomicity.* Atomic units of work need a transactional store: MongoDB as a replica set, or a relational
-    database; the in-memory store is neither atomic nor durable.
-  - *Security.* The REST API has no authentication of its own.
+  - *Verification.* Every module runs the same contract tests and end-to-end scenarios, on infrastructure embedded
+    in the build so that it needs no Docker: Kafka on an embedded Kafka broker; RabbitMQ on an embedded AMQP 0-9-1
+    broker (Apache Qpid); the JDBC store on H2 in PostgreSQL mode; MongoDB on an in-memory server. What these stand-ins
+    cannot show is checked by design rather than by test: RabbitMQ's single active consumer, which Qpid lacks, and
+    multi-document transactions on a MongoDB replica set. Running the scenarios against the real servers before a
+    production rollout is advisable.
+  - *Atomicity.* A unit of work is atomic only on a store with transactions: a relational database, or MongoDB as a
+    replica set or sharded cluster. On a standalone MongoDB server, a crash in the middle of an event can keep its
+    state without its outbound events; Aktimetrix warns at startup, and with
+    `aktimetrix.storage.transactions=always` an event fails there rather than be processed without a transaction. The in-memory store is for tests and demonstrations: neither atomic nor durable.
+  - *Security.* Authentication is the application's: with Spring Security, the REST API requires a reader role to
+    query and a writer role to change definitions, and the application decides how users sign in. Without it, the
+    API is open to whoever can reach it.
 
 ## 11. Further reading
 
@@ -920,17 +960,19 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 |---|---|
 | **Business entity** | The real-world object followed, such as an order; identified by entity type and entity id. |
 | **Business event** | A message from a source system saying something happened to an entity, such as *order delivered*. |
-| **Process definition** | The declaration of a business process: its steps in order, the events that start, end and cancel it, and optionally its own deadline and measurements. Versioned: each change is a new revision, and an instance keeps the revision it started with. |
+| **Process definition** | The declaration of a business process: its steps in order, the events that start, end and cancel it, and optionally its own deadline and measurements. Versioned: each change is a new revision, and an instance keeps the revision it started with unless it is migrated. |
 | **Step definition** | The declaration of a milestone: the events that start and complete it, its plan, tolerance and measurements. Shared by a tenant's processes, and adaptable per process. |
 | **Process instance** / **step instance** | A process, or one of its steps, for one business entity. |
 | **Measurement** | A user-defined dimension observed at a process or step, such as time, distance or rating. |
 | **Planned** / **actual** (`P` / `A`) | What a measurement should be, set when the instance is created; and what it was, recorded when it completes, or read as an interim reading while it is in progress. |
 | **Deviation** | Actual minus planned value of a measurement. |
 | **Tolerance** / **conformance** | How far an actual may deviate from its plan; and whether it did (`WITHIN_TOLERANCE` or `OUT_OF_TOLERANCE`). |
-| **Metric** | A figure computed from measurements: declared on a process as arithmetic over its measurements, such as fuel per kilometre, and compared with the same figure computed from the plan; or reported by the runtime across all entities, such as the share within tolerance. |
+| **Metric** | A figure computed from measurements: declared on a process as an expression over its measurements, such as fuel per kilometre or the highest temperature, and compared with the same figure computed from the plan; or reported by the runtime across all entities, such as the share within tolerance. |
 | **Interim reading** | A value of a step's measurement reported while the step is still in progress, compared with the plan at once. |
 | **Meter** | Application code that computes a planned or actual measurement, typically a planning rule. |
 | **Metadata** | Domain data kept on an instance, such as an order's customer, used by meters and passed to consumers. |
+| **Alternative** | Steps of a process of which one happens, such as handover at the door or at a locker: the first to start or complete is taken, and the others are skipped. |
+| **Attempt** | One occurrence of a repeatable step; the step is judged on its first. |
 | **Deadline** | The planned time plus the tolerance: the moment after which a step or process is late. |
 | **Alarm** | A durable timer at the deadline of a step or process, set when it is planned; when it fires and the event has not arrived, the step or process becomes `OVERDUE`. |
 | **Timeliness** | How a step or process compares with its planned time: `ON_TIME`, `LATE`, `AT_RISK` (steps only) or `OVERDUE`. |

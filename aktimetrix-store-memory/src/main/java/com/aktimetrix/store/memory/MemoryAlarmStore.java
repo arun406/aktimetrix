@@ -5,7 +5,6 @@ import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.StoreDocuments;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,7 +31,7 @@ final class MemoryAlarmStore implements AlarmStore {
     }
 
     @Override
-    public synchronized List<Alarm> claimDue(LocalDateTime now, Instant claimedAt, Instant leaseUntil, int limit) {
+    public synchronized List<Alarm> claimDue(Instant now, Instant claimedAt, Instant leaseUntil, int limit) {
         final List<Alarm> due = alarms.values().stream()
                 .filter(a -> a.getDueAt().isBefore(now) && (a.getLockedUntil() == null || a.getLockedUntil().isBefore(claimedAt)))
                 .sorted(Comparator.comparing(Alarm::getDueAt))

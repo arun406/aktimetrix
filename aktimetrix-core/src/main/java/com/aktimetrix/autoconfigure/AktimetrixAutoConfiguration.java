@@ -3,8 +3,10 @@ package com.aktimetrix.autoconfigure;
 import com.aktimetrix.core.api.EventMapper;
 import com.aktimetrix.core.configurations.AktimetrixProperties;
 import com.aktimetrix.core.event.EnvelopeEventMapper;
+import com.aktimetrix.core.notification.WebhookNotifier;
 import tools.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -27,12 +29,12 @@ import java.time.Clock;
 public class AktimetrixAutoConfiguration {
 
     /**
-     * Clock of planned, actual and overdue times, in {@code aktimetrix.time-zone}.
+     * Clock of planned, actual and overdue times, all UTC instants.
      */
     @Bean
     @ConditionalOnMissingBean
-    public Clock aktimetrixClock(AktimetrixProperties properties) {
-        return Clock.system(properties.getTimeZone());
+    public Clock aktimetrixClock() {
+        return Clock.systemUTC();
     }
 
     /**
@@ -43,5 +45,14 @@ public class AktimetrixAutoConfiguration {
     @ConditionalOnMissingBean(EventMapper.class)
     public EventMapper aktimetrixEventMapper(ObjectMapper objectMapper) {
         return new EnvelopeEventMapper(objectMapper);
+    }
+
+    /**
+     * Posts notifications to {@code aktimetrix.notifications.webhook.url}, when it is set.
+     */
+    @Bean
+    @ConditionalOnProperty(prefix = "aktimetrix.notifications.webhook", name = "url")
+    public WebhookNotifier aktimetrixWebhookNotifier(AktimetrixProperties properties, ObjectMapper objectMapper) {
+        return new WebhookNotifier(properties.getNotifications().getWebhook(), objectMapper);
     }
 }

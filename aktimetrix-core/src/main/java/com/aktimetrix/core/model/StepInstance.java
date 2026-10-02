@@ -6,7 +6,7 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 
 @Data
@@ -27,27 +27,40 @@ public class StepInstance {
     private String version;
     private String functionalCtx;
     private Map<String, Object> metadata;
-    private LocalDateTime createdOn;
+    private Instant createdOn;
     /**
      * When the step should happen: the planned TIME measurement computed by its meter, if any.
      */
-    private LocalDateTime plannedAt;
+    private Instant plannedAt;
     /**
      * When the step counts as late: {@code plannedAt} plus the step definition's tolerance.
      */
-    private LocalDateTime lateAfter;
+    private Instant lateAfter;
     /**
      * Forecast of when the step will happen, when an earlier step ran late.
      */
-    private LocalDateTime expectedAt;
+    private Instant expectedAt;
     /**
      * When the step actually completed.
      */
-    private LocalDateTime actualAt;
+    private Instant actualAt;
     /**
      * How the step compares with its plan; {@code null} until it can be judged.
      */
     private Timeliness timeliness;
+    /**
+     * Whether the step completed without its start event: a step with start and end events whose end arrived first,
+     * a sign that a source system missed or delayed an event.
+     */
+    private boolean startMissing;
+    /**
+     * How many times the step has completed: 1 once it happened, more for a repeatable step that happened again.
+     */
+    private int attempts;
+    /**
+     * When the step last completed; differs from {@code actualAt} for a repeatable step that happened again.
+     */
+    private Instant lastAttemptAt;
     /**
      * Incremented on every save; a save based on a stale copy fails instead of overwriting a newer state.
      */
@@ -59,7 +72,7 @@ public class StepInstance {
      * does not move the deadline writes no alarm.
      */
     @JsonIgnore
-    private LocalDateTime alarmAt;
+    private Instant alarmAt;
 
     public StepInstance() {
         super();
@@ -76,7 +89,7 @@ public class StepInstance {
      * @param createdOn
      */
     public StepInstance(String tenant, String stepCode, String processInstanceId, String groupCode,
-                        String functionalCtx, String version, String status, LocalDateTime createdOn) {
+                        String functionalCtx, String version, String status, Instant createdOn) {
         this.tenant = tenant;
         this.stepCode = stepCode;
         this.processInstanceId = processInstanceId;
