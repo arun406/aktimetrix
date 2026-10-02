@@ -151,6 +151,26 @@ public abstract class ParcelScenario {
     }
 
     /**
+     * An event delivered twice is processed once; an event dated in the future is invalid.
+     */
+    @Test
+    @Order(Integer.MAX_VALUE - 1)   // after the scenario whose counters it would change
+    void ignoresDuplicateEventsAndRejectsEventsDatedInTheFuture() {
+        sendFor("P-6", "booking-6", "PARCEL_BOOKED", "2024-01-12 09:00:00", "{\"bookedAt\":\"2024-01-12 09:00:00\"}");
+        sendFor("P-6", "pickup-6", "PARCEL_PICKED_UP", "2024-01-12 10:00:00", null);
+        sendFor("P-6", "pickup-6", "PARCEL_PICKED_UP", "2024-01-12 10:00:00", null);
+        awaitTrue(() -> total(monitor.meters().find("aktimetrix.events").tag("outcome", "duplicate").counters()) == 1,
+                "the duplicate being recognised");
+
+        final String future = "{\"tenantKey\":\"T1\",\"eventId\":\"future-6\",\"eventCode\":\"PARCEL_SORTED\","
+                + "\"entityType\":\"parcel\",\"entityId\":\"P-6\",\"eventUTCTime\":\"2999-01-01 00:00:00\"}";
+        broker.send(TOPIC, "P-6", future);
+        assertThat(broker.received(TOPIC + ".dlq", messages -> messages.contains(future))).contains(future);
+        assertThat(stepOf(runs("P-6").get(0), "SORT").orElseThrow().getStatus()).as("the future event changed nothing")
+                .isNotEqualTo("Completed");
+    }
+
+    /**
      * The process is restartable: a parcel booked again after its run was cancelled starts a second run, which later
      * events apply to; a replay of the booking that started the first run starts nothing.
      */

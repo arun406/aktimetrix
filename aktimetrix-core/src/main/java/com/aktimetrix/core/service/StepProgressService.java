@@ -145,8 +145,16 @@ public class StepProgressService {
             }
             logger.info("Step {} of process instance {}: {} -> {}", step.getStepCode(), processInstance.getId(),
                     step.getStatus(), nextStatus);
+            final String previousStatus = step.getStatus();
             step.setStatus(nextStatus);
             if (Constants.STATUS_COMPLETED.equals(nextStatus)) {
+                if (!isEmpty(definition.getEndEventCodes()) && !isEmpty(definition.getStartEventCodes())
+                        && Constants.STATUS_CREATED.equals(previousStatus)) {
+                    logger.warn("Step {} of process instance {} completed without its start event",
+                            step.getStepCode(), processInstance.getId());
+                    step.setStartMissing(true);
+                    metrics.eventQuality(step.getTenant(), step.getStepCode(), "start_missing");
+                }
                 step.setActualAt(occurredAt);
                 step.setTimeliness(stepPlanner.judge(step, occurredAt));
                 actuals.add(actualTime(step, occurredAt));

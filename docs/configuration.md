@@ -58,6 +58,9 @@ aktimetrix:
 | `aktimetrix.events.group` | `aktimetrix` | Consumer group of the inbound business events. |
 | `aktimetrix.events.dead-letter.enabled` | `true` | Send events that cannot be processed to a dead-letter topic instead of dropping them. |
 | `aktimetrix.events.dead-letter.topic` | *events topic*`.dlq` | The dead-letter topic. |
+| `aktimetrix.events.deduplication.enabled` | `true` | Ignore an event whose `eventId` was already processed, such as a message delivered twice. Events without an `eventId` are never deduplicated. |
+| `aktimetrix.events.deduplication.retention` | `P7D` | How long processed event ids are remembered. |
+| `aktimetrix.events.max-future-skew` | `PT5M` | How far in the future an event's business time may be; an event dated later is invalid, and sent to the dead-letter topic. |
 | `aktimetrix.time-zone` | `UTC` | Zone of all planned and actual times. Event times are converted to it, and alarms compare deadlines with the current time in it. |
 | `aktimetrix.definitions.load-on-startup` | `true` | Load process and step definitions from the classpath at startup. |
 | `aktimetrix.definitions.processes` | `classpath*:aktimetrix/process-definitions.json` | Location of the process definitions: a JSON array. |
@@ -200,6 +203,7 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `plannedAt`, `lateAfter` | Its own deadline, if the definition has `plannedWithin` or a planned `TIME` set by a meter: planned completion, and that plus the tolerance. |
 | `endedAt` | Business time of the event that completed or cancelled it. |
 | `timeliness` | `ON_TIME` or `LATE` at completion, or `OVERDUE`; empty without a deadline. |
+| `run` | Which run of the process this is for the entity: 1, then 2 and on for a restartable process started again. |
 | `definitionRevision` | The revision of the process definition the instance follows: the one it started with. |
 | `metadata` | The process metadata. |
 | `steps` | Its steps, as in `Step_Event` (on `CREATED`). |
@@ -215,6 +219,7 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `expectedAt` | Forecast, when an earlier step ran late. |
 | `actualAt` | Business time of the event that completed it. |
 | `timeliness` | `ON_TIME`, `LATE`, `AT_RISK` or `OVERDUE`; empty until it can be judged. |
+| `startMissing` | `true` when the step completed without its start event. |
 | `metadata` | The step metadata. |
 
 **`Measurement_Event`** (`entityType` `com.aktimetrix.measurement.instance`)
@@ -278,7 +283,8 @@ Aktimetrix records [Micrometer](https://micrometer.io/) metrics in the applicati
 
 | Metric | Type | Tags |
 |---|---|---|
-| `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `ignored`, `invalid`, `failed`) |
+| `aktimetrix.events` | counter | `tenant`, `event`, `outcome` (`handled`, `ignored`, `duplicate`, `invalid`, `failed`) |
+| `aktimetrix.events.quality` | counter | `tenant`, `step`, `issue` (`start_missing`) |
 | `aktimetrix.processes.started` / `.completed` / `.cancelled` / `.overdue` | counter | `tenant`, `process` |
 | `aktimetrix.steps.completed` | counter | `tenant`, `step`, `timeliness` |
 | `aktimetrix.steps.lateness` | timer | `tenant`, `step`: how long after its planned time a step completed |

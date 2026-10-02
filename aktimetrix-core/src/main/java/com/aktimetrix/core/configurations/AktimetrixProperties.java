@@ -38,6 +38,24 @@ public class AktimetrixProperties {
         private String group = "aktimetrix";
 
         private final DeadLetter deadLetter = new DeadLetter();
+        private final Deduplication deduplication = new Deduplication();
+        /**
+         * How far in the future an event's business time may be, for clocks that are slightly ahead; an event dated
+         * later is invalid, and sent to the dead-letter topic.
+         */
+        private Duration maxFutureSkew = Duration.ofMinutes(5);
+
+        @Data
+        public static class Deduplication {
+            /**
+             * Whether an event whose {@code eventId} was already processed is ignored.
+             */
+            private boolean enabled = true;
+            /**
+             * How long processed event ids are remembered.
+             */
+            private Duration retention = Duration.ofDays(7);
+        }
 
         @Data
         public static class DeadLetter {

@@ -615,7 +615,8 @@ plan, the actual, the deviation and the entity together.
 
 | Metric | Type | Tags | Meaning |
 |---|---|---|---|
-| `aktimetrix.events` | counter | tenant, event, outcome | Business events received: `handled`, `ignored` (skipped by the event mapper), `invalid` (rejected, sent to the dead-letter channel) or `failed` (an error while processing; retried, then dead-lettered). |
+| `aktimetrix.events` | counter | tenant, event, outcome | Business events received: `handled`, `ignored` (skipped by the event mapper), `duplicate` (its `eventId` was already processed), `invalid` (rejected, sent to the dead-letter channel, e.g. dated in the future) or `failed` (an error while processing; retried, then dead-lettered). |
+| `aktimetrix.events.quality` | counter | tenant, step, issue | Signs that a source misses events: `start_missing`, a step completed without its start event. |
 | `aktimetrix.alarms.pending` | gauge | | Alarms set at deadlines and not fired yet. |
 | `aktimetrix.alarms.fired` | counter | tenant, kind | Alarms that found their step or process still open and marked it overdue. |
 | `aktimetrix.alarms.delay` | timer | kind | How long after its due time each alarm fired. |
@@ -630,6 +631,7 @@ plan, the actual, the deviation and the entity together.
 | `events{outcome=invalid}` or `{outcome=failed}` rises | A source system changed its message format, or sends events without an entity id or code | Inspect the dead-letter channel; fix the source or the event mapper; replay. |
 | A start event is `handled` but `processes.started` stays flat | No confirmed definition starts on that event: missing, or its start event code misspelt | Check the tenant's definitions. |
 | `events` drops to zero for an event code | The source system stopped publishing | Investigate upstream; deadlines keep firing, so steps go `OVERDUE` meanwhile. |
+| `events{outcome=duplicate}` or `events.quality` rises | A source system resends events, or misses some | Fix the source's delivery; results stay correct, since duplicates are ignored and missing starts flagged. |
 | Share of `ON_TIME` steps falls, or `steps.overdue` rises | A business problem: the commitments are not kept | This is what the monitor is for: alert the business owner, not the platform team. |
 
 The last row is the purpose of the system; the others protect it. Separating them keeps business alerts with the
@@ -896,7 +898,10 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
   move it to a newer revision, for example to apply a corrected plan to orders already under way.
 - **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
 - **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
-  each milestone. An event mapper can translate formats, but cannot supply missing events.
+  each milestone. Aktimetrix guards against what it can detect: a duplicate is ignored by its `eventId`, an event
+  dated in the future is rejected, a step completed without its start event is flagged, and a missing completion
+  makes its step `OVERDUE`. It cannot invent an event that never comes, nor correct a business time that is wrong
+  but plausible.
 - **Monitoring only.** Aktimetrix never calls back into source systems; acting on its events is up to consumers.
 - **Reference implementation.**
   - *Verification.* The modules are verified on embedded infrastructure: Kafka on an embedded Kafka broker; RabbitMQ

@@ -49,6 +49,11 @@ public class StepInstance {
      */
     private Timeliness timeliness;
     /**
+     * Whether the step completed without its start event: a step with start and end events whose end arrived first,
+     * a sign that a source system missed or delayed an event.
+     */
+    private boolean startMissing;
+    /**
      * Incremented on every save; a save based on a stale copy fails instead of overwriting a newer state.
      */
     @Version

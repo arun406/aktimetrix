@@ -29,6 +29,11 @@ version may change the public API.
   measurement, such as `max(TEMPERATURE)` across the steps. A measurement recorded after the process completed, such
   as a rating, computes again the metrics that use it.
 
+- Event quality: an event whose `eventId` was already processed is ignored (`aktimetrix.events.deduplication.*`,
+  stored per tenant for 7 days by default), an event dated in the future beyond `aktimetrix.events.max-future-skew` is
+  invalid, and a step that completes without its start event is flagged `startMissing` and counted in
+  `aktimetrix.events.quality`. Published process events carry their `run`.
+
 **Security**
 - A metric expression is limited to 1,000 characters and 32 levels of nesting, and checked when its definition is
   saved, so that a deeply nested expression cannot exhaust the stack when a process completes.

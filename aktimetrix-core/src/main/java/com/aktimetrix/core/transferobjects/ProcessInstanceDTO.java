@@ -43,5 +43,6 @@ public class ProcessInstanceDTO implements Serializable {
     private LocalDateTime lateAfter;
     private LocalDateTime endedAt;
     private Timeliness timeliness;
+    private int run;
     private List<StepInstanceDTO> steps;
 }

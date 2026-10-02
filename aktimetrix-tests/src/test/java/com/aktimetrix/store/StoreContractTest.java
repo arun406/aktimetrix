@@ -16,6 +16,7 @@ import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
+import com.aktimetrix.core.store.ProcessedEventStore;
 import com.aktimetrix.core.store.ProcessInstanceStore;
 import com.aktimetrix.core.store.StepInstanceStore;
 import org.junit.jupiter.api.AfterAll;
@@ -56,6 +57,7 @@ public abstract class StoreContractTest {
     protected DefinitionStore definitions;
     protected OutboxStore outbox;
     protected AlarmStore alarms;
+    protected ProcessedEventStore processedEvents;
     protected AktimetrixTransactions transactions;
 
     /**
@@ -72,6 +74,7 @@ public abstract class StoreContractTest {
         definitions = context.getBean(DefinitionStore.class);
         outbox = context.getBean(OutboxStore.class);
         alarms = context.getBean(AlarmStore.class);
+        processedEvents = context.getBean(ProcessedEventStore.class);
         transactions = context.getBean(AktimetrixTransactions.class);
     }
 
@@ -183,6 +186,25 @@ public abstract class StoreContractTest {
                 });
         assertThat(processes.findById(tenant, first.getId())).get().extracting(ProcessInstance::getRun).isEqualTo(1);
         assertThat(processes.findByEntityId(tenant, "1234")).hasSize(2);
+    }
+
+    @Test
+    void anEventIsProcessedOncePerTenantAndForgottenAfterItsRetention() {
+        final String tenant = unique();
+        final Instant at = Instant.parse("2024-01-10T09:00:00Z");
+        assertThat(processedEvents.isProcessed(tenant, "e1")).isFalse();
+
+        processedEvents.markProcessed(tenant, "e1", at);
+
+        assertThat(processedEvents.isProcessed(tenant, "e1")).isTrue();
+        assertThat(processedEvents.isProcessed(unique(), "e1")).as("another tenant's").isFalse();
+        assertThatThrownBy(() -> processedEvents.markProcessed(tenant, "e1", at))
+                .isInstanceOf(DuplicateKeyException.class);
+        processedEvents.markProcessed(tenant, "e2", at.plusSeconds(3600));
+
+        assertThat(processedEvents.deleteProcessedBefore(at.plusSeconds(60))).isGreaterThanOrEqualTo(1);
+        assertThat(processedEvents.isProcessed(tenant, "e1")).isFalse();
+        assertThat(processedEvents.isProcessed(tenant, "e2")).isTrue();
     }
 
     @Test

@@ -89,3 +89,10 @@ CREATE TABLE IF NOT EXISTS aktimetrix_alarm (
     attempts            INT          NOT NULL
 );
 CREATE INDEX IF NOT EXISTS aktimetrix_alarms_due ON aktimetrix_alarm (due_at);
+CREATE TABLE IF NOT EXISTS aktimetrix_processed_event (
+    tenant       VARCHAR(255) NOT NULL,
+    event_id     VARCHAR(255) NOT NULL,
+    processed_at BIGINT       NOT NULL,
+    PRIMARY KEY (tenant, event_id)
+);
+CREATE INDEX IF NOT EXISTS aktimetrix_processed_events_at ON aktimetrix_processed_event (processed_at);

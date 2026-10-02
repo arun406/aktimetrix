@@ -138,6 +138,20 @@ class StepProgressServiceTest {
 
         assertThat(service.recordMilestone("SHIPPED_EVENT", process, SHIPPED_AT)).hasSize(1);
         assertThat(ship.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
+        assertThat(ship.isStartMissing()).isFalse();
+    }
+
+    @Test
+    void aStepThatCompletesWithoutItsStartEventIsFlagged() {
+        StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
+        givenSteps(ship);
+        givenDefinition("SHIP", List.of("PICKED_EVENT"), List.of("SHIPPED_EVENT"));
+
+        service.recordMilestone("SHIPPED_EVENT", process, SHIPPED_AT);
+
+        assertThat(ship.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
+        assertThat(ship.isStartMissing()).isTrue();
+        assertThat(registry.get("aktimetrix.events.quality").tag("issue", "start_missing").counter().count()).isEqualTo(1);
     }
 
     @Test

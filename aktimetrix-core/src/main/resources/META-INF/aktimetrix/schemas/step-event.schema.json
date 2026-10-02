@@ -187,6 +187,10 @@
             "string",
             "null"
           ]
+        },
+        "startMissing": {
+          "type": "boolean",
+          "description": "Whether the step completed without its start event."
         }
       }
     },

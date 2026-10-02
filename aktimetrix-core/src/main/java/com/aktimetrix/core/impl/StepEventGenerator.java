@@ -60,6 +60,7 @@ public class StepEventGenerator implements EventGenerator {
                 .expectedAt(instance.getExpectedAt())
                 .actualAt(instance.getActualAt())
                 .timeliness(instance.getTimeliness())
+                .startMissing(instance.isStartMissing())
                 .build();
     }
 

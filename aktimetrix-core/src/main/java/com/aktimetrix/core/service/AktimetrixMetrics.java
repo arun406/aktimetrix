@@ -88,6 +88,17 @@ public class AktimetrixMetrics {
         stepCounter("aktimetrix.steps.overdue", "Steps that passed their deadline without their event", step).increment();
     }
 
+    /**
+     * A sign of poor event quality, such as a step that completed without its start event.
+     *
+     * @param issue e.g. {@code start_missing}
+     */
+    public void eventQuality(String tenant, String stepCode, String issue) {
+        Counter.builder("aktimetrix.events.quality").description("Signs of missing or out-of-order business events")
+                .tag("tenant", value(tenant)).tag("step", value(stepCode)).tag("issue", issue)
+                .register(registry).increment();
+    }
+
     public void stepAtRisk(StepInstance step) {
         stepCounter("aktimetrix.steps.at.risk", "Steps forecast to miss their deadline", step).increment();
     }

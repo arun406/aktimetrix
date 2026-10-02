@@ -6,6 +6,7 @@ import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
+import com.aktimetrix.core.store.ProcessedEventStore;
 import com.aktimetrix.core.store.ProcessInstanceStore;
 import com.aktimetrix.core.store.StepInstanceStore;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -58,6 +59,11 @@ public class JdbcStoreAutoConfiguration {
     @Bean
     public AlarmStore aktimetrixAlarmStore(DataSource dataSource, JdbcStoreInitializer schema) {
         return new JdbcAlarmStore(new JdbcTemplate(dataSource));
+    }
+
+    @Bean
+    public ProcessedEventStore aktimetrixProcessedEventStore(DataSource dataSource, JdbcStoreInitializer schema) {
+        return new JdbcProcessedEventStore(new JdbcTemplate(dataSource));
     }
 
     @Bean

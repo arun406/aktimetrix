@@ -308,6 +308,11 @@
         },
         "valid": {
           "type": "boolean"
+        },
+        "run": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Which run of the process this is for the entity: 1, then 2 and on for a restartable process started again."
         }
       }
     },
