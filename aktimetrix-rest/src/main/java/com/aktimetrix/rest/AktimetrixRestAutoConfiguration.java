@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 /**
  * The Aktimetrix REST API, in a servlet web application. It is described with OpenAPI as the group
@@ -25,6 +26,21 @@ public class AktimetrixRestAutoConfiguration {
      * Name of the OpenAPI group of the Aktimetrix API.
      */
     public static final String API_GROUP = "aktimetrix";
+
+    /**
+     * When the application uses Spring Security, every endpoint requires a role: see {@link AktimetrixRestAccess}.
+     * Authentication stays with the application's own configuration, which keeps securing its other endpoints.
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity")
+    @EnableMethodSecurity
+    static class Security {
+
+        @Bean
+        AktimetrixRestAccess aktimetrixRestAccess() {
+            return new AktimetrixRestAccess();
+        }
+    }
 
     @Configuration(proxyBeanMethods = false)
     @ConditionalOnClass(GroupedOpenApi.class)

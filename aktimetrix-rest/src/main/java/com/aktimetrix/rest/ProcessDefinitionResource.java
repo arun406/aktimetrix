@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +38,7 @@ public class ProcessDefinitionResource {
         this.migrations = migrations;
     }
 
+    @PreAuthorize("@aktimetrixRestAccess.canWrite(authentication)")
     @PostMapping
     @Operation(summary = "Create or replace a process definition",
             description = "Replaces the definition with the same tenant and process code. The definition is validated first, as "
@@ -49,12 +51,14 @@ public class ProcessDefinitionResource {
         return ResponseEntity.created(URI.create("/reference-data/process-definitions/" + saved.getId())).build();
     }
 
+    @PreAuthorize("@aktimetrixRestAccess.canRead(authentication)")
     @GetMapping
     @Operation(summary = "List the process definitions", description = "Of every tenant.")
     public List<ProcessDefinition> list() {
         return service.list();
     }
 
+    @PreAuthorize("@aktimetrixRestAccess.canWrite(authentication)")
     @PostMapping("/{tenant}/{processCode}/migrations")
     @Operation(summary = "Migrate the running instances to the current revision",
             description = "Moves every running instance of the process that follows an older revision to the current one, "

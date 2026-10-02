@@ -929,14 +929,19 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
   Remedial action, such as re-routing a parcel, stays with those systems or a workflow engine; this is a deliberate
   boundary.
 - **Reference implementation.**
-  - *Verification.* The modules are verified on embedded infrastructure: Kafka on an embedded Kafka broker; RabbitMQ
-    on an embedded AMQP 0-9-1 broker (Apache Qpid), which does not support RabbitMQ's single-active-consumer queue
-    argument; the JDBC store on H2 in PostgreSQL mode; MongoDB on an in-memory server without transactions.
-  - *Ordering on RabbitMQ.* The events queue has a single active consumer, so one instance processes events at a
-    time; processing in parallel while keeping each entity's events in order needs partitioned bindings.
-  - *Atomicity.* Atomic units of work need a transactional store: MongoDB as a replica set, or a relational
-    database; the in-memory store is neither atomic nor durable.
-  - *Security.* The REST API has no authentication of its own.
+  - *Verification.* Every module runs the same contract tests and end-to-end scenarios, on infrastructure embedded
+    in the build so that it needs no Docker: Kafka on an embedded Kafka broker; RabbitMQ on an embedded AMQP 0-9-1
+    broker (Apache Qpid); the JDBC store on H2 in PostgreSQL mode; MongoDB on an in-memory server. What these stand-ins
+    cannot show is checked by design rather than by test: RabbitMQ's single active consumer, which Qpid lacks, and
+    multi-document transactions on a MongoDB replica set. Running the scenarios against the real servers before a
+    production rollout is advisable.
+  - *Atomicity.* A unit of work is atomic only on a store with transactions: a relational database, or MongoDB as a
+    replica set or sharded cluster. On a standalone MongoDB server, a crash in the middle of an event can keep its
+    state without its outbound events; Aktimetrix warns at startup, and with
+    `aktimetrix.storage.transactions=always` an event fails there rather than be processed without a transaction. The in-memory store is for tests and demonstrations: neither atomic nor durable.
+  - *Security.* Authentication is the application's: with Spring Security, the REST API requires a reader role to
+    query and a writer role to change definitions, and the application decides how users sign in. Without it, the
+    API is open to whoever can reach it.
 
 ## 11. Further reading
 

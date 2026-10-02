@@ -16,7 +16,7 @@ settings with the standard Spring Boot properties.
 | `aktimetrix-store-jdbc` | `spring.datasource.url`, `.username`, `.password`, and the database's JDBC driver | Written for PostgreSQL; atomic units of work. |
 | `aktimetrix-store-memory` | none | Not durable, not shared between instances, not atomic: for tests and demos. |
 | `aktimetrix-broker-kafka` | `spring.kafka.properties.bootstrap.servers` (or `spring.cloud.stream.kafka.binder.brokers`) | Events of one entity are processed in order through partitions keyed by entity id. |
-| `aktimetrix-broker-rabbitmq` | `spring.rabbitmq.host`, `.port`, `.username`, `.password` | Events are processed in order by a single active consumer; see [RabbitMQ](#rabbitmq). |
+| `aktimetrix-broker-rabbitmq` | `spring.rabbitmq.host`, `.port`, `.username`, `.password` | Events are processed in order by a single active consumer, or split by entity into partitions; see [RabbitMQ](#rabbitmq). |
 
 For example, MongoDB and Kafka:
 
@@ -61,6 +61,8 @@ aktimetrix:
 | `aktimetrix.events.deduplication.enabled` | `true` | Ignore an event whose `eventId` was already processed, such as a message delivered twice. Events without an `eventId` are never deduplicated. |
 | `aktimetrix.events.deduplication.retention` | `P7D` | How long processed event ids are remembered. |
 | `aktimetrix.events.max-future-skew` | `PT5M` | How far in the future an event's business time may be; an event dated later is invalid, and sent to the dead-letter topic. |
+| `aktimetrix.events.partitions` | `1` | RabbitMQ: how many partitions the inbound events are split into, by entity; see [RabbitMQ](#rabbitmq). |
+| `aktimetrix.events.partition` | none | RabbitMQ: the partition this instance consumes, from `0`; required with several partitions. |
 | `aktimetrix.definitions.load-on-startup` | `true` | Load process and step definitions from the classpath at startup. |
 | `aktimetrix.definitions.processes` | `classpath*:aktimetrix/process-definitions.json` | Location of the process definitions: a JSON array. |
 | `aktimetrix.definitions.steps` | `classpath*:aktimetrix/step-definitions.json` | Location of the step definitions: a JSON array. |
@@ -131,8 +133,14 @@ or on `COMPLETED` with `timeliness` `LATE`.
 - **Events exchange and queue.** Source systems publish to the topic exchange `aktimetrix.events.topic`; Aktimetrix
   consumes from the queue `<topic>.<group>`, for example `order-events.aktimetrix`, bound to it with `#`.
 - **Order.** The queue has a single active consumer: whichever instance holds it processes the events in order, and
-  another takes over if it stops. To process in parallel while keeping each entity's events in order, use Spring
-  Cloud Stream partitioning on `processor-in-0`, keyed by the entity id.
+  another takes over if it stops.
+- **Partitions.** To process in parallel while keeping each entity's events in order, split the events by entity:
+  set `aktimetrix.events.partitions` to the number of partitions, and give each instance the partition it consumes,
+  `aktimetrix.events.partition`, from `0`. Partition `N` is the queue `<topic>.<group>-N`, bound with the routing key
+  `<topic>-N`, and has a single active consumer, so a second instance with the same partition stands by. Source
+  systems publish an entity's events with the routing key of its partition: the CRC-32 of the entity id, as UTF-8,
+  modulo the number of partitions, which `RabbitEventPartitions.routingKey(topic, entityId, partitions)` computes.
+  Kafka needs none of this: events are partitioned by their message key, the entity id.
 - **Dead letters.** The RabbitMQ module declares a durable direct exchange and a durable queue, both named
   `aktimetrix.events.dead-letter.topic`, bound by that name. Failing events are republished there by the binder, and
   invalid ones are published there by Aktimetrix. Only standard AMQP 0-9-1 features are used for this, not RabbitMQ's
@@ -450,6 +458,20 @@ durations and tolerances; what already happened is kept.
 curl -X POST http://localhost:8080/reference-data/process-definitions/AA/ORDER_DELIVERY/migrations
 # {"processCode":"ORDER_DELIVERY","revision":4,"migrated":["66b2…"],"upToDate":12,"failed":[]}
 ```
+
+**Security.** When the application uses Spring Security, every endpoint requires a role: a reader may query, a
+writer may also create and change definitions and migrate instances. A user without the role is answered `403`.
+How users sign in, with a password, a token or a certificate, is the application's own security configuration, which
+keeps securing its other endpoints. The roles are granted authorities, named with or without the `ROLE_` prefix, so a
+token's scope works too.
+
+| Property | Default | Purpose |
+|---|---|---|
+| `aktimetrix.rest.security.enabled` | `true` | Require the roles; `false` lets in any user the application authenticates. |
+| `aktimetrix.rest.security.reader-role` | `AKTIMETRIX_READER` | Role, or authority, that may query. |
+| `aktimetrix.rest.security.writer-role` | `AKTIMETRIX_WRITER` | Role, or authority, that may also change definitions and migrate instances. |
+
+Without Spring Security, the API is open to whoever can reach it: keep it on an internal network.
 
 A posted definition is checked as strictly as a definition file. When it is not valid, nothing is saved and the answer
 is `400 Bad Request` listing every problem, such as

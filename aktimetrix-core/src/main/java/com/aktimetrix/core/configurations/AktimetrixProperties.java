@@ -43,6 +43,17 @@ public class AktimetrixProperties {
          * later is invalid, and sent to the dead-letter topic.
          */
         private Duration maxFutureSkew = Duration.ofMinutes(5);
+        /**
+         * How many partitions the inbound events are split into, by entity, on a broker that does not partition them
+         * itself (RabbitMQ); each instance consumes one, {@link #partition}, so that instances process in parallel
+         * and each entity's events stay in order. {@code 1}: one queue.
+         */
+        private int partitions = 1;
+        /**
+         * The partition this instance consumes, from {@code 0} to {@code partitions - 1}; required when there are
+         * several.
+         */
+        private Integer partition;
 
         @Data
         public static class Deduplication {

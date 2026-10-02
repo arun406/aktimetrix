@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +32,7 @@ public class StepDefinitionResource {
         this.service = service;
     }
 
+    @PreAuthorize("@aktimetrixRestAccess.canWrite(authentication)")
     @PostMapping
     @Operation(summary = "Create or replace a step definition",
             description = "Replaces the definition with the same tenant and step code. The definition is validated first, as "
@@ -43,6 +45,7 @@ public class StepDefinitionResource {
         return ResponseEntity.created(URI.create("/reference-data/step-definitions/" + saved.getId())).build();
     }
 
+    @PreAuthorize("@aktimetrixRestAccess.canRead(authentication)")
     @GetMapping
     @Operation(summary = "List the step definitions", description = "Of every tenant.")
     public List<StepDefinition> list() {

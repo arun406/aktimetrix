@@ -28,6 +28,12 @@ version may change the public API.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
 **Added**
+- RabbitMQ partitions: with `aktimetrix.events.partitions` and `aktimetrix.events.partition`, the inbound events are
+  split by entity into several queues, one per instance, each with a single active consumer, so instances process in
+  parallel and each entity's events stay in order. `RabbitEventPartitions` gives source systems the routing key.
+- REST API security: when the application uses Spring Security, queries require the role `AKTIMETRIX_READER` and
+  changes `AKTIMETRIX_WRITER` (`aktimetrix.rest.security.*`); authentication stays with the application.
+
 - Migration: the running instances of a process can be moved to the current revision of its definition, with
   `ProcessMigrationService` or `POST /reference-data/process-definitions/{tenant}/{processCode}/migrations`. Added
   steps are created and planned, removed ones skipped while open, and steps still awaited planned again; what already
