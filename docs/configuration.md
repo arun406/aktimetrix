@@ -92,7 +92,7 @@ These are set with the lowest precedence, so your own configuration always wins:
 
 | Property | Default | Set by |
 |---|---|---|
-| `spring.cloud.stream.function.definition` | `processor` | core |
+| `spring.cloud.function.definition` | `processor`; `eventRouter;processor` with RabbitMQ partitions | core; RabbitMQ module |
 | `spring.cloud.stream.bindings.processor-in-0.destination` | `${aktimetrix.events.topic}` | core |
 | `spring.cloud.stream.bindings.processor-in-0.group` | `${aktimetrix.events.group}` | core |
 | `spring.cloud.stream.bindings.dead-letter-out-0.destination` | `${aktimetrix.events.dead-letter.topic}` | core |
@@ -104,7 +104,8 @@ These are set with the lowest precedence, so your own configuration always wins:
 | `spring.cloud.stream.rabbit.bindings.*-out-0.producer.routingKeyExpression` | `headers['aktimetrixKey']`; for dead letters, the dead-letter queue's name | RabbitMQ module |
 
 If your application defines Spring Cloud Stream functions of its own, include `processor` in your
-`spring.cloud.stream.function.definition`, e.g. `processor;myFunction`.
+`spring.cloud.function.definition`, e.g. `processor;myFunction`, and `eventRouter` too when RabbitMQ events are
+partitioned.
 
 The alarm scheduler, the overdue sweep and the outbox relay are `@Scheduled` tasks, so Aktimetrix enables Spring's scheduling in the application.
 
@@ -135,12 +136,25 @@ or on `COMPLETED` with `timeliness` `LATE`.
 - **Order.** The queue has a single active consumer: whichever instance holds it processes the events in order, and
   another takes over if it stops.
 - **Partitions.** To process in parallel while keeping each entity's events in order, split the events by entity:
-  set `aktimetrix.events.partitions` to the number of partitions, and give each instance the partition it consumes,
-  `aktimetrix.events.partition`, from `0`. Partition `N` is the queue `<topic>.<group>-N`, bound with the routing key
-  `<topic>-N`, and has a single active consumer, so a second instance with the same partition stands by. Source
-  systems publish an entity's events with the routing key of its partition: the CRC-32 of the entity id, as UTF-8,
-  modulo the number of partitions, which `RabbitEventPartitions.routingKey(topic, entityId, partitions)` computes.
-  Kafka needs none of this: events are partitioned by their message key, the entity id.
+  set `aktimetrix.events.partitions` to the number of partitions, and give each instance the partition it processes,
+  `aktimetrix.events.partition`, from `0`. Source systems change nothing: they publish to the events exchange as
+  before. An **event router** consumes the events queue `<topic>.<group>`, with a single active consumer so that it
+  reads the events in order, finds each event's entity with the event mapper, and republishes the event unchanged to
+  the exchange `<topic>.partitioned`, choosing the partition from the entity id. It acknowledges the event and
+  republishes it in one AMQP transaction, so an event is neither lost nor duplicated between the two. Partition `N`
+  is the queue `<topic>.partitioned.<group>-N`; every partition's queue is declared as soon as one instance starts,
+  and each has a single active consumer, so a second instance with the same partition stands by. Every instance runs
+  the router, of which one is active at a time; routing only reads the entity id, so it keeps up with processing
+  spread over the partitions. The number of partitions decides where each entity goes: change it only when the
+  queues are empty.
+
+  ```
+  sources ─► <topic> ─► <topic>.aktimetrix ─► event router ─► <topic>.partitioned ─┬─► …aktimetrix-0 ─► instance 0
+                                                                                   └─► …aktimetrix-1 ─► instance 1
+  ```
+
+  Kafka needs no router as long as the sources key their messages by entity id: events are then partitioned by that
+  key.
 - **Dead letters.** The RabbitMQ module declares a durable direct exchange and a durable queue, both named
   `aktimetrix.events.dead-letter.topic`, bound by that name. Failing events are republished there by the binder, and
   invalid ones are published there by Aktimetrix. Only standard AMQP 0-9-1 features are used for this, not RabbitMQ's

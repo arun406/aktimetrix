@@ -16,7 +16,10 @@ import java.util.Map;
  */
 public class AktimetrixDefaultProperties implements EnvironmentPostProcessor {
 
-    static final String SOURCE_NAME = "aktimetrixDefaults";
+    /**
+     * Name of the property source of these defaults; a broker module's own defaults take precedence over it.
+     */
+    public static final String SOURCE_NAME = "aktimetrixDefaults";
     /**
      * Binding of the dead-letter channel, for events Aktimetrix rejects itself.
      */
@@ -37,7 +40,7 @@ public class AktimetrixDefaultProperties implements EnvironmentPostProcessor {
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         Map<String, Object> defaults = new HashMap<>();
         // inbound business events
-        defaults.put("spring.cloud.stream.function.definition", "processor");
+        defaults.put("spring.cloud.function.definition", "processor");
         defaults.put("spring.cloud.stream.bindings.processor-in-0.destination", "${aktimetrix.events.topic:business-events}");
         defaults.put("spring.cloud.stream.bindings.processor-in-0.group", "${aktimetrix.events.group:aktimetrix}");
         // invalid events go to the dead-letter channel through the outbox and the dead-letter-out-0 binding; events

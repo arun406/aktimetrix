@@ -22,12 +22,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Consumes the inbound business events (binding {@code processor-in-0}, topic {@code aktimetrix.events.topic}) and
@@ -37,6 +39,12 @@ import java.util.function.Consumer;
 public class ProcessConfig {
 
     final private static Logger logger = LoggerFactory.getLogger(ProcessConfig.class);
+
+    /**
+     * Header carrying the entity id the event router partitions by.
+     */
+    public static final String PARTITION_KEY_HEADER = "aktimetrixPartitionKey";
+
     @Autowired
     private EventMapper eventMapper;
     @Autowired
@@ -105,6 +113,30 @@ public class ProcessConfig {
                 metrics.eventReceived(event.getTenantKey(), event.getEventCode(), "failed");
                 throw e;
             }
+        };
+    }
+
+    /**
+     * Routes the inbound events by entity, for a broker that does not partition them itself (RabbitMQ with
+     * {@code aktimetrix.events.partitions} above 1): it reads each event's entity id with the {@link EventMapper}, so
+     * source systems publish as they always do, and passes the event on unchanged, with the entity id in the
+     * {@value #PARTITION_KEY_HEADER} header, from which the binder chooses its partition. Events of one entity thus
+     * reach one partition, in order. An event the mapper cannot read is passed on too, to be rejected there.
+     */
+    @Bean
+    public Function<Message<byte[]>, Message<byte[]>> eventRouter() {
+        return message -> {
+            String key = "";
+            try {
+                final Event<?, ?> event = eventMapper.map(text(message.getPayload()), message.getHeaders());
+                if (event != null && event.getEntityId() != null) {
+                    key = event.getEntityId();
+                }
+            } catch (Exception e) {
+                logger.debug("Event routed without an entity: {}", e.getMessage());
+            }
+            return MessageBuilder.withPayload(message.getPayload()).copyHeaders(message.getHeaders())
+                    .setHeader(PARTITION_KEY_HEADER, key).build();
         };
     }
 

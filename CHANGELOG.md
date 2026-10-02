@@ -28,9 +28,11 @@ version may change the public API.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
 **Added**
-- RabbitMQ partitions: with `aktimetrix.events.partitions` and `aktimetrix.events.partition`, the inbound events are
-  split by entity into several queues, one per instance, each with a single active consumer, so instances process in
-  parallel and each entity's events stay in order. `RabbitEventPartitions` gives source systems the routing key.
+- RabbitMQ partitions: with `aktimetrix.events.partitions` and `aktimetrix.events.partition`, an event router reads
+  each inbound event's entity with the event mapper and republishes it, in the same AMQP transaction, to the partition
+  of that entity; each instance processes one partition, with a single active consumer. Instances process in parallel,
+  each entity's events stay in order, and source systems publish exactly as before.
+- `spring.cloud.function.definition` replaces the deprecated `spring.cloud.stream.function.definition` in the defaults.
 - REST API security: when the application uses Spring Security, queries require the role `AKTIMETRIX_READER` and
   changes `AKTIMETRIX_WRITER` (`aktimetrix.rest.security.*`); authentication stays with the application.
 
