@@ -51,8 +51,10 @@ final class MongoInstanceStores {
         @Override
         public Optional<ProcessInstance> findByEntity(String tenant, String processCode, String entityType,
                                                       String entityId) {
-            return one(where("tenant").is(tenant).and("processCode").is(processCode).and("entityType").is(entityType)
-                    .and("entityId").is(entityId));
+            final Query latest = Query.query(where("tenant").is(tenant).and("processCode").is(processCode)
+                    .and("entityType").is(entityType).and("entityId").is(entityId))
+                    .with(Sort.by(Sort.Direction.DESC, "run")).limit(1);
+            return Optional.ofNullable(mongo.findOne(latest, ProcessInstance.class, PROCESS_INSTANCES));
         }
 
         @Override

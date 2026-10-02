@@ -59,6 +59,11 @@ public class ProcessDefinition {
      */
     private String tolerance;
     /**
+     * Whether an entity may run the process again: a start event that arrives after its latest run has completed or
+     * been cancelled starts a new run, such as a re-delivery. By default an entity runs the process once.
+     */
+    private boolean restartable;
+    /**
      * Incremented each time the definition is saved. A process instance keeps the definition, at the revision it
      * started with, until it ends; a change applies to instances started after it.
      */

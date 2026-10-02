@@ -32,9 +32,14 @@ CREATE TABLE IF NOT EXISTS aktimetrix_process_instance (
     late_after   TIMESTAMP,
     timeliness   VARCHAR(16),
     revision     BIGINT       NOT NULL,
-    document     TEXT         NOT NULL,
-    CONSTRAINT aktimetrix_process_entity UNIQUE (tenant, process_code, entity_type, entity_id)
+    run_number   INTEGER      DEFAULT 1 NOT NULL,
+    document     TEXT         NOT NULL
 );
+-- one instance per run of a process for an entity; upgrades a table that had one instance per entity
+ALTER TABLE aktimetrix_process_instance ADD COLUMN IF NOT EXISTS run_number INTEGER DEFAULT 1 NOT NULL;
+ALTER TABLE aktimetrix_process_instance DROP CONSTRAINT IF EXISTS aktimetrix_process_entity;
+CREATE UNIQUE INDEX IF NOT EXISTS aktimetrix_process_entity_run
+    ON aktimetrix_process_instance (tenant, process_code, entity_type, entity_id, run_number);
 CREATE INDEX IF NOT EXISTS aktimetrix_process_by_entity ON aktimetrix_process_instance (tenant, entity_id);
 CREATE INDEX IF NOT EXISTS aktimetrix_process_deadlines ON aktimetrix_process_instance (late_after, complete);
 CREATE TABLE IF NOT EXISTS aktimetrix_step_instance (

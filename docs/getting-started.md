@@ -234,6 +234,7 @@ public class OrderDefinitions {
 | DSL | Definition field |
 |---|---|
 | `startsOn`, `endsOn`, `cancelledOn` on a process | `startEventCodes`, `endEventCodes`, `cancelEventCodes` |
+| `restartable()` on a process | `restartable: true` |
 | `on` on a step (a milestone); `startsOn` and `endsOn` (a step with a duration); `progressOn` | `startEventCodes`; `startEventCodes` and `endEventCodes`; `progressEventCodes` |
 | `after`, `within`, `tolerance`, `optional()` | `plannedAfter`, `plannedWithin`, `tolerance`, `"optionalInd": "Y"` |
 | `plan(code, m -> ...)`, `actual(code, valueFrom, unit)`, `measure(code, valueFrom, m -> ...)` | a planned (`P`) measurement; an actual (`A`) one; both |

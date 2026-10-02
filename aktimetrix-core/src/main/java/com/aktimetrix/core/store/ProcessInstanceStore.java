@@ -12,7 +12,7 @@ import java.util.Optional;
  * {@link #save} inserts an instance without an id, assigning one, and otherwise updates it with a version check: it
  * increments {@code revision}, and throws {@link org.springframework.dao.OptimisticLockingFailureException} when the
  * stored revision is not the one the instance was read with. At most one instance may exist per tenant, process code,
- * entity type and entity id: inserting a second throws {@link org.springframework.dao.DuplicateKeyException}.
+ * entity type, entity id and run: inserting a second throws {@link org.springframework.dao.DuplicateKeyException}.
  */
 public interface ProcessInstanceStore {
 
@@ -21,12 +21,12 @@ public interface ProcessInstanceStore {
     Optional<ProcessInstance> findById(String tenant, String id);
 
     /**
-     * The instance of the process for the entity, whatever its status.
+     * The latest run of the process for the entity, whatever its status.
      */
     Optional<ProcessInstance> findByEntity(String tenant, String processCode, String entityType, String entityId);
 
     /**
-     * Every instance of any process for the entity id, whatever its entity type and status.
+     * Every instance of any process for the entity id, every run, whatever its entity type and status.
      */
     List<ProcessInstance> findByEntityId(String tenant, String entityId);
 

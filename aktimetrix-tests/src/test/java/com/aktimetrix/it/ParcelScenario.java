@@ -5,6 +5,8 @@ import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.store.ProcessInstanceStore;
+import com.aktimetrix.core.store.StepInstanceStore;
 import com.aktimetrix.it.support.TestBroker;
 import com.aktimetrix.it.support.TestMonitor;
 import com.aktimetrix.it.support.TestStore;
@@ -13,15 +15,21 @@ import tools.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.aktimetrix.it.support.TestMonitor.await;
 import static com.aktimetrix.it.support.TestMonitor.awaitTrue;
@@ -37,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The process as a whole has a planned DISTANCE and should take 12 hours; the parcel is cancelled before delivery.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public abstract class ParcelScenario {
 
     private static final String TOPIC = "parcel-events";
@@ -139,6 +148,51 @@ public abstract class ParcelScenario {
                 .as("PICKUP and SORT").isEqualTo(2);
         assertThat(monitor.meters().get("aktimetrix.processes.cancelled").counter().count()).isEqualTo(1);
         assertThat(total(monitor.meters().get("aktimetrix.events").tag("outcome", "handled").counters())).isEqualTo(4);
+    }
+
+    /**
+     * The process is restartable: a parcel booked again after its run was cancelled starts a second run, which later
+     * events apply to; a replay of the booking that started the first run starts nothing.
+     */
+    @Test
+    @Order(Integer.MAX_VALUE)   // last: its runs would change the counters the other scenarios check
+    void aRestartableProcessStartsANewRunAfterTheLatestEnded() {
+        sendFor("P-5", "booking-1", "PARCEL_BOOKED", "2024-01-11 09:00:00", "{\"bookedAt\":\"2024-01-11 09:00:00\"}");
+        await(() -> monitor.process("PARCEL", "P-5"), p -> p.getId() != null, "run 1 starting");
+        sendFor("P-5", "cancel-1", "PARCEL_CANCELLED", "2024-01-11 10:00:00", null);
+        await(() -> monitor.process("PARCEL", "P-5"), p -> "Cancelled".equals(p.getStatus()), "run 1 cancelled");
+
+        sendFor("P-5", "booking-1", "PARCEL_BOOKED", "2024-01-11 09:00:00", "{\"bookedAt\":\"2024-01-11 09:00:00\"}");
+        sendFor("P-5", "booking-2", "PARCEL_BOOKED", "2024-01-11 11:00:00", "{\"bookedAt\":\"2024-01-11 11:00:00\"}");
+        awaitTrue(() -> runs("P-5").size() == 2, "run 2 starting");
+        sendFor("P-5", "pickup-2", "PARCEL_PICKED_UP", "2024-01-11 12:00:00", null);
+
+        final List<ProcessInstance> runs = runs("P-5");
+        assertThat(runs).extracting(ProcessInstance::getRun).containsExactly(1, 2);
+        assertThat(runs.get(1).getStartEventId()).isEqualTo("booking-2");
+        assertThat(runs.get(1).getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 11, 11, 0));
+        awaitTrue(() -> stepOf(runs.get(1), "PICKUP").map(s -> "Completed".equals(s.getStatus())).orElse(false),
+                "PICKUP of run 2 completing");
+        assertThat(stepOf(runs.get(0), "PICKUP").orElseThrow().getStatus()).as("run 1 has ended")
+                .isEqualTo("Cancelled");
+    }
+
+    private List<ProcessInstance> runs(String entityId) {
+        return monitor.bean(ProcessInstanceStore.class).findByEntityId("T1", entityId).stream()
+                .filter(p -> "PARCEL".equals(p.getProcessCode()))
+                .sorted(Comparator.comparingInt(ProcessInstance::getRun))
+                .collect(Collectors.toList());
+    }
+
+    private Optional<StepInstance> stepOf(ProcessInstance run, String stepCode) {
+        return monitor.bean(StepInstanceStore.class).findByProcessInstance("T1", run.getId()).stream()
+                .filter(s -> stepCode.equals(s.getStepCode())).findFirst();
+    }
+
+    private void sendFor(String entityId, String eventId, String eventCode, String utcTime, String entity) {
+        broker.send(TOPIC, entityId, "{\"tenantKey\":\"T1\",\"eventId\":\"" + eventId + "\",\"eventCode\":\""
+                + eventCode + "\",\"entityType\":\"parcel\",\"entityId\":\"" + entityId + "\",\"eventUTCTime\":\""
+                + utcTime + "\"" + (entity == null ? "" : ",\"entity\":" + entity) + "}");
     }
 
     /**

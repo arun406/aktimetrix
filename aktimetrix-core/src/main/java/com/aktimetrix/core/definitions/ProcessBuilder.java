@@ -86,6 +86,15 @@ public final class ProcessBuilder extends MeasurementsBuilder<ProcessBuilder> {
     }
 
     /**
+     * Lets an entity run the process again: a start event after its latest run has ended starts a new run, such as
+     * a re-delivery of an order.
+     */
+    public ProcessBuilder restartable() {
+        definition.setRestartable(true);
+        return this;
+    }
+
+    /**
      * The process's own deadline: this long after it starts, e.g. {@code "P1D"}.
      */
     public ProcessBuilder within(String isoDuration) {

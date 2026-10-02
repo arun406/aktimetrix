@@ -196,7 +196,7 @@ class StepProgressServiceTest {
         process.setProcessCode("ORDER_DELIVERY");
         ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
         definition.setCancelEventCodes(List.of("ORDER_CANCELLED_EVENT"));
-        when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
+        when(processInstanceService.getCurrentRuns(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
         useDefinition(definition);
         StepInstance place = step("PLACE", Constants.STATUS_COMPLETED);
         StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
@@ -223,7 +223,7 @@ class StepProgressServiceTest {
         givenSteps(step("DELIVER", Constants.STATUS_COMPLETED), rated);
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
         givenDefinition("RATED", List.of("ORDER_RATED_EVENT"), List.of()).setOptionalInd("Y");
-        when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
+        when(processInstanceService.getCurrentRuns(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
 
         service.recordMilestones(TENANT, "com.ecom.order", "1234", "ORDER_RATED_EVENT", SHIPPED_AT);
 
@@ -237,7 +237,7 @@ class StepProgressServiceTest {
         process.setProcessCode("ORDER_DELIVERY");
         ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
         definition.setEndEventCodes(List.of("ORDER_CLOSED_EVENT"));
-        when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
+        when(processInstanceService.getCurrentRuns(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
         useDefinition(definition);
         StepInstance place = step("PLACE", Constants.STATUS_COMPLETED);
         StepInstance deliver = step("DELIVER", Constants.STATUS_CREATED);
@@ -278,7 +278,7 @@ class StepProgressServiceTest {
         process.setProcessCode("ORDER_DELIVERY");
         ProcessDefinition definition = new ProcessDefinition(TENANT, "ORDER_DELIVERY");
         definition.setCancelEventCodes(List.of("ORDER_CANCELLED_EVENT"));
-        when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
+        when(processInstanceService.getCurrentRuns(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
         useDefinition(definition);
 
         service.recordMilestones(TENANT, "com.ecom.order", "1234", "ORDER_CANCELLED_EVENT", SHIPPED_AT);
@@ -328,7 +328,7 @@ class StepProgressServiceTest {
 
     @Test
     void recordsMilestonesOnEveryActiveProcessOfTheEntity() {
-        when(processInstanceService.getNotCancelledProcessInstances(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
+        when(processInstanceService.getCurrentRuns(TENANT, "com.ecom.order", "1234")).thenReturn(List.of(process));
         StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
         givenSteps(ship);
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());

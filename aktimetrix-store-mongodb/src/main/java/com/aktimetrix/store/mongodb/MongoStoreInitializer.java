@@ -36,8 +36,8 @@ import static com.aktimetrix.store.mongodb.MongoCollections.STEP_INSTANCES;
  *     Disable with {@code aktimetrix.storage.create-indexes=false} to manage them yourself.</li>
  * </ul>
  * <p>
- * The process instance index is unique: at most one instance per tenant, process and entity, even when two events
- * start the same process at the same time.
+ * The process instance index is unique: at most one instance per tenant, process, entity and run, even when two
+ * events start the same process at the same time. It replaces the earlier index of one instance per entity.
  */
 public class MongoStoreInitializer implements InitializingBean {
     private static final Logger logger = LoggerFactory.getLogger(MongoStoreInitializer.class);
@@ -90,7 +90,10 @@ public class MongoStoreInitializer implements InitializingBean {
     }
 
     public void createIndexes() {
-        ensure(PROCESS_INSTANCES, index("aktimetrix_process_entity", "tenant", "processCode", "entityType", "entityId").unique());
+        // one instance per run of a process for an entity; replaces the index of one instance per entity
+        dropIndex(PROCESS_INSTANCES, "aktimetrix_process_entity");
+        ensure(PROCESS_INSTANCES, index("aktimetrix_process_entity_run", "tenant", "processCode", "entityType",
+                "entityId", "run").unique());
         ensure(PROCESS_INSTANCES, index("aktimetrix_entity", "tenant", "entityId"));
         ensure(PROCESS_INSTANCES, index("aktimetrix_process_deadlines", "lateAfter", "complete"));
         ensure(STEP_INSTANCES, index("aktimetrix_process_steps", "tenant", "processInstanceId"));
@@ -109,6 +112,15 @@ public class MongoStoreInitializer implements InitializingBean {
             index.on(key, Direction.ASC);
         }
         return index;
+    }
+
+    private void dropIndex(String collection, String name) {
+        final boolean exists = mongoTemplate.indexOps(collection).getIndexInfo().stream()
+                .anyMatch(info -> name.equals(info.getName()));
+        if (exists) {
+            mongoTemplate.indexOps(collection).dropIndex(name);
+            logger.info("Dropped index {} on {}", name, collection);
+        }
     }
 
     private void ensure(String collection, Index index) {

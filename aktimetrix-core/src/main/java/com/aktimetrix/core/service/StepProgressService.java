@@ -58,8 +58,8 @@ public class StepProgressService {
     private final DerivedMetricService derivedMetricService;
 
     /**
-     * Applies the event to the business entity's process instances that are not cancelled: running ones, and completed
-     * ones, whose optional steps may still happen, such as a rating after delivery.
+     * Applies the event to the latest run of each of the business entity's processes, unless it was cancelled: a
+     * running one, or a completed one, whose optional steps may still happen, such as a rating after delivery.
      *
      * @return actual measurements recorded for the steps this event completed
      */
@@ -78,7 +78,7 @@ public class StepProgressService {
                                                       String eventCode, LocalDateTime occurredAt, Event<?, ?> event) {
         final List<MeasurementInstance> actuals = new ArrayList<>();
         final List<ProcessInstance> processInstances =
-                processInstanceService.getNotCancelledProcessInstances(tenant, entityType, entityId);
+                processInstanceService.getCurrentRuns(tenant, entityType, entityId);
         if (processInstances.isEmpty()) {
             logger.debug("No process instance for {} {}; {} records nothing", entityType, entityId, eventCode);
         }

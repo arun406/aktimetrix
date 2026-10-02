@@ -83,6 +83,15 @@ public class ProcessInstance {
      * Revision of {@link #definition}.
      */
     private Long definitionRevision;
+    /**
+     * Which run of the process this is for the entity: 1, then 2 and on when a restartable process starts again
+     * after a run has ended.
+     */
+    private int run = 1;
+    /**
+     * Id of the business event that started this run; a replay of it starts no new run.
+     */
+    private String startEventId;
     @Transient
     private List<StepInstance> steps = new ArrayList<>();
 

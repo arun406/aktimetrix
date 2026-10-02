@@ -290,6 +290,13 @@ optional ones stay open.
 A cancelled process is no longer monitored: a cancelled order does not leave steps to go overdue. A completed
 process still records its optional steps, which may happen later: the customer's rating the day after delivery.
 
+**Runs.** By default an entity runs a process once: a start event that arrives again, for an instance that exists, is
+a replay and starts nothing. A process declared *restartable* can run again for the same entity, such as an order
+delivered a second time after a failed attempt: a start event that arrives after the latest run has completed or been
+cancelled starts run 2, then 3. Business events then apply to the latest run only; earlier runs keep their results.
+A replay of the event that started a run, recognised by its `eventId`, starts nothing; an event without an `eventId`
+never starts a new run.
+
 ### 4.2 Planning
 
 Planned values are derived when a process instance is created, for the process and for each of its steps:
@@ -882,8 +889,6 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 
 - **Ordered milestones.** A process is a sequence of steps, each completed once. Branches, loops and repeated
   attempts of a step are not modelled.
-- **One run per entity.** There is one instance of a process per tenant, process and entity. A second run for the
-  same entity, for example a re-delivery, needs a different entity id or process.
 - **Metrics at completion.** A process's metrics are computed once, when it completes, from sums of its
   measurements; values recorded afterwards, such as a later rating, are not included, and the expressions are plain
   arithmetic.

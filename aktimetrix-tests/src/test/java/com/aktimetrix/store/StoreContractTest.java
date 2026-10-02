@@ -167,11 +167,22 @@ public abstract class StoreContractTest {
     }
 
     @Test
-    void thereIsAtMostOneInstanceOfAProcessPerEntity() {
+    void thereIsAtMostOneInstanceOfAProcessPerEntityAndRun() {
         final String tenant = unique();
-        processes.save(process(tenant, "1234"));
+        final ProcessInstance first = processes.save(process(tenant, "1234"));
 
         assertThatThrownBy(() -> processes.save(process(tenant, "1234"))).isInstanceOf(DuplicateKeyException.class);
+
+        final ProcessInstance second = process(tenant, "1234");
+        second.setRun(2);
+        processes.save(second);
+        assertThat(processes.findByEntity(tenant, "ORDER_DELIVERY", "com.ecom.order", "1234")).get()
+                .as("the latest run").satisfies(found -> {
+                    assertThat(found.getId()).isEqualTo(second.getId());
+                    assertThat(found.getRun()).isEqualTo(2);
+                });
+        assertThat(processes.findById(tenant, first.getId())).get().extracting(ProcessInstance::getRun).isEqualTo(1);
+        assertThat(processes.findByEntityId(tenant, "1234")).hasSize(2);
     }
 
     @Test

@@ -19,6 +19,12 @@ version may change the public API.
   (`/v3/api-docs/aktimetrix`); Swagger UI is available by adding `springdoc-openapi-starter-webmvc-ui`.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
+**Added**
+- Runs: a process declared `restartable` can run again for the same entity, such as a re-delivery. A start event with a
+  new `eventId` after the latest run has ended starts the next run; events apply to the latest run. Each instance
+  carries its `run` number and `startEventId`. Stores keep one instance per entity and run; MongoDB indexes and JDBC
+  tables are upgraded in place.
+
 **Security**
 - A metric expression is limited to 1,000 characters and 32 levels of nesting, and checked when its definition is
   saved, so that a deeply nested expression cannot exhaust the stack when a process completes.

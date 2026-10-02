@@ -59,10 +59,11 @@ final class JdbcInstanceStores {
                 }
                 instance.setRevision(0L);
                 jdbc.update("INSERT INTO aktimetrix_process_instance (id, tenant, process_code, entity_type, entity_id, "
-                                + "status, complete, late_after, timeliness, revision, document) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                + "status, complete, late_after, timeliness, revision, run_number, document) "
+                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         instance.getId(), instance.getTenant(), instance.getProcessCode(), instance.getEntityType(),
                         instance.getEntityId(), instance.getStatus(), instance.isComplete(), instance.getLateAfter(),
-                        timeliness(instance.getTimeliness()), 0L, StoreDocuments.toJson(instance));
+                        timeliness(instance.getTimeliness()), 0L, instance.getRun(), StoreDocuments.toJson(instance));
                 return instance;
             }
             final long read = instance.getRevision();
@@ -89,7 +90,8 @@ final class JdbcInstanceStores {
         public Optional<ProcessInstance> findByEntity(String tenant, String processCode, String entityType,
                                                       String entityId) {
             return jdbc.query("SELECT " + COLUMNS + " FROM aktimetrix_process_instance WHERE tenant = ? AND process_code = ? "
-                    + "AND entity_type = ? AND entity_id = ?", rows, tenant, processCode, entityType, entityId).stream().findFirst();
+                    + "AND entity_type = ? AND entity_id = ? ORDER BY run_number DESC LIMIT 1", rows, tenant, processCode,
+                    entityType, entityId).stream().findFirst();
         }
 
         @Override

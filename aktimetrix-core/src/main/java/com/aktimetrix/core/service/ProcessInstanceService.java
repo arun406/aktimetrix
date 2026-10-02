@@ -1,5 +1,6 @@
 package com.aktimetrix.core.service;
 
+import com.aktimetrix.core.api.Constants;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.store.ProcessInstanceStore;
 import com.aktimetrix.core.store.StepInstanceStore;
@@ -8,7 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,11 +48,39 @@ public class ProcessInstanceService {
     }
 
     /**
-     * Returns the process instance of the process for the entity, whatever its status, or {@code null}.
+     * Returns the latest run of the process for the entity, whatever its status, or {@code null}.
      */
     public ProcessInstance getProcessInstance(String tenant, String processCode, String entityType, String entityId) {
         // not filtered by status, so a completed process is not re-created when its start event is replayed
         return store.findByEntity(tenant, processCode, entityType, entityId).orElse(null);
+    }
+
+    /**
+     * Every run of the process for the entity, first to last.
+     */
+    public List<ProcessInstance> getRuns(String tenant, String processCode, String entityType, String entityId) {
+        return store.findByEntityId(tenant, entityId).stream()
+                .filter(instance -> processCode.equals(instance.getProcessCode())
+                        && Objects.equals(entityType, instance.getEntityType()))
+                .sorted(Comparator.comparingInt(ProcessInstance::getRun))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * The latest run of each process of the business entity, unless it was cancelled: the runs that business events
+     * still apply to. An earlier run has ended for good, and is left alone.
+     */
+    public List<ProcessInstance> getCurrentRuns(String tenant, String entityType, String entityId) {
+        final Map<String, ProcessInstance> latest = new LinkedHashMap<>();
+        for (ProcessInstance instance : store.findByEntityId(tenant, entityId)) {
+            if (!Objects.equals(entityType, instance.getEntityType())) {
+                continue;
+            }
+            latest.merge(instance.getProcessCode(), instance, (a, b) -> a.getRun() >= b.getRun() ? a : b);
+        }
+        return latest.values().stream()
+                .filter(instance -> !Constants.STATUS_CANCELLED.equals(instance.getStatus()))
+                .collect(Collectors.toList());
     }
 
     /**
