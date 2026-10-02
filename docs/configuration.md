@@ -146,19 +146,19 @@ or on `COMPLETED` with `timeliness` `LATE`.
   and each has a single active consumer, so a second instance with the same partition stands by. Every instance runs
   the router, of which one is active at a time; routing only reads the entity id, so it keeps up with processing
   spread over the partitions. The number of partitions decides where each entity goes: change it only when the
-  queues are empty.
-
-  ```
-  sources ─► <topic> ─► <topic>.aktimetrix ─► event router ─► <topic>.partitioned ─┬─► …aktimetrix-0 ─► instance 0
-                                                                                   └─► …aktimetrix-1 ─► instance 1
-  ```
-
-  Kafka needs no router as long as the sources key their messages by entity id: events are then partitioned by that
-  key.
+  queues are empty. Kafka needs no router as long as the sources key their messages by entity id: events are then
+  partitioned by that key.
 - **Dead letters.** The RabbitMQ module declares a durable direct exchange and a durable queue, both named
   `aktimetrix.events.dead-letter.topic`, bound by that name. Failing events are republished there by the binder, and
   invalid ones are published there by Aktimetrix. Only standard AMQP 0-9-1 features are used for this, not RabbitMQ's
   dead-letter queue arguments.
+
+With two partitions, an entity's events travel like this:
+
+```
+sources ─► <topic> ─► <topic>.aktimetrix ─► event router ─► <topic>.partitioned ─┬─► …aktimetrix-0 ─► instance 0
+                                                                                 └─► …aktimetrix-1 ─► instance 1
+```
 
 ### Delivery guarantees
 

@@ -28,6 +28,8 @@ version may change the public API.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
 **Added**
+- A documentation site on GitHub Pages, built from the repository's Markdown by `.github/workflows/docs.yml`: the
+  guides, the white paper and the changelog, with the Java API (Javadoc) and REST API (OpenAPI) references.
 - RabbitMQ partitions: with `aktimetrix.events.partitions` and `aktimetrix.events.partition`, an event router reads
   each inbound event's entity with the event mapper and republishes it, in the same AMQP transaction, to the partition
   of that entity; each instance processes one partition, with a single active consumer. Instances process in parallel,
