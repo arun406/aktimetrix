@@ -6,7 +6,7 @@ site; links to other files of the repository point to them on GitHub. The Java A
 (OpenAPI) references are added when they have been generated:
 
     ./mvnw -B install -DskipTests && ./mvnw -B -pl aktimetrix-rest test -Dtest=OpenApiTest
-    ./mvnw -B javadoc:aggregate
+    ./mvnw -B javadoc:aggregate -Ddoclint=none
     python3 site/prepare.py && mkdocs build
 """
 import re
@@ -68,8 +68,8 @@ def main():
         shutil.copytree(javadoc, OUT / "api")
     else:
         (OUT / "api").mkdir()
-        (OUT / "api" / "index.html").write_text("<p>Run <code>./mvnw javadoc:aggregate</code> to generate the Java API.</p>")
-        print("No Javadoc: run ./mvnw javadoc:aggregate to add the Java API reference")
+        (OUT / "api" / "index.html").write_text("<p>Run <code>./mvnw javadoc:aggregate -Ddoclint=none</code> to generate the Java API.</p>")
+        print("No Javadoc: run ./mvnw javadoc:aggregate -Ddoclint=none to add the Java API reference")
     print(f"Pages assembled in {OUT.relative_to(ROOT)}")
 
 

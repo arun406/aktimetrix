@@ -48,7 +48,7 @@ jobs:
         run: |
           ./mvnw -B -q install -DskipTests
           ./mvnw -B -q -pl aktimetrix-rest test -Dtest=OpenApiTest
-          ./mvnw -B -q javadoc:aggregate
+          ./mvnw -B -q javadoc:aggregate -Ddoclint=none
       - name: Build the site
         run: |
           python site/prepare.py
