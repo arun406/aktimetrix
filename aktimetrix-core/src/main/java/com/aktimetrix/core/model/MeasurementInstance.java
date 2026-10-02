@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 @Data
@@ -57,7 +58,7 @@ public class MeasurementInstance {
     private ZonedDateTime createdOn;
 
     public MeasurementInstance() {
-        this.createdOn = ZonedDateTime.now();
+        this.createdOn = ZonedDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -76,7 +77,7 @@ public class MeasurementInstance {
         this.processInstanceId = processInstanceId;
         this.stepInstanceId = stepInstanceId;
         this.unit = unit;
-        this.createdOn = ZonedDateTime.now();
+        this.createdOn = ZonedDateTime.now(ZoneOffset.UTC);
         this.type = type;
         this.measuredAt = measuredAt;
         this.createdOn = createdOn;

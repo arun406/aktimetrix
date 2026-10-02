@@ -32,11 +32,17 @@ CREATE TABLE IF NOT EXISTS aktimetrix_process_instance (
     late_after   TIMESTAMP,
     timeliness   VARCHAR(16),
     revision     BIGINT       NOT NULL,
-    document     TEXT         NOT NULL,
-    CONSTRAINT aktimetrix_process_entity UNIQUE (tenant, process_code, entity_type, entity_id)
+    run_number   INTEGER      DEFAULT 1 NOT NULL,
+    document     TEXT         NOT NULL
 );
+-- one instance per run of a process for an entity; upgrades a table that had one instance per entity
+ALTER TABLE aktimetrix_process_instance ADD COLUMN IF NOT EXISTS run_number INTEGER DEFAULT 1 NOT NULL;
+ALTER TABLE aktimetrix_process_instance DROP CONSTRAINT IF EXISTS aktimetrix_process_entity;
+CREATE UNIQUE INDEX IF NOT EXISTS aktimetrix_process_entity_run
+    ON aktimetrix_process_instance (tenant, process_code, entity_type, entity_id, run_number);
 CREATE INDEX IF NOT EXISTS aktimetrix_process_by_entity ON aktimetrix_process_instance (tenant, entity_id);
 CREATE INDEX IF NOT EXISTS aktimetrix_process_deadlines ON aktimetrix_process_instance (late_after, complete);
+CREATE INDEX IF NOT EXISTS aktimetrix_process_running ON aktimetrix_process_instance (tenant, process_code, complete);
 CREATE TABLE IF NOT EXISTS aktimetrix_step_instance (
     id                  VARCHAR(64)  PRIMARY KEY,
     tenant              VARCHAR(255) NOT NULL,
@@ -84,3 +90,10 @@ CREATE TABLE IF NOT EXISTS aktimetrix_alarm (
     attempts            INT          NOT NULL
 );
 CREATE INDEX IF NOT EXISTS aktimetrix_alarms_due ON aktimetrix_alarm (due_at);
+CREATE TABLE IF NOT EXISTS aktimetrix_processed_event (
+    tenant       VARCHAR(255) NOT NULL,
+    event_id     VARCHAR(255) NOT NULL,
+    processed_at BIGINT       NOT NULL,
+    PRIMARY KEY (tenant, event_id)
+);
+CREATE INDEX IF NOT EXISTS aktimetrix_processed_events_at ON aktimetrix_processed_event (processed_at);

@@ -18,6 +18,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +33,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DefaultEventHandlerTest {
 
-    private static final LocalDateTime PLACED_AT = LocalDateTime.of(2022, 5, 22, 23, 46);
+    private static final Instant PLACED_AT = LocalDateTime.of(2022, 5, 22, 23, 46).toInstant(ZoneOffset.UTC);
 
     @Mock
     private ProcessDefinitionService processDefinitionService;

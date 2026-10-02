@@ -5,6 +5,7 @@ import com.aktimetrix.core.service.ProcessInstanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,6 +28,7 @@ public class ProcessInstanceResource {
         this.processInstanceService = processInstanceService;
     }
 
+    @PreAuthorize("@aktimetrixRestAccess.canRead(authentication)")
     @GetMapping
     @Operation(summary = "The process instances of a business entity",
             description = "Each process instance with its steps: status, planned, expected and actual times, and "

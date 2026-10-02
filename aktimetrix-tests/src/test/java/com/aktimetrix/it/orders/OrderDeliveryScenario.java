@@ -20,8 +20,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -84,11 +85,11 @@ public abstract class OrderDeliveryScenario {
         send("1234", "RATED", "2024-03-02 08:00:00", "{\"review\":{\"stars\":4}}");
         step("RATED", s -> "Completed".equals(s.getStatus()));
         ProcessInstance order = monitor.process("ORDER_DELIVERY", "1234").orElseThrow();
-        assertThat(order.getPlannedAt()).isEqualTo(LocalDateTime.of(2024, 3, 2, 9, 0));
+        assertThat(order.getPlannedAt()).isEqualTo(LocalDateTime.of(2024, 3, 2, 9, 0).toInstant(ZoneOffset.UTC));
         assertThat(order.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
 
         // the planning rule: priority customers are delivered within 4 hours
-        assertThat(step("DELIVERED", s -> true).getPlannedAt()).isEqualTo(LocalDateTime.of(2024, 3, 1, 13, 0));
+        assertThat(step("DELIVERED", s -> true).getPlannedAt()).isEqualTo(LocalDateTime.of(2024, 3, 1, 13, 0).toInstant(ZoneOffset.UTC));
         assertThat(step("CONFIRM", s -> true).getTimeliness()).isEqualTo(Timeliness.ON_TIME);
         assertThat(step("PAY", s -> true).getTimeliness()).isEqualTo(Timeliness.ON_TIME);
         assertThat(step("HANDOVER", s -> true).getTimeliness()).isEqualTo(Timeliness.LATE);
@@ -155,7 +156,7 @@ public abstract class OrderDeliveryScenario {
                         && "TRAVEL".equals(e.at("/entity/stepCode").asText()))
                 .findFirst().orElseThrow();
         assertThat(travelled.at("/eventDetails/cause/eventCode").asText()).isEqualTo("ARRIVED");
-        assertThat(travelled.at("/eventDetails/occurredAt").asText()).isEqualTo("2024-03-01T12:45:00");
+        assertThat(travelled.at("/eventDetails/occurredAt").asText()).isEqualTo("2024-03-01T12:45:00Z");
         // the order's measurement events say what kind they are
         assertThat(order.stream().filter(e -> "Measurement_Event".equals(e.path("eventType").asText()))
                 .map(e -> e.path("eventCode").asText())).contains("PLANNED", "RECORDED", "READING", "METRIC");

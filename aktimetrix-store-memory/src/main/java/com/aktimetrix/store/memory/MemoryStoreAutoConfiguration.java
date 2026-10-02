@@ -5,6 +5,7 @@ import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
+import com.aktimetrix.core.store.ProcessedEventStore;
 import com.aktimetrix.core.store.ProcessInstanceStore;
 import com.aktimetrix.core.store.StepInstanceStore;
 import org.slf4j.LoggerFactory;
@@ -58,6 +59,11 @@ public class MemoryStoreAutoConfiguration {
     @Bean
     public AlarmStore aktimetrixAlarmStore() {
         return new MemoryAlarmStore();
+    }
+
+    @Bean
+    public ProcessedEventStore aktimetrixProcessedEventStore() {
+        return new MemoryProcessedEventStore();
     }
 
     @Bean

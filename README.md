@@ -75,8 +75,8 @@ happen and what they measure:
 - **Not a workflow engine.** It observes a process; it never drives one or calls back into source systems.
 - **Not process mining.** It follows each entity live against its plan, rather than analysing history in bulk.
 - **Not application monitoring.** It watches business commitments, not hosts, requests or traces.
-- **Not a user interface.** Aktimetrix is a headless engine. Its results are a query API, published events and
-  Micrometer metrics, so they appear in the dashboards, alerting and ticketing tools you already run, such as Grafana.
+- **Not a user interface.** Aktimetrix is a headless engine. Its results are a query API, published events,
+  notifications (a webhook, or your own notifier) and Micrometer metrics, so they appear in the dashboards, alerting and ticketing tools you already run, such as Grafana.
 
 It combines with all of them; see [positioning](./docs/white-paper.md#10-positioning-and-limitations).
 
@@ -141,7 +141,7 @@ Definitions orderDelivery() {
                                     .tolerance("20%").worseWhenHigher()))
                     .step("DELIVERED", step -> step
                             .on("DELIVERED_EVENT")
-                            .planTime(d -> metadataTime(d, "createdAt").plusDays(2))))   // a rule
+                            .planTime(d -> metadataTime(d, "createdAt").plus(Duration.ofDays(2)))))   // a rule
             .build();
 }
 ```

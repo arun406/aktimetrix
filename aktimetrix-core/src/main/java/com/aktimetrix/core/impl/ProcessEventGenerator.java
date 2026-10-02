@@ -58,6 +58,7 @@ public class ProcessEventGenerator implements EventGenerator {
                 .lateAfter(processInstance.getLateAfter())
                 .endedAt(processInstance.getEndedAt())
                 .timeliness(processInstance.getTimeliness())
+                .run(processInstance.getRun())
                 .steps(processInstance.getSteps().stream()
                         .map(step -> StepEventGenerator.dto(step, definition))
                         .collect(Collectors.toList()))

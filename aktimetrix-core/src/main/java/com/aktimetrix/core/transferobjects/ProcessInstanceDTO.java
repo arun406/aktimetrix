@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import com.aktimetrix.core.api.Timeliness;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -38,10 +38,11 @@ public class ProcessInstanceDTO implements Serializable {
     private boolean valid;
     private boolean complete;
     private Map<String, Object> metadata;
-    private LocalDateTime startedAt;
-    private LocalDateTime plannedAt;
-    private LocalDateTime lateAfter;
-    private LocalDateTime endedAt;
+    private Instant startedAt;
+    private Instant plannedAt;
+    private Instant lateAfter;
+    private Instant endedAt;
     private Timeliness timeliness;
+    private int run;
     private List<StepInstanceDTO> steps;
 }

@@ -47,6 +47,20 @@ public class StepDefinition {
      * {@code PT15M}. Defaults to none.
      */
     private String tolerance;
+    /**
+     * Whether the step may happen again after it completed, such as a second inspection: each further occurrence is
+     * recorded as an attempt, while the step stays judged on its first. Defaults to {@code false}.
+     */
+    private Boolean repeatable;
+    /**
+     * Steps of a process with the same {@code alternative} are alternatives: the first of them to start or complete is
+     * the branch taken, and the others are skipped, e.g. {@code HANDOVER} for home delivery or pickup at a locker.
+     */
+    private String alternative;
+
+    public boolean repeats() {
+        return Boolean.TRUE.equals(repeatable);
+    }
 
     public Duration plannedWithinDuration() {
         return plannedWithin == null ? null : Duration.parse(plannedWithin);
@@ -82,6 +96,8 @@ public class StepDefinition {
         merged.setPlannedAfter(pick(override.getPlannedAfter(), plannedAfter));
         merged.setPlannedWithin(pick(override.getPlannedWithin(), plannedWithin));
         merged.setTolerance(pick(override.getTolerance(), tolerance));
+        merged.setRepeatable(pick(override.getRepeatable(), repeatable));
+        merged.setAlternative(pick(override.getAlternative(), alternative));
         return merged;
     }
 

@@ -13,7 +13,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,17 +59,18 @@ final class JdbcInstanceStores {
                 }
                 instance.setRevision(0L);
                 jdbc.update("INSERT INTO aktimetrix_process_instance (id, tenant, process_code, entity_type, entity_id, "
-                                + "status, complete, late_after, timeliness, revision, document) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                + "status, complete, late_after, timeliness, revision, run_number, document) "
+                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         instance.getId(), instance.getTenant(), instance.getProcessCode(), instance.getEntityType(),
-                        instance.getEntityId(), instance.getStatus(), instance.isComplete(), instance.getLateAfter(),
-                        timeliness(instance.getTimeliness()), 0L, StoreDocuments.toJson(instance));
+                        instance.getEntityId(), instance.getStatus(), instance.isComplete(), JdbcTimes.utc(instance.getLateAfter()),
+                        timeliness(instance.getTimeliness()), 0L, instance.getRun(), StoreDocuments.toJson(instance));
                 return instance;
             }
             final long read = instance.getRevision();
             instance.setRevision(read + 1);
             final int updated = jdbc.update("UPDATE aktimetrix_process_instance SET status = ?, complete = ?, late_after = ?, "
                             + "timeliness = ?, revision = ?, document = ? WHERE id = ? AND revision = ?",
-                    instance.getStatus(), instance.isComplete(), instance.getLateAfter(),
+                    instance.getStatus(), instance.isComplete(), JdbcTimes.utc(instance.getLateAfter()),
                     timeliness(instance.getTimeliness()), read + 1, StoreDocuments.toJson(instance), instance.getId(), read);
             if (updated == 0) {
                 instance.setRevision(read);
@@ -89,7 +90,8 @@ final class JdbcInstanceStores {
         public Optional<ProcessInstance> findByEntity(String tenant, String processCode, String entityType,
                                                       String entityId) {
             return jdbc.query("SELECT " + COLUMNS + " FROM aktimetrix_process_instance WHERE tenant = ? AND process_code = ? "
-                    + "AND entity_type = ? AND entity_id = ?", rows, tenant, processCode, entityType, entityId).stream().findFirst();
+                    + "AND entity_type = ? AND entity_id = ? ORDER BY run_number DESC LIMIT 1", rows, tenant, processCode,
+                    entityType, entityId).stream().findFirst();
         }
 
         @Override
@@ -106,9 +108,15 @@ final class JdbcInstanceStores {
         }
 
         @Override
-        public List<ProcessInstance> findOverdue(LocalDateTime now) {
+        public List<ProcessInstance> findRunning(String tenant, String processCode) {
+            return jdbc.query("SELECT " + COLUMNS + " FROM aktimetrix_process_instance WHERE tenant = ? AND process_code = ? "
+                    + "AND complete = FALSE", rows, tenant, processCode);
+        }
+
+        @Override
+        public List<ProcessInstance> findOverdue(Instant now) {
             return jdbc.query("SELECT " + COLUMNS + " FROM aktimetrix_process_instance WHERE complete = FALSE "
-                    + "AND late_after < ? AND (timeliness IS NULL OR timeliness <> ?)", rows, now, OVERDUE);
+                    + "AND late_after < ? AND (timeliness IS NULL OR timeliness <> ?)", rows, JdbcTimes.utc(now), OVERDUE);
         }
     }
 
@@ -136,14 +144,14 @@ final class JdbcInstanceStores {
                 jdbc.update("INSERT INTO aktimetrix_step_instance (id, tenant, process_instance_id, step_sequence, status, "
                                 + "late_after, timeliness, revision, document) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         step.getId(), step.getTenant(), step.getProcessInstanceId(), step.getSequence(), step.getStatus(),
-                        step.getLateAfter(), timeliness(step.getTimeliness()), 0L, StoreDocuments.toJson(step));
+                        JdbcTimes.utc(step.getLateAfter()), timeliness(step.getTimeliness()), 0L, StoreDocuments.toJson(step));
                 return step;
             }
             final long read = step.getRevision();
             step.setRevision(read + 1);
             final int updated = jdbc.update("UPDATE aktimetrix_step_instance SET status = ?, late_after = ?, timeliness = ?, "
                             + "revision = ?, document = ? WHERE id = ? AND revision = ?",
-                    step.getStatus(), step.getLateAfter(), timeliness(step.getTimeliness()), read + 1,
+                    step.getStatus(), JdbcTimes.utc(step.getLateAfter()), timeliness(step.getTimeliness()), read + 1,
                     StoreDocuments.toJson(step), step.getId(), read);
             if (updated == 0) {
                 step.setRevision(read);
@@ -165,10 +173,10 @@ final class JdbcInstanceStores {
         }
 
         @Override
-        public List<StepInstance> findOverdue(LocalDateTime now) {
+        public List<StepInstance> findOverdue(Instant now) {
             return jdbc.query("SELECT " + COLUMNS + " FROM aktimetrix_step_instance WHERE (status IS NULL OR status NOT IN (?, ?, ?)) "
                             + "AND late_after < ? AND (timeliness IS NULL OR timeliness <> ?)", rows,
-                    Constants.STATUS_COMPLETED, Constants.STATUS_CANCELLED, Constants.STATUS_SKIPPED, now, OVERDUE);
+                    Constants.STATUS_COMPLETED, Constants.STATUS_CANCELLED, Constants.STATUS_SKIPPED, JdbcTimes.utc(now), OVERDUE);
         }
     }
 

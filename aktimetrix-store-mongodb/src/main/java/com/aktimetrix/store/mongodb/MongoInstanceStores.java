@@ -13,7 +13,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,8 +51,10 @@ final class MongoInstanceStores {
         @Override
         public Optional<ProcessInstance> findByEntity(String tenant, String processCode, String entityType,
                                                       String entityId) {
-            return one(where("tenant").is(tenant).and("processCode").is(processCode).and("entityType").is(entityType)
-                    .and("entityId").is(entityId));
+            final Query latest = Query.query(where("tenant").is(tenant).and("processCode").is(processCode)
+                    .and("entityType").is(entityType).and("entityId").is(entityId))
+                    .with(Sort.by(Sort.Direction.DESC, "run")).limit(1);
+            return Optional.ofNullable(mongo.findOne(latest, ProcessInstance.class, PROCESS_INSTANCES));
         }
 
         @Override
@@ -67,7 +69,12 @@ final class MongoInstanceStores {
         }
 
         @Override
-        public List<ProcessInstance> findOverdue(LocalDateTime now) {
+        public List<ProcessInstance> findRunning(String tenant, String processCode) {
+            return all(where("tenant").is(tenant).and("processCode").is(processCode).and("complete").is(false));
+        }
+
+        @Override
+        public List<ProcessInstance> findOverdue(Instant now) {
             return all(where("complete").is(false).and("lateAfter").lt(now).and("timeliness").ne(Timeliness.OVERDUE.name()));
         }
 
@@ -104,7 +111,7 @@ final class MongoInstanceStores {
         }
 
         @Override
-        public List<StepInstance> findOverdue(LocalDateTime now) {
+        public List<StepInstance> findOverdue(Instant now) {
             return mongo.find(Query.query(where("status").nin(Constants.STATUS_COMPLETED, Constants.STATUS_CANCELLED,
                             Constants.STATUS_SKIPPED).and("lateAfter").lt(now).and("timeliness").ne(Timeliness.OVERDUE.name())),
                     StepInstance.class, STEP_INSTANCES);

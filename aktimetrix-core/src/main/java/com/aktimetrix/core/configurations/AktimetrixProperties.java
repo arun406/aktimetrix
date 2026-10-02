@@ -4,7 +4,11 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
-import java.time.ZoneId;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Settings of an Aktimetrix application, under the {@code aktimetrix} prefix.
@@ -13,18 +17,13 @@ import java.time.ZoneId;
 @ConfigurationProperties(prefix = "aktimetrix")
 public class AktimetrixProperties {
 
-    /**
-     * Time zone of all planned and actual times. Event times are converted to it, and the overdue monitor compares
-     * planned times with the current time in it.
-     */
-    private ZoneId timeZone = ZoneId.of("UTC");
-
     private final Events events = new Events();
     private final Definitions definitions = new Definitions();
     private final Monitor monitor = new Monitor();
     private final Alarms alarms = new Alarms();
     private final Outbox outbox = new Outbox();
     private final Storage storage = new Storage();
+    private final Notifications notifications = new Notifications();
 
     @Data
     public static class Events {
@@ -38,6 +37,35 @@ public class AktimetrixProperties {
         private String group = "aktimetrix";
 
         private final DeadLetter deadLetter = new DeadLetter();
+        private final Deduplication deduplication = new Deduplication();
+        /**
+         * How far in the future an event's business time may be, for clocks that are slightly ahead; an event dated
+         * later is invalid, and sent to the dead-letter topic.
+         */
+        private Duration maxFutureSkew = Duration.ofMinutes(5);
+        /**
+         * How many partitions the inbound events are split into, by entity, on a broker that does not partition them
+         * itself (RabbitMQ); each instance consumes one, {@link #partition}, so that instances process in parallel
+         * and each entity's events stay in order. {@code 1}: one queue.
+         */
+        private int partitions = 1;
+        /**
+         * The partition this instance consumes, from {@code 0} to {@code partitions - 1}; required when there are
+         * several.
+         */
+        private Integer partition;
+
+        @Data
+        public static class Deduplication {
+            /**
+             * Whether an event whose {@code eventId} was already processed is ignored.
+             */
+            private boolean enabled = true;
+            /**
+             * How long processed event ids are remembered.
+             */
+            private Duration retention = Duration.ofDays(7);
+        }
 
         @Data
         public static class DeadLetter {
@@ -50,6 +78,35 @@ public class AktimetrixProperties {
              * Dead-letter topic; defaults to the inbound topic followed by {@code .dlq}.
              */
             private String topic;
+        }
+    }
+
+    @Data
+    public static class Notifications {
+        /**
+         * The conditions that notify: {@code AT_RISK}, {@code OVERDUE} and {@code LATE}.
+         */
+        private Set<String> on = new LinkedHashSet<>(List.of("AT_RISK", "OVERDUE", "LATE"));
+        /**
+         * How many times a notification is attempted before it is given up.
+         */
+        private int maxAttempts = 10;
+        private final Webhook webhook = new Webhook();
+
+        @Data
+        public static class Webhook {
+            /**
+             * URL that each notification is posted to as JSON; no webhook when empty.
+             */
+            private String url;
+            /**
+             * Headers added to each request, such as {@code Authorization}.
+             */
+            private Map<String, String> headers = new LinkedHashMap<>();
+            /**
+             * How long a request may take.
+             */
+            private Duration timeout = Duration.ofSeconds(10);
         }
     }
 

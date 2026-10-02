@@ -3,6 +3,8 @@ package com.aktimetrix.rest;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.service.ProcessDefinitionService;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
+import com.aktimetrix.core.service.ProcessMigrationService;
+import com.aktimetrix.core.service.ProcessMigrationService.Migration;
 import com.aktimetrix.core.store.DefinitionStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -24,11 +27,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DefinitionResourceTest {
 
     private final DefinitionStore store = mock(DefinitionStore.class);
+    private final ProcessMigrationService migrations = mock(ProcessMigrationService.class);
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
-        final ProcessDefinitionResource processes = new ProcessDefinitionResource(new ProcessDefinitionService(store));
+        final ProcessDefinitionResource processes = new ProcessDefinitionResource(new ProcessDefinitionService(store),
+                migrations);
         final StepDefinitionResource steps = new StepDefinitionResource(new StepDefinitionService(store));
         mvc = MockMvcBuilders.standaloneSetup(processes, steps)
                 .setControllerAdvice(new InvalidDefinitionHandler()).build();
@@ -55,6 +60,28 @@ class DefinitionResourceTest {
                 .andExpect(jsonPath("$.problems[0]").value(
                         "process ORDER_DELIVERY: startEventCodes is missing, so the process can never start"));
         verify(store, never()).saveProcess(any());
+    }
+
+    @Test
+    void runningInstancesAreMigratedToTheCurrentRevision() throws Exception {
+        when(store.findProcess("AA", "ORDER_DELIVERY")).thenReturn(Optional.of(new ProcessDefinition("AA", "ORDER_DELIVERY")));
+        when(migrations.migrate("AA", "ORDER_DELIVERY"))
+                .thenReturn(new Migration("ORDER_DELIVERY", 4L, List.of("p-1", "p-2"), 3, List.of()));
+
+        mvc.perform(post("/reference-data/process-definitions/AA/ORDER_DELIVERY/migrations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revision").value(4))
+                .andExpect(jsonPath("$.migrated.length()").value(2))
+                .andExpect(jsonPath("$.upToDate").value(3));
+    }
+
+    @Test
+    void migratingAnUnknownProcessIsNotFound() throws Exception {
+        when(store.findProcess("AA", "UNKNOWN")).thenReturn(Optional.empty());
+
+        mvc.perform(post("/reference-data/process-definitions/AA/UNKNOWN/migrations"))
+                .andExpect(status().isNotFound());
+        verify(migrations, never()).migrate(any(), any());
     }
 
     @Test

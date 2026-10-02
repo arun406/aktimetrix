@@ -5,6 +5,7 @@ import com.aktimetrix.core.api.PublishedEvents;
 import com.aktimetrix.core.model.MeasurementInstance;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.notification.Notifications;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
@@ -20,14 +21,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -36,7 +38,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PublishedEventsTest {
 
-    private static final LocalDateTime DELIVERED_AT = LocalDateTime.of(2024, 3, 1, 12, 55);
+    private static final Instant DELIVERED_AT = LocalDateTime.of(2024, 3, 1, 12, 55).toInstant(ZoneOffset.UTC);
 
     @Mock
     private Outbox outbox;
@@ -71,7 +73,8 @@ class PublishedEventsTest {
         rated.setId("s-7");
         rated.setSequence(6);
         rated.setRevision(2L);
-        StepInstancePublisherService publisher = new StepInstancePublisherService(outbox, contexts);
+        StepInstancePublisherService publisher = new StepInstancePublisherService(outbox, contexts,
+                mock(Notifications.class));
 
         ProcessingContext.run(new Cause(Cause.EVENT, "e-42", "ORDER_RATED_EVENT"), DELIVERED_AT,
                 () -> publisher.publish(rated, PublishedEvents.Step.COMPLETED));
@@ -107,7 +110,7 @@ class PublishedEventsTest {
         Event<Measurement, EventContext> event = captured("measurement-instance-out-0", "p-1");
         assertThat(event.getEventCode()).isEqualTo(PublishedEvents.Measurement.READING);
         assertThat(event.getEventDetails().getOccurredAt()).as("outside a unit of work: now")
-                .isEqualTo(LocalDateTime.of(2024, 3, 1, 13, 0));
+                .isEqualTo(LocalDateTime.of(2024, 3, 1, 13, 0).toInstant(ZoneOffset.UTC));
         assertThat(event.getEventDetails().getCause()).isNull();
     }
 
@@ -125,16 +128,17 @@ class PublishedEventsTest {
 
     @Test
     void aProcessEventCarriesItsDefinitionRevisionAndIsKeyedByProcess() {
-        ProcessInstancePublisherService publisher = new ProcessInstancePublisherService(outbox, contexts);
+        ProcessInstancePublisherService publisher = new ProcessInstancePublisherService(outbox, contexts,
+                mock(Notifications.class));
 
-        ProcessingContext.run(new Cause(Cause.DEADLINE, null, null), LocalDateTime.of(2024, 3, 2, 9, 1),
+        ProcessingContext.run(new Cause(Cause.DEADLINE, null, null), LocalDateTime.of(2024, 3, 2, 9, 1).toInstant(ZoneOffset.UTC),
                 () -> publisher.publish(order, PublishedEvents.Process.OVERDUE));
 
         Event<Map<String, Object>, EventContext> event = captured("process-instance-out-0", "p-1");
         EventContext context = event.getEventDetails();
         assertThat(context.getRevision()).isEqualTo(4L);
         assertThat(context.getCause().getType()).isEqualTo(Cause.DEADLINE);
-        assertThat(context.getOccurredAt()).isEqualTo(LocalDateTime.of(2024, 3, 2, 9, 1));
+        assertThat(context.getOccurredAt()).isEqualTo(LocalDateTime.of(2024, 3, 2, 9, 1).toInstant(ZoneOffset.UTC));
     }
 
     private MeasurementInstance measurement(String code, String type) {

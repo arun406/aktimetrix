@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +41,7 @@ public class OverdueProcessMonitor {
     @Scheduled(fixedDelayString = "${aktimetrix.monitor.overdue-check-interval:PT10M}",
             initialDelayString = "${aktimetrix.monitor.overdue-check-interval:PT10M}")
     public List<ProcessInstance> checkOverdueProcesses() {
-        final LocalDateTime now = LocalDateTime.now(clock);
+        final Instant now = clock.instant();
         final List<ProcessInstance> overdue = new ArrayList<>();
         for (ProcessInstance process : processInstanceStore.findOverdue(now)) {
             try {

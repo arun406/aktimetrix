@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ public class StepPlanner {
      * @return the steps whose plan changed
      */
     public List<StepInstance> planNewSteps(List<StepInstance> steps, Map<String, StepDefinition> definitions,
-                                           LocalDateTime startedAt) {
+                                           Instant startedAt) {
         final List<StepInstance> changed = new ArrayList<>();
         for (StepInstance step : steps) {
             final StepDefinition definition = definitions.get(step.getStepCode());
@@ -67,7 +67,7 @@ public class StepPlanner {
             final StepDefinition definition = definitions.get(step.getStepCode());
             if (definition == null || !completed.getStepCode().equals(definition.getPlannedAfter())
                     || definition.plannedWithinDuration() == null
-                    || Constants.STATUS_COMPLETED.equals(step.getStatus()) || step.getPlannedAt() != null) {
+                    || isClosed(step) || step.getPlannedAt() != null) {
                 continue;
             }
             step.setPlannedAt(completed.getActualAt().plus(definition.plannedWithinDuration()));
@@ -96,11 +96,11 @@ public class StepPlanner {
         for (StepInstance step : steps) {
             final StepDefinition definition = definitions.get(step.getStepCode());
             if (step.getSequence() <= source.getSequence() || step.getPlannedAt() == null
-                    || Constants.STATUS_COMPLETED.equals(step.getStatus())
+                    || isClosed(step)
                     || (definition != null && source.getStepCode().equals(definition.getPlannedAfter()))) {
                 continue;
             }
-            final LocalDateTime expected = step.getPlannedAt().plus(delay);
+            final Instant expected = step.getPlannedAt().plus(delay);
             if (step.getExpectedAt() == null || expected.isAfter(step.getExpectedAt())) {
                 step.setExpectedAt(expected);
             }
@@ -116,14 +116,22 @@ public class StepPlanner {
      * {@link Timeliness#ON_TIME} or {@link Timeliness#LATE} for a step completed at {@code actualAt}, or
      * {@code null} when it had no plan.
      */
-    public Timeliness judge(StepInstance step, LocalDateTime actualAt) {
+    public Timeliness judge(StepInstance step, Instant actualAt) {
         if (step.getPlannedAt() == null) {
             return null;
         }
         return actualAt.isAfter(deadline(step)) ? Timeliness.LATE : Timeliness.ON_TIME;
     }
 
-    private static LocalDateTime deadline(StepInstance step) {
+    /**
+     * Completed, or skipped as an alternative not taken: nothing left to plan or forecast.
+     */
+    private static boolean isClosed(StepInstance step) {
+        return Constants.STATUS_COMPLETED.equals(step.getStatus()) || Constants.STATUS_SKIPPED.equals(step.getStatus())
+                || step.getActualAt() != null;
+    }
+
+    private static Instant deadline(StepInstance step) {
         return step.getLateAfter() != null ? step.getLateAfter() : step.getPlannedAt();
     }
 
@@ -131,7 +139,7 @@ public class StepPlanner {
         if (step.getPlannedAt() == null) {
             return false;
         }
-        final LocalDateTime lateAfter = step.getPlannedAt().plus(definition.toleranceDuration());
+        final Instant lateAfter = step.getPlannedAt().plus(definition.toleranceDuration());
         if (lateAfter.equals(step.getLateAfter())) {
             return false;
         }

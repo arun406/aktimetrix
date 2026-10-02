@@ -5,7 +5,9 @@ import com.aktimetrix.core.stereotypes.Measurement;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AbstractMeterTest {
 
-    private static final LocalDateTime ORDERED_ON = LocalDateTime.of(2022, 5, 22, 23, 46);
+    private static final Instant ORDERED_ON = LocalDateTime.of(2022, 5, 22, 23, 46).toInstant(ZoneOffset.UTC);
 
     private final ShipMeter meter = new ShipMeter();
 
@@ -23,7 +25,8 @@ class AbstractMeterTest {
         assertThat(meter.metadataTime(step(ORDERED_ON), "orderedOn")).isEqualTo(ORDERED_ON);
         assertThat(meter.metadataTime(step("2022-05-22T23:46:00"), "orderedOn")).isEqualTo(ORDERED_ON);
         assertThat(meter.metadataTime(step("2022-05-22 23:46:00"), "orderedOn")).isEqualTo(ORDERED_ON);
-        assertThat(meter.metadataTime(step(Date.from(ORDERED_ON.atZone(ZoneId.systemDefault()).toInstant())), "orderedOn"))
+        assertThat(meter.metadataTime(step(Date.from(ORDERED_ON)), "orderedOn")).isEqualTo(ORDERED_ON);
+        assertThat(meter.metadataTime(step("2022-05-23T01:46:00+02:00"), "orderedOn")).as("with an offset")
                 .isEqualTo(ORDERED_ON);
         assertThat(meter.metadataTime(step(ORDERED_ON), "missing")).isNull();
     }
@@ -35,7 +38,7 @@ class AbstractMeterTest {
         assertThat(measurement.getCode()).isEqualTo("TIME");
         assertThat(measurement.getStepCode()).isEqualTo("SHIP");
         assertThat(measurement.getType()).isEqualTo("P");
-        assertThat(measurement.getValue()).isEqualTo("2022-05-23T01:46");
+        assertThat(measurement.getValue()).isEqualTo("2022-05-23T01:46:00Z");
     }
 
     private static StepInstance step(Object orderedOn) {
@@ -55,7 +58,7 @@ class AbstractMeterTest {
 
         @Override
         protected String getMeasurementValue(String tenant, StepInstance step) {
-            return String.valueOf(metadataTime(step, "orderedOn").plusHours(2));
+            return String.valueOf(metadataTime(step, "orderedOn").plus(Duration.ofHours(2)));
         }
     }
 }

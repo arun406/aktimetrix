@@ -12,7 +12,7 @@ import com.aktimetrix.core.store.StoreDocuments;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,10 +51,11 @@ final class MemoryInstanceStores {
                         Objects.equals(existing.getTenant(), instance.getTenant())
                                 && Objects.equals(existing.getProcessCode(), instance.getProcessCode())
                                 && Objects.equals(existing.getEntityType(), instance.getEntityType())
-                                && Objects.equals(existing.getEntityId(), instance.getEntityId()));
+                                && Objects.equals(existing.getEntityId(), instance.getEntityId())
+                                && existing.getRun() == instance.getRun());
                 if (duplicate) {
-                    throw new DuplicateKeyException("A " + instance.getProcessCode() + " process already exists for "
-                            + instance.getEntityType() + " " + instance.getEntityId());
+                    throw new DuplicateKeyException("Run " + instance.getRun() + " of a " + instance.getProcessCode()
+                            + " process already exists for " + instance.getEntityType() + " " + instance.getEntityId());
                 }
                 instance.setId(newId());
                 instance.setRevision(0L);
@@ -81,7 +82,7 @@ final class MemoryInstanceStores {
                                                       String entityId) {
             return find(i -> Objects.equals(tenant, i.getTenant()) && Objects.equals(processCode, i.getProcessCode())
                     && Objects.equals(entityType, i.getEntityType()) && Objects.equals(entityId, i.getEntityId()))
-                    .stream().findFirst();
+                    .stream().max(Comparator.comparingInt(ProcessInstance::getRun));
         }
 
         @Override
@@ -96,7 +97,12 @@ final class MemoryInstanceStores {
         }
 
         @Override
-        public synchronized List<ProcessInstance> findOverdue(LocalDateTime now) {
+        public synchronized List<ProcessInstance> findRunning(String tenant, String processCode) {
+            return find(i -> tenant.equals(i.getTenant()) && processCode.equals(i.getProcessCode()) && !i.isComplete());
+        }
+
+        @Override
+        public synchronized List<ProcessInstance> findOverdue(Instant now) {
             return find(i -> !i.isComplete() && i.getLateAfter() != null && i.getLateAfter().isBefore(now)
                     && i.getTimeliness() != Timeliness.OVERDUE);
         }
@@ -141,7 +147,7 @@ final class MemoryInstanceStores {
         }
 
         @Override
-        public synchronized List<StepInstance> findOverdue(LocalDateTime now) {
+        public synchronized List<StepInstance> findOverdue(Instant now) {
             return steps.values().stream()
                     .filter(s -> !CLOSED_STEP.contains(s.getStatus()) && s.getLateAfter() != null
                             && s.getLateAfter().isBefore(now) && s.getTimeliness() != Timeliness.OVERDUE)

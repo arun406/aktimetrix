@@ -6,6 +6,7 @@ import com.aktimetrix.core.store.AlarmStore;
 import com.aktimetrix.core.store.DefinitionStore;
 import com.aktimetrix.core.store.MeasurementInstanceStore;
 import com.aktimetrix.core.store.OutboxStore;
+import com.aktimetrix.core.store.ProcessedEventStore;
 import com.aktimetrix.core.store.ProcessInstanceStore;
 import com.aktimetrix.core.store.StepInstanceStore;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -73,6 +74,11 @@ public class MongoStoreAutoConfiguration {
     @Bean
     public AlarmStore aktimetrixAlarmStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
         return new MongoAlarmStore(mongoTemplate);
+    }
+
+    @Bean
+    public ProcessedEventStore aktimetrixProcessedEventStore(MongoTemplate mongoTemplate, MongoStoreInitializer database) {
+        return new MongoProcessedEventStore(mongoTemplate);
     }
 
     @Bean

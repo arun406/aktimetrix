@@ -5,6 +5,7 @@ import com.aktimetrix.core.api.Context;
 import com.aktimetrix.core.api.PostProcessor;
 import com.aktimetrix.core.impl.ProcessEventGenerator;
 import com.aktimetrix.core.model.ProcessInstance;
+import com.aktimetrix.core.notification.Notifications;
 import com.aktimetrix.core.outbox.Outbox;
 import com.aktimetrix.core.transferobjects.Event;
 import com.aktimetrix.core.transferobjects.EventContext;
@@ -21,6 +22,7 @@ public class ProcessInstancePublisherService implements PostProcessor {
 
     final private Outbox outbox;
     final private PublishedEventContexts contexts;
+    private final Notifications notifications;
 
     @Override
     public void postProcess(Context context) {
@@ -41,5 +43,6 @@ public class ProcessInstancePublisherService implements PostProcessor {
                 new ProcessEventGenerator(processInstance, eventCode, contexts.of(processInstance)).generate();
         log.debug("process instance event : {}", event);
         outbox.enqueue("process-instance-out-0", processInstance.getId(), event);
+        notifications.onProcess(processInstance, eventCode, event);
     }
 }

@@ -9,6 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.Instant;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,7 +30,7 @@ class AbstractMilestoneEventHandlerTest {
         event.setEventCode("ORDER_SHIPPED_EVENT");
         event.setEntityType("com.ecom.order");
         event.setEntityId("1234");
-        LocalDateTime shippedAt = LocalDateTime.of(2022, 5, 23, 1, 30);
+        Instant shippedAt = LocalDateTime.of(2022, 5, 23, 1, 30).toInstant(ZoneOffset.UTC);
         when(stepProgressService.occurredAt(event)).thenReturn(shippedAt);
 
         handler.handle(event);
