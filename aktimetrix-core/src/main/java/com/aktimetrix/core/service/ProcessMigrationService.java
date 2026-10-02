@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -75,7 +75,7 @@ public class ProcessMigrationService {
                 continue;
             }
             try {
-                ProcessingContext.run(new Cause(Cause.MIGRATION, null, null), LocalDateTime.now(clock),
+                ProcessingContext.run(new Cause(Cause.MIGRATION, null, null), clock.instant(),
                         () -> transactions.run(() -> migrate(
                                 processInstanceService.getProcessInstance(tenant, listed.getId()),
                                 StoreDocuments.copy(current))));
@@ -96,7 +96,7 @@ public class ProcessMigrationService {
         if (process == null || process.isComplete()) {
             return;   // ended meanwhile
         }
-        final LocalDateTime now = LocalDateTime.now(clock);
+        final Instant now = clock.instant();
         logger.info("Migrating process instance {} from revision {} to {}", process.getId(),
                 process.getDefinitionRevision(), definition.getRevision());
         process.setDefinition(definition);
@@ -166,7 +166,7 @@ public class ProcessMigrationService {
     /**
      * The process's own deadline, from the new {@code plannedWithin} and {@code tolerance}.
      */
-    private static void replanProcess(ProcessInstance process, ProcessDefinition definition, LocalDateTime now) {
+    private static void replanProcess(ProcessInstance process, ProcessDefinition definition, Instant now) {
         if (definition.plannedWithinDuration() != null && process.getStartedAt() != null) {
             process.setPlannedAt(process.getStartedAt().plus(definition.plannedWithinDuration()));
         }
@@ -184,12 +184,12 @@ public class ProcessMigrationService {
      * @return whether its plan changed
      */
     private static boolean replan(StepInstance step, StepDefinition definition, ProcessInstance process,
-                                  Map<String, StepInstance> steps, LocalDateTime now) {
-        final LocalDateTime plannedBefore = step.getPlannedAt();
-        final LocalDateTime lateAfterBefore = step.getLateAfter();
+                                  Map<String, StepInstance> steps, Instant now) {
+        final Instant plannedBefore = step.getPlannedAt();
+        final Instant lateAfterBefore = step.getLateAfter();
         final Timeliness timelinessBefore = step.getTimeliness();
         if (definition.plannedWithinDuration() != null) {
-            final LocalDateTime from;
+            final Instant from;
             if (definition.getPlannedAfter() == null) {
                 from = process.getStartedAt();
             } else {

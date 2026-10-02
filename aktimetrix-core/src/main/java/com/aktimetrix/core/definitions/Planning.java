@@ -1,10 +1,10 @@
 package com.aktimetrix.core.definitions;
 
-import com.aktimetrix.core.meter.impl.AbstractMeter;
 import com.aktimetrix.core.model.ProcessInstance;
 import com.aktimetrix.core.model.StepInstance;
+import com.aktimetrix.core.util.Times;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Helpers for planning rules written with the DSL.
@@ -19,8 +19,8 @@ public final class Planning {
      *
      * @return the value, or {@code null} when the key is absent
      */
-    public static LocalDateTime metadataTime(StepInstance step, String key) {
-        return AbstractMeter.toLocalDateTime(step.getMetadata() == null ? null : step.getMetadata().get(key));
+    public static Instant metadataTime(StepInstance step, String key) {
+        return Times.toInstant(step.getMetadata() == null ? null : step.getMetadata().get(key));
     }
 
     /**
@@ -28,7 +28,7 @@ public final class Planning {
      *
      * @return the value, or {@code null} when the key is absent
      */
-    public static LocalDateTime metadataTime(ProcessInstance process, String key) {
-        return AbstractMeter.toLocalDateTime(process.getMetadata() == null ? null : process.getMetadata().get(key));
+    public static Instant metadataTime(ProcessInstance process, String key) {
+        return Times.toInstant(process.getMetadata() == null ? null : process.getMetadata().get(key));
     }
 }

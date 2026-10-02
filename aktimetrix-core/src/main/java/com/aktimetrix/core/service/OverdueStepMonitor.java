@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,7 +46,7 @@ public class OverdueStepMonitor {
     @Scheduled(fixedDelayString = "${aktimetrix.monitor.overdue-check-interval:PT10M}",
             initialDelayString = "${aktimetrix.monitor.overdue-check-interval:PT10M}")
     public List<StepInstance> checkOverdueSteps() {
-        final LocalDateTime now = LocalDateTime.now(clock);
+        final Instant now = clock.instant();
         final List<StepInstance> overdue = new ArrayList<>();
         for (StepInstance found : stepInstanceStore.findOverdue(now)) {
             try {
@@ -71,7 +71,7 @@ public class OverdueStepMonitor {
         return overdue;
     }
 
-    private static boolean isStillOverdue(StepInstance step, LocalDateTime now) {
+    private static boolean isStillOverdue(StepInstance step, Instant now) {
         return DeadlineAlarms.isAwaited(step) && step.getLateAfter() != null && step.getLateAfter().isBefore(now);
     }
 }

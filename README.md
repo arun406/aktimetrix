@@ -141,7 +141,7 @@ Definitions orderDelivery() {
                                     .tolerance("20%").worseWhenHigher()))
                     .step("DELIVERED", step -> step
                             .on("DELIVERED_EVENT")
-                            .planTime(d -> metadataTime(d, "createdAt").plusDays(2))))   // a rule
+                            .planTime(d -> metadataTime(d, "createdAt").plus(Duration.ofDays(2)))))   // a rule
             .build();
 }
 ```

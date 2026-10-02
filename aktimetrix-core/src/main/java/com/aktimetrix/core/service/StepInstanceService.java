@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +80,7 @@ public class StepInstanceService {
 
     public StepInstance prepareStepInstanceObject(String tenant, String processInstanceId, String stepCode,
                                                   String functionalCtx, String groupCode, String version, String status) {
-        return new StepInstance(tenant, stepCode, processInstanceId, groupCode, functionalCtx, version, status, LocalDateTime.now());
+        return new StepInstance(tenant, stepCode, processInstanceId, groupCode, functionalCtx, version, status, Instant.now());
     }
 
     /**

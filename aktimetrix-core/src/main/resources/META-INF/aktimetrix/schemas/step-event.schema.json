@@ -114,32 +114,32 @@
             "string",
             "null"
           ],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
-          "description": "Local date-time in aktimetrix.time-zone."
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?Z$",
+          "description": "UTC instant."
         },
         "lateAfter": {
           "type": [
             "string",
             "null"
           ],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
-          "description": "Local date-time in aktimetrix.time-zone."
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?Z$",
+          "description": "UTC instant."
         },
         "expectedAt": {
           "type": [
             "string",
             "null"
           ],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
-          "description": "Local date-time in aktimetrix.time-zone."
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?Z$",
+          "description": "UTC instant."
         },
         "actualAt": {
           "type": [
             "string",
             "null"
           ],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
-          "description": "Local date-time in aktimetrix.time-zone."
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?Z$",
+          "description": "UTC instant."
         },
         "timeliness": {
           "enum": [
@@ -162,8 +162,8 @@
             "string",
             "null"
           ],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
-          "description": "Local date-time in aktimetrix.time-zone."
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?Z$",
+          "description": "UTC instant."
         },
         "functionalCtx": {
           "type": [
@@ -203,8 +203,8 @@
             "string",
             "null"
           ],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
-          "description": "When the step last completed: local date-time in aktimetrix.time-zone."
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?Z$",
+          "description": "When the step last completed: UTC instant."
         }
       }
     },
@@ -267,7 +267,7 @@
         },
         "occurredAt": {
           "type": "string",
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?Z$",
           "description": "When the change happened in the business."
         },
         "cause": {

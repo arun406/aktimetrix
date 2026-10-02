@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * What a {@link Notifier} is told: which entity, which process run and step, what happened, and the times behind it.
@@ -38,20 +38,20 @@ public class Notification {
      */
     private String stepCode;
     private String stepInstanceId;
-    private LocalDateTime plannedAt;
-    private LocalDateTime lateAfter;
+    private Instant plannedAt;
+    private Instant lateAfter;
     /**
      * For a step at risk: when it is now expected.
      */
-    private LocalDateTime expectedAt;
+    private Instant expectedAt;
     /**
      * For a late step or process: when it completed.
      */
-    private LocalDateTime actualAt;
+    private Instant actualAt;
     /**
      * When the condition arose, in business time.
      */
-    private LocalDateTime occurredAt;
+    private Instant occurredAt;
 
     public static final String STEP = "STEP";
     public static final String PROCESS = "PROCESS";

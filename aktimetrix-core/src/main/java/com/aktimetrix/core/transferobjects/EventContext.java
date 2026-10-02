@@ -1,13 +1,12 @@
 package com.aktimetrix.core.transferobjects;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Where a published event belongs, and why it happened: the {@code eventDetails} of every event Aktimetrix publishes.
@@ -46,11 +45,10 @@ public class EventContext {
      */
     private Long revision;
     /**
-     * When the change happened in the business, in {@code aktimetrix.time-zone}: the time of the business event that
-     * caused it, or of the deadline check.
+     * When the change happened in the business, a UTC instant: the time of the business event that caused it, or of
+     * the deadline check.
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime occurredAt;
+    private Instant occurredAt;
     /**
      * What caused the change.
      */

@@ -9,13 +9,15 @@ import com.aktimetrix.core.referencedata.model.StepDefinition;
 import com.aktimetrix.core.referencedata.model.MeasurementDefinition;
 import com.aktimetrix.core.referencedata.service.StepDefinitionService;
 import com.aktimetrix.core.stereotypes.ProcessHandler;
+import com.aktimetrix.core.util.Times;
 import com.aktimetrix.core.util.CollectionUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -106,7 +108,7 @@ public class DefaultMeasurementProcessor implements Processor {
                 .findFirst()
                 .ifPresent(time -> {
                     try {
-                        step.setPlannedAt(LocalDateTime.parse(time.getValue()));
+                        step.setPlannedAt(Times.parse(time.getValue()));
                         stepInstanceService.save(step);
                     } catch (DateTimeParseException e) {
                         logger.warn("Planned TIME of the {} step is not an ISO date-time: {}", step.getStepCode(),
@@ -131,7 +133,7 @@ public class DefaultMeasurementProcessor implements Processor {
                 return new MeasurementInstance(context.getTenant(), measurementDefinition.getMeasurementCode(),
                         measurementDefinition.getValue(), measurementDefinition.getUnit(), stepInstance.getProcessInstanceId(),
                         stepInstance.getId(), stepInstance.getStepCode(), Constants.PLAN_MEASUREMENT_TYPE,
-                        stepInstance.getLocationCode(), ZonedDateTime.now());
+                        stepInstance.getLocationCode(), ZonedDateTime.now(ZoneOffset.UTC));
             }
             logger.warn("No meter registered, and no planned value, for the planned {} measurement of the {} step",
                     measurementDefinition.getMeasurementCode(), stepDefinition.getStepCode());

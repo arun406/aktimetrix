@@ -5,6 +5,8 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.stereotypes.Measurement;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+
 /**
  * A parcel should be picked up within an hour of being booked.
  */
@@ -19,6 +21,6 @@ public class PickupPlanMeter extends AbstractMeter {
 
     @Override
     protected String getMeasurementValue(String tenant, StepInstance step) {
-        return String.valueOf(metadataTime(step, "bookedAt").plusHours(1));
+        return String.valueOf(metadataTime(step, "bookedAt").plus(Duration.ofHours(1)));
     }
 }

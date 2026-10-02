@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -69,7 +69,7 @@ public class StepProgressService {
      * @return actual measurements recorded for the steps this event completed
      */
     public List<MeasurementInstance> recordMilestones(String tenant, String entityType, String entityId,
-                                                      String eventCode, LocalDateTime occurredAt) {
+                                                      String eventCode, Instant occurredAt) {
         return recordMilestones(tenant, entityType, entityId, eventCode, occurredAt, null);
     }
 
@@ -80,7 +80,7 @@ public class StepProgressService {
      * @return actual measurements recorded for the steps and processes this event completed
      */
     public List<MeasurementInstance> recordMilestones(String tenant, String entityType, String entityId,
-                                                      String eventCode, LocalDateTime occurredAt, Event<?, ?> event) {
+                                                      String eventCode, Instant occurredAt, Event<?, ?> event) {
         final List<MeasurementInstance> actuals = new ArrayList<>();
         final List<ProcessInstance> processInstances =
                 processInstanceService.getCurrentRuns(tenant, entityType, entityId);
@@ -114,7 +114,7 @@ public class StepProgressService {
      * @return actual measurements recorded for the steps this event completed
      */
     public List<MeasurementInstance> recordMilestone(String eventCode, ProcessInstance processInstance,
-                                                     LocalDateTime occurredAt) {
+                                                     Instant occurredAt) {
         return recordMilestone(eventCode, processInstance, occurredAt, null);
     }
 
@@ -124,7 +124,7 @@ public class StepProgressService {
      * @param event the event itself, from which actual measurements are read; may be {@code null}
      */
     public List<MeasurementInstance> recordMilestone(String eventCode, ProcessInstance processInstance,
-                                                     LocalDateTime occurredAt, Event<?, ?> event) {
+                                                     Instant occurredAt, Event<?, ?> event) {
         final String tenant = processInstance.getTenant();
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(tenant, processInstance.getId());
         final Map<String, StepDefinition> definitions = processDefinitionService.stepDefinitionsOf(processInstance);
@@ -241,7 +241,7 @@ public class StepProgressService {
      * Marks a step whose deadline has passed without its event as {@link Timeliness#OVERDUE}, and forecasts the
      * later steps of its process as delayed by at least as much.
      */
-    public void markOverdue(StepInstance step, LocalDateTime now) {
+    public void markOverdue(StepInstance step, Instant now) {
         logger.warn("Step {} of process instance {} is overdue: planned at {}", step.getStepCode(),
                 step.getProcessInstanceId(), step.getPlannedAt());
         step.setTimeliness(Timeliness.OVERDUE);
@@ -259,7 +259,7 @@ public class StepProgressService {
 
     private void forecast(StepInstance source, Duration delay, List<StepInstance> steps,
                           Map<String, StepDefinition> definitions) {
-        final Map<StepInstance, LocalDateTime> expectedBefore = new IdentityHashMap<>();
+        final Map<StepInstance, Instant> expectedBefore = new IdentityHashMap<>();
         steps.forEach(step -> expectedBefore.put(step, step.getExpectedAt()));
         final List<StepInstance> newlyAtRisk = stepPlanner.forecast(source, delay, steps, definitions);
         newlyAtRisk.forEach(atRisk -> {
@@ -280,25 +280,24 @@ public class StepProgressService {
     }
 
     /**
-     * When the event happened in the business, in the configured time zone: {@code eventTime} if present, else
+     * When the event happened in the business, as a UTC instant: {@code eventTime} if present, else
      * {@code eventUTCTime}, else the time it is processed.
      */
-    public LocalDateTime occurredAt(Event<?, ?> event) {
+    public Instant occurredAt(Event<?, ?> event) {
         return occurredAt(event, clock);
     }
 
     /**
-     * When the event happened in the business, in the clock's time zone: {@code eventTime} if present, else
-     * {@code eventUTCTime}, else now.
+     * When the event happened in the business: {@code eventTime} if present, else {@code eventUTCTime}, else now.
      */
-    public static LocalDateTime occurredAt(Event<?, ?> event, Clock clock) {
+    public static Instant occurredAt(Event<?, ?> event, Clock clock) {
         if (event.getEventTime() != null) {
-            return event.getEventTime().withZoneSameInstant(clock.getZone()).toLocalDateTime();
+            return event.getEventTime().toInstant();
         }
         if (event.getEventUTCTime() != null) {
-            return event.getEventUTCTime().atZone(ZoneOffset.UTC).withZoneSameInstant(clock.getZone()).toLocalDateTime();
+            return event.getEventUTCTime().toInstant(ZoneOffset.UTC);
         }
-        return LocalDateTime.now(clock);
+        return clock.instant();
     }
 
     /**
@@ -337,7 +336,7 @@ public class StepProgressService {
      * duration, and the conformance follows from its timeliness. A further attempt of a repeatable step is not
      * compared: the plan was for its first.
      */
-    private MeasurementInstance actualTime(StepInstance step, LocalDateTime occurredAt, boolean compare) {
+    private MeasurementInstance actualTime(StepInstance step, Instant occurredAt, boolean compare) {
         final MeasurementInstance actual = new MeasurementInstance(step.getTenant(), Constants.MEASUREMENT_CODE_TIME,
                 String.valueOf(occurredAt), Constants.MEASUREMENT_UNIT_TIMESTAMP, step.getProcessInstanceId(),
                 step.getId(), step.getStepCode(), Constants.ACTUAL_MEASUREMENT_TYPE, step.getLocationCode(),
@@ -356,7 +355,7 @@ public class StepProgressService {
      * Cancels the process instance: it and its open steps become {@code Cancelled}, so they are no longer monitored,
      * and a CANCELLED event is published for each.
      */
-    public void cancel(ProcessInstance processInstance, LocalDateTime occurredAt) {
+    public void cancel(ProcessInstance processInstance, Instant occurredAt) {
         logger.info("Process instance {} is cancelled", processInstance.getId());
         processInstance.setStatus(Constants.STATUS_CANCELLED);
         processInstance.setComplete(true);
@@ -394,7 +393,7 @@ public class StepProgressService {
      */
     private List<MeasurementInstance> completeProcessIfDone(ProcessInstance processInstance, List<StepInstance> steps,
                                                             Map<String, StepDefinition> definitions,
-                                                            LocalDateTime occurredAt, Event<?, ?> event) {
+                                                            Instant occurredAt, Event<?, ?> event) {
         if (processInstance.isComplete()) {
             return List.of();
         }
@@ -416,7 +415,7 @@ public class StepProgressService {
      * @return the actual measurements of the process
      */
     private List<MeasurementInstance> end(ProcessInstance processInstance, ProcessDefinition definition,
-                                          LocalDateTime occurredAt, Event<?, ?> event) {
+                                          Instant occurredAt, Event<?, ?> event) {
         final List<StepInstance> steps = stepInstanceService.getStepInstancesByProcessInstanceId(
                 processInstance.getTenant(), processInstance.getId());
         final Map<String, StepDefinition> definitions = processDefinitionService.stepDefinitionsOf(processInstance);
@@ -439,7 +438,7 @@ public class StepProgressService {
      * Completes the process, judges it against its deadline, and records its actual measurements.
      */
     private List<MeasurementInstance> complete(ProcessInstance processInstance, ProcessDefinition definition,
-                                               LocalDateTime occurredAt, Event<?, ?> event) {
+                                               Instant occurredAt, Event<?, ?> event) {
         logger.info("Process instance {} is complete", processInstance.getId());
         processInstance.setComplete(true);
         processInstance.setStatus(Constants.STATUS_COMPLETED);

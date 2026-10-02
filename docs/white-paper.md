@@ -217,8 +217,13 @@ Every inbound event uses one envelope, whatever its source. The fields the model
 | `tenantKey` | Selects the tenant's definitions and instances. |
 | `eventCode` | Determines which processes the event starts and which steps it starts or completes. |
 | `entityType`, `entityId` | Identify the business entity. All events of order `1234` carry `1234`. |
-| `eventTime` | When the event happened in the business; it becomes the actual time of the step. |
+| `eventTime` | When the event happened in the business, with its offset; it becomes the actual time of the step. |
 | `entity` | The domain object, which becomes metadata. |
+
+**Time.** Every time the model keeps or publishes, planned, actual or forecast, is an instant in UTC: event times
+are converted on arrival, deadlines are compared with the current instant, and consumers convert to a local time
+for display. A plan expressed in local time, such as *deliver by 18:00 in Paris*, is converted to UTC when it is
+computed.
 
 The full envelope is specified in the [event format](./getting-started.md#the-event-format). Source systems do not
 need to adopt it: an **event mapper** translates each system's own messages into this envelope as they are consumed
@@ -419,7 +424,7 @@ moves to 12:55, after its 12:15 deadline, and the step is published as at risk:
   "entity": {
     "id": "65e1a8c09d2a4e1f5c3b7a91", "processInstanceId": "65e1a8c09d2a4e1f5c3b7a8a", "tenant": "AA",
     "stepCode": "DELIVERED", "stepName": "Delivered", "optional": false, "sequence": 5, "status": "Created",
-    "plannedAt": "2024-03-01T12:15:00", "lateAfter": "2024-03-01T12:15:00", "expectedAt": "2024-03-01T12:55:00",
+    "plannedAt": "2024-03-01T12:15:00Z", "lateAfter": "2024-03-01T12:15:00Z", "expectedAt": "2024-03-01T12:55:00Z",
     "actualAt": null, "timeliness": "AT_RISK",
     "metadata": { "orderId": "1234", "priority": true, "createdAt": "2024-03-01T09:00:00" }
   },
@@ -428,7 +433,7 @@ moves to 12:55, after its 12:15 deadline, and the step is published as at risk:
     "businessEntity": { "entityType": "com.ecom.order", "entityId": "1234" },
     "processCode": "ORDER_DELIVERY", "processInstanceId": "65e1a8c09d2a4e1f5c3b7a8a", "definitionRevision": 1,
     "stepCode": "DELIVERED", "stepInstanceId": "65e1a8c09d2a4e1f5c3b7a91", "revision": 2,
-    "occurredAt": "2024-03-01T11:40:00",
+    "occurredAt": "2024-03-01T11:40:00Z",
     "cause": { "type": "EVENT", "eventId": "0000…0004", "eventCode": "HANDED_TO_AGENT_EVENT" }
   }
 }
@@ -516,7 +521,6 @@ needs only the connection settings of its broker and state store. The settings g
 
 | Concern | Settings | Default |
 |---|---|---|
-| **Time** | The time zone of all planned and actual times | UTC |
 | **Inbound events** | The destination events are read from, the consumer group, and whether events that cannot be processed go to a dead-letter destination, and which | Dead-lettering on |
 | **Definitions** | Whether definitions are loaded at startup, and from which files | Loaded, from the application's `aktimetrix` folder |
 | **Deadlines** | Whether this instance fires alarms; how often it looks for due alarms, how many it claims at once, and for how long | On; every 5 s; 100; 30 s |
@@ -773,7 +777,7 @@ public class OrderDefinitions {
                         .startsOn("ORDER_CREATED_EVENT")
                         .cancelledOn("ORDER_CANCELLED_EVENT")
                         // priority customers within one day, others within three: the order's deadline
-                        .planTime(o -> metadataTime(o, "createdAt").plusDays(priority(o.getMetadata()) ? 1 : 3))
+                        .planTime(o -> metadataTime(o, "createdAt").plus(Duration.ofDays(priority(o.getMetadata()) ? 1 : 3)))
                         .measure("COST", "deliveryCost", cost -> cost.value(8).unit("EUR").tolerance("10%")
                                 .worseWhenHigher())
                         .metric("FUEL_PER_KM", "FUEL / DISTANCE", m -> m.unit("L/KM").tolerance("10%")
@@ -791,8 +795,8 @@ public class OrderDefinitions {
                                 .on("DELIVERED_EVENT")
                                 // priority customers within 3 h 15 min of the order, others within 2 days
                                 .planTime(d -> priority(d.getMetadata())
-                                        ? metadataTime(d, "createdAt").plusHours(3).plusMinutes(15)
-                                        : metadataTime(d, "createdAt").plusDays(2)))
+                                        ? metadataTime(d, "createdAt").plus(Duration.ofMinutes(195))
+                                        : metadataTime(d, "createdAt").plus(Duration.ofDays(2))))
                         // ... RATED
                 )
                 .build();
@@ -855,8 +859,8 @@ public class DeliveryPlanMeter extends AbstractMeter {
     protected String getMeasurementValue(String tenant, StepInstance step) {
         boolean priority = Boolean.TRUE.equals(step.getMetadata().get("priority"));
         return String.valueOf(priority
-                ? metadataTime(step, "createdAt").plusHours(3).plusMinutes(15)
-                : metadataTime(step, "createdAt").plusDays(2));
+                ? metadataTime(step, "createdAt").plus(Duration.ofMinutes(195))
+                : metadataTime(step, "createdAt").plus(Duration.ofDays(2)));
     }
 }
 ```
@@ -915,7 +919,6 @@ They combine: a BPMN engine can be one of the systems whose events Aktimetrix wa
 - **Milestones, not a flow chart.** A process is a sequence of steps, with alternatives (one of several branches)
   and repeatable steps (counted attempts). Nested branches, parallel paths that join, and loops over several steps
   are not modelled; such a process is monitored by its milestones rather than by every path through it.
-- **One time zone per deployment.** Planned and actual times are stored as local times in one configured zone.
 - **Event quality.** Results depend on the source systems publishing an event, with an accurate business time, for
   each milestone. Aktimetrix guards against what it can detect: a duplicate is ignored by its `eventId`, an event
   dated in the future is rejected, a step completed without its start event is flagged, and a missing completion

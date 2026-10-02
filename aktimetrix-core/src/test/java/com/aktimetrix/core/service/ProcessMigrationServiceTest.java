@@ -15,9 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
+import java.time.Duration;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -32,8 +33,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProcessMigrationServiceTest {
 
-    private static final LocalDateTime BOOKED = LocalDateTime.of(2024, 1, 10, 9, 0);
-    private static final LocalDateTime NOW = LocalDateTime.of(2024, 1, 10, 12, 30);
+    private static final Instant BOOKED = LocalDateTime.of(2024, 1, 10, 9, 0).toInstant(ZoneOffset.UTC);
+    private static final Instant NOW = LocalDateTime.of(2024, 1, 10, 12, 30).toInstant(ZoneOffset.UTC);
 
     @Mock
     private ProcessInstanceService processInstanceService;
@@ -66,7 +67,7 @@ class ProcessMigrationServiceTest {
         };
         service = new ProcessMigrationService(processInstanceService, processDefinitionService, stepInstanceService,
                 stepInstancePublisherService, processInstancePublisherService, registryService, transactions,
-                Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
+                Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test
@@ -74,12 +75,12 @@ class ProcessMigrationServiceTest {
         final ProcessDefinition revision1 = definition(1L, step("PICKUP", "PT1H", null), step("SORT", "PT3H", null),
                 step("LEGACY", "PT4H", null));
         final ProcessInstance parcel = instance("p-1", revision1);
-        final StepInstance pickup = stepInstance("PICKUP", 0, Constants.STATUS_COMPLETED, BOOKED.plusHours(1));
-        pickup.setActualAt(BOOKED.plusMinutes(50));
+        final StepInstance pickup = stepInstance("PICKUP", 0, Constants.STATUS_COMPLETED, BOOKED.plus(Duration.ofHours(1)));
+        pickup.setActualAt(BOOKED.plus(Duration.ofMinutes(50)));
         pickup.setTimeliness(Timeliness.ON_TIME);
-        final StepInstance sort = stepInstance("SORT", 1, Constants.STATUS_CREATED, BOOKED.plusHours(3));
+        final StepInstance sort = stepInstance("SORT", 1, Constants.STATUS_CREATED, BOOKED.plus(Duration.ofHours(3)));
         sort.setTimeliness(Timeliness.OVERDUE);
-        final StepInstance legacy = stepInstance("LEGACY", 2, Constants.STATUS_CREATED, BOOKED.plusHours(4));
+        final StepInstance legacy = stepInstance("LEGACY", 2, Constants.STATUS_CREATED, BOOKED.plus(Duration.ofHours(4)));
         final ProcessDefinition revision2 = definition(2L, step("PICKUP", "PT1H", null), step("SORT", "PT5H", null),
                 step("DELIVER", "PT2H", "SORT"));
         revision2.setPlannedWithin("P1D");
@@ -100,11 +101,11 @@ class ProcessMigrationServiceTest {
         assertThat(parcel.getDefinitionRevision()).isEqualTo(2L);
         assertThat(parcel.getDefinition().getSteps()).extracting(StepDefinition::getStepCode)
                 .containsExactly("PICKUP", "SORT", "DELIVER");
-        assertThat(parcel.getLateAfter()).isEqualTo(BOOKED.plusDays(1));
+        assertThat(parcel.getLateAfter()).isEqualTo(BOOKED.plus(Duration.ofDays(1)));
 
-        assertThat(pickup.getActualAt()).as("what happened is kept").isEqualTo(BOOKED.plusMinutes(50));
+        assertThat(pickup.getActualAt()).as("what happened is kept").isEqualTo(BOOKED.plus(Duration.ofMinutes(50)));
         assertThat(pickup.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
-        assertThat(sort.getPlannedAt()).isEqualTo(BOOKED.plusHours(5));
+        assertThat(sort.getPlannedAt()).isEqualTo(BOOKED.plus(Duration.ofHours(5)));
         assertThat(sort.getTimeliness()).as("its new deadline is ahead").isNull();
         verify(stepInstancePublisherService).publish(sort, "PLANNED");
         assertThat(legacy.getStatus()).isEqualTo(Constants.STATUS_SKIPPED);
@@ -145,7 +146,7 @@ class ProcessMigrationServiceTest {
         return instance;
     }
 
-    private static StepInstance stepInstance(String code, int sequence, String status, LocalDateTime plannedAt) {
+    private static StepInstance stepInstance(String code, int sequence, String status, Instant plannedAt) {
         final StepInstance step = new StepInstance("T1", code, "p-1", null, null, "1.0.0", status, BOOKED);
         step.setId("s-" + code);
         step.setSequence(sequence);

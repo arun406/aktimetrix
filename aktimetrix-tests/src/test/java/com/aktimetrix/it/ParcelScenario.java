@@ -26,6 +26,9 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -54,7 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public abstract class ParcelScenario {
 
     private static final String TOPIC = "parcel-events";
-    private static final LocalDateTime BOOKED = LocalDateTime.of(2024, 1, 10, 9, 0);
+    private static final Instant BOOKED = LocalDateTime.of(2024, 1, 10, 9, 0).toInstant(ZoneOffset.UTC);
     private final ObjectMapper json = new ObjectMapper();
 
     private TestBroker broker;
@@ -85,10 +88,10 @@ public abstract class ParcelScenario {
         send("PARCEL_BOOKED", "2024-01-10 09:00:00",
                 "{\"bookedAt\":\"2024-01-10 09:00:00\",\"from\":\"AMS\",\"to\":\"RTM\"}");
         StepInstance pickup = step("PICKUP", s -> s.getLateAfter() != null);
-        assertThat(pickup.getPlannedAt()).isEqualTo(BOOKED.plusHours(1));
-        assertThat(pickup.getLateAfter()).isEqualTo(BOOKED.plusHours(1).plusMinutes(10));
+        assertThat(pickup.getPlannedAt()).isEqualTo(BOOKED.plus(Duration.ofHours(1)));
+        assertThat(pickup.getLateAfter()).isEqualTo(BOOKED.plus(Duration.ofHours(1)).plus(Duration.ofMinutes(10)));
         StepInstance sort = step("SORT", s -> s.getPlannedAt() != null);
-        assertThat(sort.getPlannedAt()).isEqualTo(BOOKED.plusHours(3));
+        assertThat(sort.getPlannedAt()).isEqualTo(BOOKED.plus(Duration.ofHours(3)));
         assertThat(monitor.step("P-1", "DELIVER").orElseThrow().getPlannedAt()).isNull();
         assertThat(step("BOOK", s -> "Completed".equals(s.getStatus())).getActualAt()).isEqualTo(BOOKED);
 
@@ -106,14 +109,14 @@ public abstract class ParcelScenario {
         assertThat(pickup.getTimeliness()).isEqualTo(Timeliness.LATE);
         sort = step("SORT", s -> s.getTimeliness() != null);
         assertThat(sort.getTimeliness()).isEqualTo(Timeliness.AT_RISK);
-        assertThat(sort.getExpectedAt()).isEqualTo(BOOKED.plusHours(4).plusMinutes(30));
+        assertThat(sort.getExpectedAt()).isEqualTo(BOOKED.plus(Duration.ofHours(4)).plus(Duration.ofMinutes(30)));
 
         // sorted at 12:10: late, and DELIVER is planned 5 hours later
         send("PARCEL_SORTED", "2024-01-10 12:10:00", "{\"scale\":{\"weightKg\":2.5}}");
         sort = step("SORT", s -> "Completed".equals(s.getStatus()));
         assertThat(sort.getTimeliness()).isEqualTo(Timeliness.LATE);
         assertThat(step("DELIVER", s -> s.getPlannedAt() != null).getPlannedAt())
-                .isEqualTo(LocalDateTime.of(2024, 1, 10, 17, 10));
+                .isEqualTo(LocalDateTime.of(2024, 1, 10, 17, 10).toInstant(ZoneOffset.UTC));
 
         // the sorting event carried the parcel's weight: SORT's actual WEIGHT, compared with the planned 2 kg ± 10%
         MeasurementInstance weight = measurement(m -> "WEIGHT".equals(m.getCode()) && "A".equals(m.getType()));
@@ -127,19 +130,19 @@ public abstract class ParcelScenario {
         // SORT's actual TIME is compared with its plan too: 10 minutes late
         MeasurementInstance sortTime = measurement(m -> "TIME".equals(m.getCode()) && "A".equals(m.getType())
                 && "SORT".equals(m.getStepCode()));
-        assertThat(sortTime.getPlannedValue()).isEqualTo("2024-01-10T12:00");
+        assertThat(sortTime.getPlannedValue()).isEqualTo("2024-01-10T12:00:00Z");
         assertThat(sortTime.getDeviation()).isEqualTo("PT10M");
 
         // the process has its own deadline: 12 hours after booking
         ProcessInstance parcel = monitor.process("PARCEL", "P-1").orElseThrow();
-        assertThat(parcel.getPlannedAt()).isEqualTo(BOOKED.plusHours(12));
+        assertThat(parcel.getPlannedAt()).isEqualTo(BOOKED.plus(Duration.ofHours(12)));
 
         // cancelled before delivery: the process ends, and DELIVER is no longer awaited
         send("PARCEL_CANCELLED", "2024-01-10 13:00:00", null);
         assertThat(step("DELIVER", s -> "Cancelled".equals(s.getStatus())).getActualAt()).isNull();
         parcel = monitor.process("PARCEL", "P-1").orElseThrow();
         assertThat(parcel.getStatus()).isEqualTo("Cancelled");
-        assertThat(parcel.getEndedAt()).isEqualTo(LocalDateTime.of(2024, 1, 10, 13, 0));
+        assertThat(parcel.getEndedAt()).isEqualTo(LocalDateTime.of(2024, 1, 10, 13, 0).toInstant(ZoneOffset.UTC));
 
         // the steps that needed attention were notified, after the outbox relayed them
         final RecordingNotifier notifier = monitor.bean(RecordingNotifier.class);
@@ -203,7 +206,7 @@ public abstract class ParcelScenario {
         final List<ProcessInstance> runs = runs("P-5");
         assertThat(runs).extracting(ProcessInstance::getRun).containsExactly(1, 2);
         assertThat(runs.get(1).getStartEventId()).isEqualTo("booking-2");
-        assertThat(runs.get(1).getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 11, 11, 0));
+        assertThat(runs.get(1).getStartedAt()).isEqualTo(LocalDateTime.of(2024, 1, 11, 11, 0).toInstant(ZoneOffset.UTC));
         awaitTrue(() -> stepOf(runs.get(1), "PICKUP").map(s -> "Completed".equals(s.getStatus())).orElse(false),
                 "PICKUP of run 2 completing");
         assertThat(stepOf(runs.get(0), "PICKUP").orElseThrow().getStatus()).as("run 1 has ended")
@@ -239,7 +242,7 @@ public abstract class ParcelScenario {
         assertThat(migration.getRevision()).isEqualTo(revision);
         assertThat(monitor.process("RETURN", "R-2").orElseThrow().getDefinitionRevision()).isEqualTo(revision);
         assertThat(monitor.step("R-2", "LABEL").orElseThrow().getPlannedAt())
-                .isEqualTo(LocalDateTime.of(2024, 1, 13, 11, 0));
+                .isEqualTo(LocalDateTime.of(2024, 1, 13, 11, 0).toInstant(ZoneOffset.UTC));
         assertThat(monitor.bean(ProcessMigrationService.class).migrate("T1", "RETURN").getUpToDate()).isEqualTo(1);
     }
 
@@ -258,8 +261,8 @@ public abstract class ParcelScenario {
 
         final StepInstance inspect = await(() -> monitor.step("R-1", "INSPECT"), s -> s.getAttempts() == 2,
                 "the second inspection");
-        assertThat(inspect.getActualAt()).isEqualTo(LocalDateTime.of(2024, 1, 12, 10, 0));
-        assertThat(inspect.getLastAttemptAt()).isEqualTo(LocalDateTime.of(2024, 1, 12, 11, 0));
+        assertThat(inspect.getActualAt()).isEqualTo(LocalDateTime.of(2024, 1, 12, 10, 0).toInstant(ZoneOffset.UTC));
+        assertThat(inspect.getLastAttemptAt()).isEqualTo(LocalDateTime.of(2024, 1, 12, 11, 0).toInstant(ZoneOffset.UTC));
         await(() -> monitor.step("R-1", "REPLACE"), s -> "Skipped".equals(s.getStatus()), "the replacement skipped");
         await(() -> monitor.process("RETURN", "R-1"), ProcessInstance::isComplete, "the return completing");
     }

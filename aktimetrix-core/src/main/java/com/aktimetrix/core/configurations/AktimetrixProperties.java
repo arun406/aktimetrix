@@ -4,7 +4,6 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
-import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -17,12 +16,6 @@ import java.util.Set;
 @Data
 @ConfigurationProperties(prefix = "aktimetrix")
 public class AktimetrixProperties {
-
-    /**
-     * Time zone of all planned and actual times. Event times are converted to it, and the overdue monitor compares
-     * planned times with the current time in it.
-     */
-    private ZoneId timeZone = ZoneId.of("UTC");
 
     private final Events events = new Events();
     private final Definitions definitions = new Definitions();

@@ -12,7 +12,7 @@ import com.aktimetrix.core.store.StoreDocuments;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -102,7 +102,7 @@ final class MemoryInstanceStores {
         }
 
         @Override
-        public synchronized List<ProcessInstance> findOverdue(LocalDateTime now) {
+        public synchronized List<ProcessInstance> findOverdue(Instant now) {
             return find(i -> !i.isComplete() && i.getLateAfter() != null && i.getLateAfter().isBefore(now)
                     && i.getTimeliness() != Timeliness.OVERDUE);
         }
@@ -147,7 +147,7 @@ final class MemoryInstanceStores {
         }
 
         @Override
-        public synchronized List<StepInstance> findOverdue(LocalDateTime now) {
+        public synchronized List<StepInstance> findOverdue(Instant now) {
             return steps.values().stream()
                     .filter(s -> !CLOSED_STEP.contains(s.getStatus()) && s.getLateAfter() != null
                             && s.getLateAfter().isBefore(now) && s.getTimeliness() != Timeliness.OVERDUE)

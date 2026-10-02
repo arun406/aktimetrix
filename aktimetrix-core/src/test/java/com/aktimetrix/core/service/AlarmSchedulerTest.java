@@ -19,9 +19,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.OptimisticLockingFailureException;
 
+import java.time.LocalDateTime;
+import java.time.Duration;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +42,7 @@ import static org.mockito.Mockito.when;
 class AlarmSchedulerTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC);
-    private static final LocalDateTime NOW = LocalDateTime.of(2022, 5, 23, 12, 0);
+    private static final Instant NOW = LocalDateTime.of(2022, 5, 23, 12, 0).toInstant(ZoneOffset.UTC);
 
     @Mock
     private AlarmStore alarms;
@@ -71,7 +72,7 @@ class AlarmSchedulerTest {
 
     @Test
     void anOpenStepPastItsDeadlineIsMarkedOverdueAsADeadlineCause() {
-        StepInstance step = step("s1", NOW.minusMinutes(3));
+        StepInstance step = step("s1", NOW.minus(Duration.ofMinutes(3)));
         Alarm alarm = alarmOf(step);
         due(List.of(alarm));
         when(steps.findById("s1")).thenReturn(Optional.of(step));
@@ -89,7 +90,7 @@ class AlarmSchedulerTest {
 
     @Test
     void anAlarmForAStepCompletedMeanwhileIsCancelled() {
-        StepInstance step = step("s1", NOW.minusMinutes(3));
+        StepInstance step = step("s1", NOW.minus(Duration.ofMinutes(3)));
         step.setStatus(Constants.STATUS_COMPLETED);
         Alarm alarm = alarmOf(step);
         due(List.of(alarm));
@@ -102,25 +103,25 @@ class AlarmSchedulerTest {
 
     @Test
     void anAlarmWhoseDeadlineMovedLaterIsSetAgain() {
-        StepInstance step = step("s1", NOW.plusHours(1));
-        Alarm alarm = Alarm.of(Alarm.STEP, "T1", "s1", "p1", NOW.minusMinutes(3));
+        StepInstance step = step("s1", NOW.plus(Duration.ofHours(1)));
+        Alarm alarm = Alarm.of(Alarm.STEP, "T1", "s1", "p1", NOW.minus(Duration.ofMinutes(3)));
         due(List.of(alarm));
         when(steps.findById("s1")).thenReturn(Optional.of(step));
 
         assertThat(scheduler.fireDueAlarms()).isZero();
         ArgumentCaptor<Alarm> moved = ArgumentCaptor.forClass(Alarm.class);
         verify(alarms).schedule(moved.capture());
-        assertThat(moved.getValue().getDueAt()).isEqualTo(NOW.plusHours(1));
+        assertThat(moved.getValue().getDueAt()).isEqualTo(NOW.plus(Duration.ofHours(1)));
     }
 
     @Test
     void anAlarmThatLosesARaceIsLeftForItsLeaseAndTheBatchCarriesOn() {
-        StepInstance ship = step("s1", NOW.minusMinutes(3));
+        StepInstance ship = step("s1", NOW.minus(Duration.ofMinutes(3)));
         ProcessInstance order = new ProcessInstance();
         order.setId("p1");
         order.setTenant("T1");
-        order.setLateAfter(NOW.minusMinutes(1));
-        due(List.of(alarmOf(ship), Alarm.of(Alarm.PROCESS, "T1", "p1", "p1", NOW.minusMinutes(1))));
+        order.setLateAfter(NOW.minus(Duration.ofMinutes(1)));
+        due(List.of(alarmOf(ship), Alarm.of(Alarm.PROCESS, "T1", "p1", "p1", NOW.minus(Duration.ofMinutes(1)))));
         when(steps.findById("s1")).thenReturn(Optional.of(ship));
         when(processes.findById("T1", "p1")).thenReturn(Optional.of(order));
         doThrow(new OptimisticLockingFailureException("stale")).when(stepProgressService).markOverdue(ship, NOW);
@@ -132,9 +133,9 @@ class AlarmSchedulerTest {
 
     @Test
     void claimsBatchesUntilNoneIsFull() {
-        StepInstance a = step("a", NOW.minusMinutes(3));
-        StepInstance b = step("b", NOW.minusMinutes(2));
-        StepInstance c = step("c", NOW.minusMinutes(1));
+        StepInstance a = step("a", NOW.minus(Duration.ofMinutes(3)));
+        StepInstance b = step("b", NOW.minus(Duration.ofMinutes(2)));
+        StepInstance c = step("c", NOW.minus(Duration.ofMinutes(1)));
         when(alarms.claimDue(eq(NOW), eq(CLOCK.instant()), eq(CLOCK.instant().plusSeconds(30)), anyInt()))
                 .thenReturn(List.of(alarmOf(a), alarmOf(b)), List.of(alarmOf(c)));
         when(steps.findById(any())).thenAnswer(i -> Optional.of(List.of(a, b, c).stream()
@@ -152,7 +153,7 @@ class AlarmSchedulerTest {
         return Alarm.of(Alarm.STEP, step.getTenant(), step.getId(), step.getProcessInstanceId(), step.getLateAfter());
     }
 
-    private static StepInstance step(String id, LocalDateTime lateAfter) {
+    private static StepInstance step(String id, Instant lateAfter) {
         StepInstance step = new StepInstance();
         step.setId(id);
         step.setTenant("T1");

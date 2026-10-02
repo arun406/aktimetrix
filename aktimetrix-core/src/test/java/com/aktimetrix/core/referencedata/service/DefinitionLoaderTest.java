@@ -16,6 +16,10 @@ import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -139,8 +143,8 @@ class DefinitionLoaderTest {
                 new StaticListableBeanFactory(named).getBeanProvider(Definitions.class), registry);
     }
 
-    private static java.time.LocalDateTime at(int hours) {
-        return java.time.LocalDateTime.of(2024, 3, 1, 9, 0).plusHours(hours);
+    private static java.time.Instant at(int hours) {
+        return java.time.LocalDateTime.of(2024, 3, 1, 9, 0).toInstant(ZoneOffset.UTC).plus(Duration.ofHours(hours));
     }
 
     @Measurement(code = "TIME", stepCode = "DELIVER")

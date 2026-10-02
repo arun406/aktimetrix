@@ -22,13 +22,15 @@ import com.aktimetrix.core.service.MeasurementInstanceService;
 import com.aktimetrix.core.service.ProcessInstanceService;
 import com.aktimetrix.core.service.RegistryService;
 import com.aktimetrix.core.service.StepInstanceService;
+import com.aktimetrix.core.util.Times;
 import com.aktimetrix.core.service.StepPlanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -134,7 +136,7 @@ public abstract class AbstractProcessor implements Processor {
             } else if (measurement.getValue() != null) {
                 measurements.add(new MeasurementInstance(context.getTenant(), measurement.getMeasurementCode(),
                         measurement.getValue(), measurement.getUnit(), processInstance.getId(), null, null,
-                        Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.now()));
+                        Constants.PLAN_MEASUREMENT_TYPE, null, ZonedDateTime.now(ZoneOffset.UTC)));
             } else {
                 logger.warn("No process-level meter, and no planned value, for {} of the {} process",
                         measurement.getMeasurementCode(), definition.getProcessCode());
@@ -160,7 +162,7 @@ public abstract class AbstractProcessor implements Processor {
         for (MeasurementInstance measurement : measurements) {
             if (Constants.MEASUREMENT_CODE_TIME.equals(measurement.getCode()) && measurement.getValue() != null) {
                 try {
-                    processInstance.setPlannedAt(LocalDateTime.parse(measurement.getValue()));
+                    processInstance.setPlannedAt(Times.parse(measurement.getValue()));
                 } catch (DateTimeParseException e) {
                     logger.warn("Planned TIME of the {} process is not an ISO date-time: {}",
                             definition.getProcessCode(), measurement.getValue());
@@ -260,7 +262,7 @@ public abstract class AbstractProcessor implements Processor {
         processInstance.setStartEventId(eventId);
         processInstance.setMetadata(getProcessMetadata(context));
         processInstance.setEntityId(entityId);
-        processInstance.setStartedAt((LocalDateTime) context.getProperty(Constants.OCCURRED_AT));
+        processInstance.setStartedAt((Instant) context.getProperty(Constants.OCCURRED_AT));
         if (definition.plannedWithinDuration() != null && processInstance.getStartedAt() != null) {
             processInstance.setPlannedAt(processInstance.getStartedAt().plus(definition.plannedWithinDuration()));
             processInstance.setLateAfter(processInstance.getPlannedAt().plus(definition.toleranceDuration()));

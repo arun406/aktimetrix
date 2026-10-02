@@ -6,8 +6,10 @@ import com.aktimetrix.core.model.StepInstance;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class StepPlannerTest {
 
-    private static final LocalDateTime BOOKED = LocalDateTime.of(2024, 1, 10, 9, 0);
+    private static final Instant BOOKED = LocalDateTime.of(2024, 1, 10, 9, 0).toInstant(ZoneOffset.UTC);
 
     private final StepPlanner planner = new StepPlanner();
     private final Map<String, StepDefinition> definitions = new HashMap<>();
@@ -24,7 +26,7 @@ class StepPlannerTest {
     @Test
     void plansFromProcessStartAndSetsDeadlines() {
         StepInstance pickup = step("PICKUP", 1);
-        pickup.setPlannedAt(BOOKED.plusHours(1));             // planned by a meter
+        pickup.setPlannedAt(BOOKED.plus(Duration.ofHours(1)));             // planned by a meter
         StepInstance sort = step("SORT", 2);
         StepInstance deliver = step("DELIVER", 3);
         define("PICKUP", null, null, "PT10M");
@@ -34,31 +36,31 @@ class StepPlannerTest {
         List<StepInstance> changed = planner.planNewSteps(List.of(pickup, sort, deliver), definitions, BOOKED);
 
         assertThat(changed).containsExactly(pickup, sort);
-        assertThat(pickup.getLateAfter()).isEqualTo(BOOKED.plusHours(1).plusMinutes(10));
-        assertThat(sort.getPlannedAt()).isEqualTo(BOOKED.plusHours(3));
-        assertThat(sort.getLateAfter()).isEqualTo(BOOKED.plusHours(3));
+        assertThat(pickup.getLateAfter()).isEqualTo(BOOKED.plus(Duration.ofHours(1)).plus(Duration.ofMinutes(10)));
+        assertThat(sort.getPlannedAt()).isEqualTo(BOOKED.plus(Duration.ofHours(3)));
+        assertThat(sort.getLateAfter()).isEqualTo(BOOKED.plus(Duration.ofHours(3)));
         assertThat(deliver.getPlannedAt()).as("planned only when SORT completes").isNull();
     }
 
     @Test
     void plansFromTheActualTimeOfTheStepItCountsFrom() {
         StepInstance sort = step("SORT", 2);
-        sort.setActualAt(BOOKED.plusHours(3).plusMinutes(10));
+        sort.setActualAt(BOOKED.plus(Duration.ofHours(3)).plus(Duration.ofMinutes(10)));
         StepInstance deliver = step("DELIVER", 3);
         define("SORT", null, "PT3H", null);
         define("DELIVER", "SORT", "PT5H", "PT30M");
 
         assertThat(planner.planAfter(sort, List.of(sort, deliver), definitions)).containsExactly(deliver);
-        assertThat(deliver.getPlannedAt()).isEqualTo(BOOKED.plusHours(8).plusMinutes(10));
-        assertThat(deliver.getLateAfter()).isEqualTo(BOOKED.plusHours(8).plusMinutes(40));
+        assertThat(deliver.getPlannedAt()).isEqualTo(BOOKED.plus(Duration.ofHours(8)).plus(Duration.ofMinutes(10)));
+        assertThat(deliver.getLateAfter()).isEqualTo(BOOKED.plus(Duration.ofHours(8)).plus(Duration.ofMinutes(40)));
     }
 
     @Test
     void forecastsLaterStepsAndFlagsThoseBeyondTheirDeadline() {
         StepInstance pickup = step("PICKUP", 1);
-        StepInstance sort = plannedStep("SORT", 2, BOOKED.plusHours(3), BOOKED.plusHours(3));
-        StepInstance load = plannedStep("LOAD", 3, BOOKED.plusHours(4), BOOKED.plusHours(6));
-        StepInstance deliver = plannedStep("DELIVER", 4, BOOKED.plusHours(8), BOOKED.plusHours(8));
+        StepInstance sort = plannedStep("SORT", 2, BOOKED.plus(Duration.ofHours(3)), BOOKED.plus(Duration.ofHours(3)));
+        StepInstance load = plannedStep("LOAD", 3, BOOKED.plus(Duration.ofHours(4)), BOOKED.plus(Duration.ofHours(6)));
+        StepInstance deliver = plannedStep("DELIVER", 4, BOOKED.plus(Duration.ofHours(8)), BOOKED.plus(Duration.ofHours(8)));
         StepInstance done = plannedStep("EARLIER", 0, BOOKED, BOOKED);
         done.setStatus(Constants.STATUS_COMPLETED);
         define("PICKUP", null, null, null);
@@ -71,7 +73,7 @@ class StepPlannerTest {
 
         assertThat(atRisk).containsExactly(sort);
         assertThat(sort.getTimeliness()).isEqualTo(Timeliness.AT_RISK);
-        assertThat(load.getExpectedAt()).isEqualTo(BOOKED.plusHours(5).plusMinutes(30));
+        assertThat(load.getExpectedAt()).isEqualTo(BOOKED.plus(Duration.ofHours(5)).plus(Duration.ofMinutes(30)));
         assertThat(load.getTimeliness()).as("within its tolerance").isNull();
         assertThat(deliver.getExpectedAt()).as("planned from PICKUP's actual time already").isNull();
         assertThat(done.getExpectedAt()).isNull();
@@ -79,7 +81,7 @@ class StepPlannerTest {
 
     @Test
     void noForecastWithoutDelay() {
-        StepInstance sort = plannedStep("SORT", 2, BOOKED.plusHours(3), BOOKED.plusHours(3));
+        StepInstance sort = plannedStep("SORT", 2, BOOKED.plus(Duration.ofHours(3)), BOOKED.plus(Duration.ofHours(3)));
         define("SORT", null, "PT3H", null);
 
         assertThat(planner.forecast(step("PICKUP", 1), Duration.ofMinutes(-5), List.of(sort), definitions)).isEmpty();
@@ -88,10 +90,10 @@ class StepPlannerTest {
 
     @Test
     void judgesAgainstTheDeadline() {
-        StepInstance sort = plannedStep("SORT", 2, BOOKED.plusHours(3), BOOKED.plusHours(3).plusMinutes(15));
+        StepInstance sort = plannedStep("SORT", 2, BOOKED.plus(Duration.ofHours(3)), BOOKED.plus(Duration.ofHours(3)).plus(Duration.ofMinutes(15)));
 
-        assertThat(planner.judge(sort, BOOKED.plusHours(3).plusMinutes(15))).isEqualTo(Timeliness.ON_TIME);
-        assertThat(planner.judge(sort, BOOKED.plusHours(3).plusMinutes(16))).isEqualTo(Timeliness.LATE);
+        assertThat(planner.judge(sort, BOOKED.plus(Duration.ofHours(3)).plus(Duration.ofMinutes(15)))).isEqualTo(Timeliness.ON_TIME);
+        assertThat(planner.judge(sort, BOOKED.plus(Duration.ofHours(3)).plus(Duration.ofMinutes(16)))).isEqualTo(Timeliness.LATE);
         assertThat(planner.judge(step("UNPLANNED", 5), BOOKED)).isNull();
     }
 
@@ -112,7 +114,7 @@ class StepPlannerTest {
         return step;
     }
 
-    private static StepInstance plannedStep(String code, int sequence, LocalDateTime plannedAt, LocalDateTime lateAfter) {
+    private static StepInstance plannedStep(String code, int sequence, Instant plannedAt, Instant lateAfter) {
         StepInstance step = step(code, sequence);
         step.setPlannedAt(plannedAt);
         step.setLateAfter(lateAfter);

@@ -3,7 +3,6 @@ package com.aktimetrix.core.store;
 import com.aktimetrix.core.model.Alarm;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -26,7 +25,7 @@ public interface AlarmStore {
      * expired, earliest first: sets their {@code lockedUntil} to {@code leaseUntil} and increments their
      * {@code attempts}. Two callers never claim the same alarm while its lease holds.
      */
-    List<Alarm> claimDue(LocalDateTime now, Instant claimedAt, Instant leaseUntil, int limit);
+    List<Alarm> claimDue(Instant now, Instant claimedAt, Instant leaseUntil, int limit);
 
     long countPending();
 }

@@ -12,6 +12,14 @@ version may change the public API.
   `spring.jackson.serialization.write-dates-as-timestamps=false` is no longer set: it is Jackson 3's own default.
 - MongoDB connection settings follow Spring Boot 4: `spring.mongodb.uri` instead of `spring.data.mongodb.uri`.
 
+**Changed: times are UTC instants** (breaking)
+- Every planned, actual and forecast time, deadline and alarm is a `java.time.Instant`, kept and published in UTC,
+  such as `2024-03-01T12:45:00Z`; so is the value of a `TIME` measurement. `aktimetrix.time-zone` is removed; event
+  times are converted from their own offset. Meters and planning rules return instants: `metadataTime(...)` gives an
+  `Instant`, so write `.plus(Duration.ofHours(4))` for `.plusHours(4)`. `Times.toInstant` reads other forms.
+- Data stored by earlier versions is read as before: a time without an offset is taken as UTC, which was the
+  default zone.
+
 **Changed: REST API in its own module** (breaking)
 - The REST API moved from `aktimetrix-core` to the new module `aktimetrix-rest`; add it to keep the endpoints. The
   core no longer brings Spring MVC or a web server.

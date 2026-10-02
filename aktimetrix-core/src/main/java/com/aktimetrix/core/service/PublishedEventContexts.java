@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Builds the {@link EventContext} of the events Aktimetrix publishes: the business entity and process an instance
@@ -60,7 +60,7 @@ public class PublishedEventContexts {
     private EventContext.EventContextBuilder base(ProcessInstance process) {
         final EventContext.EventContextBuilder context = EventContext.builder()
                 .schemaVersion(PublishedEvents.SCHEMA_VERSION)
-                .occurredAt(ProcessingContext.occurredAt(() -> LocalDateTime.now(clock)))
+                .occurredAt(ProcessingContext.occurredAt(() -> clock.instant()))
                 .cause(ProcessingContext.cause());
         if (process != null) {
             context.businessEntity(new BusinessEntity(process.getEntityType(), process.getEntityId()))

@@ -14,9 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.OptimisticLockingFailureException;
 
+import java.time.LocalDateTime;
+import java.time.Duration;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +34,7 @@ import static org.mockito.Mockito.when;
 class OverdueStepMonitorTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2022-05-23T12:00:00Z"), ZoneOffset.UTC);
-    private static final LocalDateTime NOW = LocalDateTime.of(2022, 5, 23, 12, 0);
+    private static final Instant NOW = LocalDateTime.of(2022, 5, 23, 12, 0).toInstant(ZoneOffset.UTC);
 
     @Mock
     private StepInstanceStore stepInstanceStore;
@@ -116,7 +117,7 @@ class OverdueStepMonitorTest {
         step.setId(UUID.randomUUID().toString());
         step.setStepCode(stepCode);
         step.setStatus(Constants.STATUS_CREATED);
-        step.setLateAfter(NOW.minusHours(1));
+        step.setLateAfter(NOW.minus(Duration.ofHours(1)));
         return step;
     }
 }

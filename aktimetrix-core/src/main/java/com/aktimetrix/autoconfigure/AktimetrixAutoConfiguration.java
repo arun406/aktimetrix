@@ -29,12 +29,12 @@ import java.time.Clock;
 public class AktimetrixAutoConfiguration {
 
     /**
-     * Clock of planned, actual and overdue times, in {@code aktimetrix.time-zone}.
+     * Clock of planned, actual and overdue times, all UTC instants.
      */
     @Bean
     @ConditionalOnMissingBean
-    public Clock aktimetrixClock(AktimetrixProperties properties) {
-        return Clock.system(properties.getTimeZone());
+    public Clock aktimetrixClock() {
+        return Clock.systemUTC();
     }
 
     /**

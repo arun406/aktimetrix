@@ -2,7 +2,6 @@ package com.aktimetrix.core.model;
 
 import com.aktimetrix.core.api.Timeliness;
 import com.aktimetrix.core.referencedata.model.ProcessDefinition;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +10,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.annotation.Version;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,25 +36,24 @@ public class ProcessInstance {
     private boolean active;
     private boolean valid;
     private boolean complete;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createdOn;
+    private Instant createdOn;
     /**
      * When the process started in the business: the time of the event that started it.
      */
-    private LocalDateTime startedAt;
+    private Instant startedAt;
     private Map<String, Object> metadata;
     /**
      * When the whole process should complete: its start plus the definition's {@code plannedWithin}, if any.
      */
-    private LocalDateTime plannedAt;
+    private Instant plannedAt;
     /**
      * When the process counts as late: {@code plannedAt} plus the definition's tolerance.
      */
-    private LocalDateTime lateAfter;
+    private Instant lateAfter;
     /**
      * When the process completed or was cancelled: the time of the event that ended it.
      */
-    private LocalDateTime endedAt;
+    private Instant endedAt;
     /**
      * How the process compares with its deadline; {@code null} when it has none, or until it can be judged.
      */
@@ -71,7 +69,7 @@ public class ProcessInstance {
      * does not move the deadline writes no alarm.
      */
     @JsonIgnore
-    private LocalDateTime alarmAt;
+    private Instant alarmAt;
     /**
      * The definition the process started with, its steps resolved: the process follows it until it ends, even if the
      * definition changes meanwhile. {@code null} for instances started by versions that did not keep it; they follow
@@ -104,7 +102,7 @@ public class ProcessInstance {
         this.subCategoryCode = definition.getSubCategoryCode();
         this.status = "Created";
         this.version = 1;
-        this.createdOn = LocalDateTime.now();
+        this.createdOn = Instant.now();
         this.tenant = definition.getTenant();
         this.entityType = definition.getEntityType();
         this.definition = definition;

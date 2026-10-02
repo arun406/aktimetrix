@@ -9,6 +9,8 @@ import tools.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -108,7 +110,7 @@ class DefinitionsTest {
         final Definitions dsl = Definitions.tenant("SHOP")
                 .process("ORDER", order -> order
                         .step("DELIVERED", delivered -> delivered.on("DELIVERED")
-                                .planTime(step -> metadataTime(step, "createdAt").plusHours(4))))
+                                .planTime(step -> metadataTime(step, "createdAt").plus(Duration.ofHours(4)))))
                 .build();
 
         final StepDefinition delivered = dsl.processDefinitions().get(0).getSteps().get(0);
@@ -123,7 +125,7 @@ class DefinitionsTest {
         step.setStepCode("DELIVERED");
         step.setMetadata(Map.of("createdAt", "2024-03-01 09:00:00"));
         assertThat(RuleMeters.step(rule).measure("SHOP", step).getValue())
-                .isEqualTo(LocalDateTime.of(2024, 3, 1, 13, 0).toString());
+                .isEqualTo(LocalDateTime.of(2024, 3, 1, 13, 0).toInstant(ZoneOffset.UTC).toString());
         assertThat(List.of(RuleMeters.step(rule).measure("SHOP", step).getUnit())).containsExactly("TIMESTAMP");
     }
 }

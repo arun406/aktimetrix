@@ -5,7 +5,7 @@ import com.aktimetrix.core.service.StepProgressService;
 import com.aktimetrix.core.transferobjects.Event;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Base class for handlers of milestone events that never start a process: for every active process instance of
@@ -38,7 +38,7 @@ public abstract class AbstractMilestoneEventHandler implements EventHandler {
      * When the event happened in the business, used as the actual time of the steps it completes. Defaults to
      * {@link StepProgressService#occurredAt(Event)}; override to read it from the entity instead.
      */
-    protected LocalDateTime occurredAt(Event<?, ?> event) {
+    protected Instant occurredAt(Event<?, ?> event) {
         return stepProgressService.occurredAt(event);
     }
 

@@ -26,7 +26,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.function.Consumer;
 
 /**
@@ -77,8 +77,8 @@ public class ProcessConfig {
                 reject(event, payload, "has no eventCode, tenantKey or entityId");
                 return;
             }
-            final LocalDateTime occurredAt = StepProgressService.occurredAt(event, clock);
-            if (occurredAt.isAfter(LocalDateTime.now(clock).plus(properties.getEvents().getMaxFutureSkew()))) {
+            final Instant occurredAt = StepProgressService.occurredAt(event, clock);
+            if (occurredAt.isAfter(clock.instant().plus(properties.getEvents().getMaxFutureSkew()))) {
                 reject(event, payload, "is dated in the future, " + occurredAt);
                 return;
             }

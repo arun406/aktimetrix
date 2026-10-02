@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -72,7 +71,7 @@ public class AlarmScheduler {
         int overdue = 0;
         List<Alarm> due;
         do {
-            final LocalDateTime now = LocalDateTime.now(clock);
+            final Instant now = clock.instant();
             final Instant claimedAt = clock.instant();
             due = alarms.claimDue(now, claimedAt, claimedAt.plus(properties.getAlarms().getLease()), batch);
             for (Alarm alarm : due) {
@@ -84,7 +83,7 @@ public class AlarmScheduler {
         return overdue;
     }
 
-    private boolean fire(Alarm alarm, LocalDateTime now) {
+    private boolean fire(Alarm alarm, Instant now) {
         final boolean[] marked = {false};
         try {
             ProcessingContext.run(new Cause(Cause.DEADLINE, null, null), alarm.getDueAt(), () -> transactions.run(() ->
@@ -101,7 +100,7 @@ public class AlarmScheduler {
         return marked[0];
     }
 
-    private boolean fireStep(Alarm alarm, LocalDateTime now) {
+    private boolean fireStep(Alarm alarm, Instant now) {
         final StepInstance step = steps.findById(alarm.getTargetId()).orElse(null);
         if (step == null || !DeadlineAlarms.isAwaited(step) || step.getLateAfter() == null) {
             alarms.cancel(alarm.getId());
@@ -116,7 +115,7 @@ public class AlarmScheduler {
         return true;
     }
 
-    private boolean fireProcess(Alarm alarm, LocalDateTime now) {
+    private boolean fireProcess(Alarm alarm, Instant now) {
         final ProcessInstance process = processes.findById(alarm.getTenant(), alarm.getTargetId()).orElse(null);
         if (process == null || process.isComplete() || process.getTimeliness() == Timeliness.OVERDUE
                 || process.getLateAfter() == null) {

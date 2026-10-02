@@ -13,7 +13,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -74,7 +74,7 @@ final class MongoInstanceStores {
         }
 
         @Override
-        public List<ProcessInstance> findOverdue(LocalDateTime now) {
+        public List<ProcessInstance> findOverdue(Instant now) {
             return all(where("complete").is(false).and("lateAfter").lt(now).and("timeliness").ne(Timeliness.OVERDUE.name()));
         }
 
@@ -111,7 +111,7 @@ final class MongoInstanceStores {
         }
 
         @Override
-        public List<StepInstance> findOverdue(LocalDateTime now) {
+        public List<StepInstance> findOverdue(Instant now) {
             return mongo.find(Query.query(where("status").nin(Constants.STATUS_COMPLETED, Constants.STATUS_CANCELLED,
                             Constants.STATUS_SKIPPED).and("lateAfter").lt(now).and("timeliness").ne(Timeliness.OVERDUE.name())),
                     StepInstance.class, STEP_INSTANCES);

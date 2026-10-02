@@ -2,7 +2,7 @@ package com.aktimetrix.core.store;
 
 import com.aktimetrix.core.model.ProcessInstance;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,5 +44,5 @@ public interface ProcessInstanceStore {
      * Instances of every tenant that are not complete, whose {@code lateAfter} is before {@code now}, and whose
      * timeliness is not {@code OVERDUE} yet.
      */
-    List<ProcessInstance> findOverdue(LocalDateTime now);
+    List<ProcessInstance> findOverdue(Instant now);
 }

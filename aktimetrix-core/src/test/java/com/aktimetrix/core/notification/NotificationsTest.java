@@ -15,6 +15,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -99,7 +100,7 @@ class NotificationsTest {
         step.setTenant("AA");
         step.setStepCode("HANDOVER");
         step.setProcessInstanceId("p1");
-        step.setPlannedAt(LocalDateTime.of(2024, 1, 10, 10, 30));
+        step.setPlannedAt(LocalDateTime.of(2024, 1, 10, 10, 30).toInstant(ZoneOffset.UTC));
         step.setTimeliness(timeliness);
         return step;
     }

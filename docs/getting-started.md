@@ -185,16 +185,17 @@ public class DeliveryPlanMeter extends AbstractMeter {
         // priority customers within 3 h 15 min of the order, others within 2 days
         boolean priority = Boolean.TRUE.equals(step.getMetadata().get("priority"));
         return String.valueOf(priority
-                ? metadataTime(step, "createdAt").plusHours(3).plusMinutes(15)
-                : metadataTime(step, "createdAt").plusDays(2));
+                ? metadataTime(step, "createdAt").plus(Duration.ofMinutes(195))
+                : metadataTime(step, "createdAt").plus(Duration.ofDays(2)));
     }
 }
 ```
 
 Write one meter per plan that follows a rule; for the order as a whole, extend `AbstractProcessMeter` and name
 `processCode` instead of `stepCode`. A planned `TIME` must be an
-ISO-8601 local date-time, which `String.valueOf(LocalDateTime)` produces. `metadataTime` reads a date-time from the
-metadata whether it is stored as a `LocalDateTime`, a `Date`, or a string.
+ISO-8601 instant, which `String.valueOf(Instant)` produces: Aktimetrix keeps every time in UTC, so a rule such as
+*deliver by 18:00 local time* converts that time to UTC. `metadataTime` reads a date-time from the metadata as an
+`Instant`, whether it is stored as an instant, a `Date`, or a string; a date-time without an offset is taken as UTC.
 
 That is a working monitor: events start the process, meters plan it, milestone events complete its steps, and the
 alarms at the deadlines mark any step whose event does not arrive in time as overdue.
@@ -222,8 +223,8 @@ public class OrderDefinitions {
                                 .after("CONFIRM").within("PT15M").tolerance("PT5M"))
                         .step("DELIVERED", step -> step.on("ORDER_DELIVERED_EVENT")
                                 .planTime(s -> Boolean.TRUE.equals(s.getMetadata().get("priority"))
-                                        ? metadataTime(s, "createdAt").plusHours(3).plusMinutes(15)
-                                        : metadataTime(s, "createdAt").plusDays(2)))
+                                        ? metadataTime(s, "createdAt").plus(Duration.ofMinutes(195))
+                                        : metadataTime(s, "createdAt").plus(Duration.ofDays(2))))
                         .step("RATED", step -> step.on("ORDER_RATED_EVENT").optional()
                                 .measure("RATING", "review.stars", r -> r.value(5).tolerance("1"))))
                 .build();
@@ -330,9 +331,9 @@ it inside the entity instead, for example `"deliveredAt"`, add an event handler 
 public class OrderDeliveredEventHandler extends AbstractMilestoneEventHandler {
 
     @Override
-    protected LocalDateTime occurredAt(Event<?, ?> event) {
+    protected Instant occurredAt(Event<?, ?> event) {
         Map<?, ?> order = (Map<?, ?>) event.getEntity();
-        return LocalDateTime.parse(order.get("deliveredAt").toString(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return Times.parse(order.get("deliveredAt").toString());   // e.g. "2024-03-01 12:55:00", in UTC
     }
 }
 ```
@@ -369,7 +370,7 @@ publish events in another format, keep it and declare an `EventMapper` instead: 
 | `eventCode` | yes | Which processes the event starts, and which steps it completes. |
 | `entityId` | yes | Identifies the business entity: all events of order `1234` carry `"1234"`. |
 | `entityType` | yes | Must equal the process definition's `entityType`. |
-| `eventTime` | recommended | When it happened (`yyyy-MM-dd'T'HH:mm:ss.SSSZ`), converted to `aktimetrix.time-zone`. |
+| `eventTime` | recommended | When it happened, with its offset (`yyyy-MM-dd'T'HH:mm:ss.SSSZ`); kept as a UTC instant. |
 | `eventUTCTime` | fallback | When it happened, in UTC (`yyyy-MM-dd HH:mm:ss`), if `eventTime` is absent. |
 | `entity` | no | Your domain object; becomes metadata. |
 

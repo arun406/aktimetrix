@@ -61,7 +61,6 @@ aktimetrix:
 | `aktimetrix.events.deduplication.enabled` | `true` | Ignore an event whose `eventId` was already processed, such as a message delivered twice. Events without an `eventId` are never deduplicated. |
 | `aktimetrix.events.deduplication.retention` | `P7D` | How long processed event ids are remembered. |
 | `aktimetrix.events.max-future-skew` | `PT5M` | How far in the future an event's business time may be; an event dated later is invalid, and sent to the dead-letter topic. |
-| `aktimetrix.time-zone` | `UTC` | Zone of all planned and actual times. Event times are converted to it, and alarms compare deadlines with the current time in it. |
 | `aktimetrix.definitions.load-on-startup` | `true` | Load process and step definitions from the classpath at startup. |
 | `aktimetrix.definitions.processes` | `classpath*:aktimetrix/process-definitions.json` | Location of the process definitions: a JSON array. |
 | `aktimetrix.definitions.steps` | `classpath*:aktimetrix/step-definitions.json` | Location of the step definitions: a JSON array. |
@@ -194,7 +193,7 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `processCode`, `processInstanceId`, `definitionRevision` | The process, its instance, and the revision of the definition it follows. |
 | `stepCode`, `stepInstanceId` | The step, for step events and step measurements. |
 | `revision` | The revision of the process or step instance after the change: of two events about one instance, the higher is the more recent. |
-| `occurredAt` | When the change happened in the business, in `aktimetrix.time-zone`: the time of the business event that caused it, or of the deadline check. |
+| `occurredAt` | When the change happened in the business, a UTC instant: the time of the business event that caused it, or of the deadline check. |
 | `cause` | `type` `EVENT`, with the `eventId` and `eventCode` of the business event; or `type` `DEADLINE`, for a change made when a deadline passed: an alarm or the overdue sweep; or `type` `MIGRATION`, for a change made by migrating the instance to a newer revision. |
 
 **`Process_Event`** (`entityType` `com.aktimetrix.process.instance`)
@@ -240,7 +239,7 @@ Schemas of the three event types ship in `aktimetrix-core`, under `META-INF/akti
 | `derivedFrom` | For a process metric, its expression, e.g. `FUEL / DISTANCE`. |
 | `plannedValue`, `deviation`, `conformance` | For an actual: the plan it is compared with, actual minus planned (a number, or an ISO-8601 duration for `TIME`), and `WITHIN_TOLERANCE` / `OUT_OF_TOLERANCE` when a tolerance is declared. |
 
-Times inside `entity` are local date-times in `aktimetrix.time-zone`.
+Every time Aktimetrix sets, inside `entity` and in `eventDetails`, is a UTC instant such as `2024-03-01T12:45:00Z`, and so is the value of a `TIME` measurement; consumers convert them for display. Metadata keeps the values the source system sent.
 
 ## Notifications
 
@@ -263,11 +262,11 @@ application has no notifier.
   "entityId": "1234",
   "stepCode": "DELIVERED",
   "stepInstanceId": "s-6",
-  "plannedAt": "2024-03-01T18:00:00",
-  "lateAfter": "2024-03-01T18:30:00",
+  "plannedAt": "2024-03-01T18:00:00Z",
+  "lateAfter": "2024-03-01T18:30:00Z",
   "expectedAt": null,
   "actualAt": null,
-  "occurredAt": "2024-03-01T18:30:04"
+  "occurredAt": "2024-03-01T18:30:04Z"
 }
 ```
 

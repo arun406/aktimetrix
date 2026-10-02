@@ -14,6 +14,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.Duration;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -22,7 +25,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class DeadlineAlarmsTest {
 
-    private static final LocalDateTime DEADLINE = LocalDateTime.of(2022, 5, 23, 12, 0);
+    private static final Instant DEADLINE = LocalDateTime.of(2022, 5, 23, 12, 0).toInstant(ZoneOffset.UTC);
 
     @Mock
     private AlarmStore store;
@@ -58,7 +61,7 @@ class DeadlineAlarmsTest {
     @Test
     void aMovedDeadlineMovesTheAlarm() {
         StepInstance step = step();
-        step.setAlarmAt(DEADLINE.minusHours(1));
+        step.setAlarmAt(DEADLINE.minus(Duration.ofHours(1)));
 
         alarms.reconcile(step);
 

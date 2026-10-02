@@ -9,7 +9,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +39,7 @@ final class MongoAlarmStore implements AlarmStore {
     }
 
     @Override
-    public List<Alarm> claimDue(LocalDateTime now, Instant claimedAt, Instant leaseUntil, int limit) {
+    public List<Alarm> claimDue(Instant now, Instant claimedAt, Instant leaseUntil, int limit) {
         final List<Alarm> claimed = new ArrayList<>();
         final Query due = Query.query(where("dueAt").lt(now).orOperator(
                 where("lockedUntil").is(null), where("lockedUntil").lt(claimedAt))).with(Sort.by("dueAt"));

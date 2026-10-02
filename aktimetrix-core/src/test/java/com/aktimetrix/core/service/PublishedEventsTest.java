@@ -21,9 +21,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PublishedEventsTest {
 
-    private static final LocalDateTime DELIVERED_AT = LocalDateTime.of(2024, 3, 1, 12, 55);
+    private static final Instant DELIVERED_AT = LocalDateTime.of(2024, 3, 1, 12, 55).toInstant(ZoneOffset.UTC);
 
     @Mock
     private Outbox outbox;
@@ -110,7 +110,7 @@ class PublishedEventsTest {
         Event<Measurement, EventContext> event = captured("measurement-instance-out-0", "p-1");
         assertThat(event.getEventCode()).isEqualTo(PublishedEvents.Measurement.READING);
         assertThat(event.getEventDetails().getOccurredAt()).as("outside a unit of work: now")
-                .isEqualTo(LocalDateTime.of(2024, 3, 1, 13, 0));
+                .isEqualTo(LocalDateTime.of(2024, 3, 1, 13, 0).toInstant(ZoneOffset.UTC));
         assertThat(event.getEventDetails().getCause()).isNull();
     }
 
@@ -131,14 +131,14 @@ class PublishedEventsTest {
         ProcessInstancePublisherService publisher = new ProcessInstancePublisherService(outbox, contexts,
                 mock(Notifications.class));
 
-        ProcessingContext.run(new Cause(Cause.DEADLINE, null, null), LocalDateTime.of(2024, 3, 2, 9, 1),
+        ProcessingContext.run(new Cause(Cause.DEADLINE, null, null), LocalDateTime.of(2024, 3, 2, 9, 1).toInstant(ZoneOffset.UTC),
                 () -> publisher.publish(order, PublishedEvents.Process.OVERDUE));
 
         Event<Map<String, Object>, EventContext> event = captured("process-instance-out-0", "p-1");
         EventContext context = event.getEventDetails();
         assertThat(context.getRevision()).isEqualTo(4L);
         assertThat(context.getCause().getType()).isEqualTo(Cause.DEADLINE);
-        assertThat(context.getOccurredAt()).isEqualTo(LocalDateTime.of(2024, 3, 2, 9, 1));
+        assertThat(context.getOccurredAt()).isEqualTo(LocalDateTime.of(2024, 3, 2, 9, 1).toInstant(ZoneOffset.UTC));
     }
 
     private MeasurementInstance measurement(String code, String type) {

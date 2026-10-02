@@ -7,7 +7,7 @@ import com.aktimetrix.core.referencedata.model.ProcessDefinition;
 import com.aktimetrix.core.referencedata.model.StepDefinition;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -134,9 +134,9 @@ public final class ProcessBuilder extends MeasurementsBuilder<ProcessBuilder> {
 
     /**
      * Plans the process's own time by a rule, e.g.
-     * {@code planTime(order -> metadataTime(order, "createdAt").plusDays(1))}.
+     * {@code planTime(order -> metadataTime(order, "createdAt").plus(Duration.ofDays(1)))}.
      */
-    public ProcessBuilder planTime(Function<ProcessInstance, LocalDateTime> rule) {
+    public ProcessBuilder planTime(Function<ProcessInstance, Instant> rule) {
         return plan("TIME", "TIMESTAMP", rule::apply);
     }
 

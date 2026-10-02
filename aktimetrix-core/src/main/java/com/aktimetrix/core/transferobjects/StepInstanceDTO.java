@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 
 @Data
@@ -34,14 +34,14 @@ public class StepInstanceDTO implements Serializable {
     private String functionalCtx;
     private Map<String, Object> metadata;
     private String tenant;
-    private LocalDateTime createdOn;
-    private LocalDateTime plannedAt;
-    private LocalDateTime lateAfter;
-    private LocalDateTime expectedAt;
+    private Instant createdOn;
+    private Instant plannedAt;
+    private Instant lateAfter;
+    private Instant expectedAt;
     private int sequence;
-    private LocalDateTime actualAt;
+    private Instant actualAt;
     private Timeliness timeliness;
     private boolean startMissing;
     private int attempts;
-    private LocalDateTime lastAttemptAt;
+    private Instant lastAttemptAt;
 }

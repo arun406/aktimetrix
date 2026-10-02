@@ -14,7 +14,7 @@ import com.aktimetrix.core.transferobjects.Event;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -86,7 +86,7 @@ public abstract class AbstractEventHandler implements EventHandler {
     /**
      * When the event happened in the business. Override to read it from the entity instead of the event envelope.
      */
-    protected LocalDateTime occurredAt(Event<?, ?> event) {
+    protected Instant occurredAt(Event<?, ?> event) {
         return stepProgressService.occurredAt(event);
     }
 

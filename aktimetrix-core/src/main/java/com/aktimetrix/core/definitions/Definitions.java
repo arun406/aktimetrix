@@ -27,7 +27,7 @@ import java.util.function.Function;
  *                     .step("PAY", step -> step.on("PAYMENT_CONFIRMED").after("CONFIRM").within("PT15M")
  *                             .tolerance("PT5M"))
  *                     .step("DELIVERED", step -> step.on("DELIVERED")
- *                             .planTime(delivered -> metadataTime(delivered, "createdAt").plusHours(4))))
+ *                             .planTime(delivered -> metadataTime(delivered, "createdAt").plus(Duration.ofHours(4)))))
  *             .build();
  * }
  * }</pre>

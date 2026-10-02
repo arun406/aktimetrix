@@ -23,9 +23,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 
+import java.time.LocalDateTime;
+import java.time.Duration;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -45,7 +46,7 @@ import static org.mockito.Mockito.when;
 class StepProgressServiceTest {
 
     private static final String TENANT = "AA";
-    private static final LocalDateTime SHIPPED_AT = LocalDateTime.of(2022, 5, 23, 1, 30);
+    private static final Instant SHIPPED_AT = LocalDateTime.of(2022, 5, 23, 1, 30).toInstant(ZoneOffset.UTC);
 
     @Mock
     private StepInstanceService stepInstanceService;
@@ -117,7 +118,7 @@ class StepProgressServiceTest {
             assertThat(m.getCode()).isEqualTo("TIME");
             assertThat(m.getType()).isEqualTo(Constants.ACTUAL_MEASUREMENT_TYPE);
             assertThat(m.getUnit()).isEqualTo("TIMESTAMP");
-            assertThat(m.getValue()).isEqualTo("2022-05-23T01:30");
+            assertThat(m.getValue()).isEqualTo("2022-05-23T01:30:00Z");
         });
         verify(stepInstanceService).save(ship);
         verify(measurementInstanceService).saveMeasurementInstances(actuals);
@@ -197,7 +198,7 @@ class StepProgressServiceTest {
 
     @Test
     void processWithADeadlineIsJudgedWhenItCompletes() {
-        process.setLateAfter(SHIPPED_AT.minusMinutes(1));
+        process.setLateAfter(SHIPPED_AT.minus(Duration.ofMinutes(1)));
         givenSteps(step("DELIVER", Constants.STATUS_CREATED));
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
 
@@ -316,15 +317,15 @@ class StepProgressServiceTest {
     @Test
     void completedStepIsJudgedAgainstItsPlan() {
         StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
-        ship.setPlannedAt(LocalDateTime.of(2022, 5, 23, 1, 46));
+        ship.setPlannedAt(LocalDateTime.of(2022, 5, 23, 1, 46).toInstant(ZoneOffset.UTC));
         StepInstance deliver = step("DELIVER", Constants.STATUS_CREATED);
-        deliver.setPlannedAt(LocalDateTime.of(2022, 5, 23, 9, 46));
+        deliver.setPlannedAt(LocalDateTime.of(2022, 5, 23, 9, 46).toInstant(ZoneOffset.UTC));
         givenSteps(ship, deliver);
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
 
         service.recordMilestone("ORDER_SHIPPED_EVENT", process, SHIPPED_AT);
-        service.recordMilestone("ORDER_DELIVERED_EVENT", process, LocalDateTime.of(2022, 5, 23, 10, 30));
+        service.recordMilestone("ORDER_DELIVERED_EVENT", process, LocalDateTime.of(2022, 5, 23, 10, 30).toInstant(ZoneOffset.UTC));
 
         assertThat(ship.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
         assertThat(deliver.getTimeliness()).isEqualTo(Timeliness.LATE);
@@ -333,7 +334,7 @@ class StepProgressServiceTest {
     @Test
     void overdueStepThatCompletesLateBecomesLate() {
         StepInstance ship = step("SHIP", Constants.STATUS_CREATED);
-        ship.setPlannedAt(LocalDateTime.of(2022, 5, 23, 1, 0));
+        ship.setPlannedAt(LocalDateTime.of(2022, 5, 23, 1, 0).toInstant(ZoneOffset.UTC));
         ship.setTimeliness(Timeliness.OVERDUE);
         givenSteps(ship);
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
@@ -355,7 +356,7 @@ class StepProgressServiceTest {
     }
 
     @Test
-    void occurredAtIsConvertedToTheConfiguredZone() {
+    void occurredAtIsAUtcInstantWhateverTheClocksZone() {
         StepProgressService inKolkata = new StepProgressService(stepInstanceService,
                 processInstanceService, measurementInstanceService, measurementInstancePublisherService,
                 stepInstancePublisherService, new StepPlanner(), metrics(registry),
@@ -363,27 +364,27 @@ class StepProgressServiceTest {
                 processDefinitionService, processInstancePublisherService, actualMeasurementService,
                 derivedMetricService);
         Event<Object, Object> event = new Event<>();
-        assertThat(inKolkata.occurredAt(event)).isEqualTo(LocalDateTime.of(2022, 5, 23, 17, 30));
+        assertThat(inKolkata.occurredAt(event)).as("now").isEqualTo(Instant.parse("2022-05-23T12:00:00Z"));
 
         event.setEventUTCTime(LocalDateTime.of(2022, 5, 22, 22, 0));
-        assertThat(inKolkata.occurredAt(event)).isEqualTo(LocalDateTime.of(2022, 5, 23, 3, 30));
+        assertThat(inKolkata.occurredAt(event)).isEqualTo(Instant.parse("2022-05-22T22:00:00Z"));
 
-        event.setEventTime(ZonedDateTime.of(2022, 5, 23, 0, 0, 0, 0, ZoneOffset.ofHours(2)));
-        assertThat(inKolkata.occurredAt(event)).isEqualTo(LocalDateTime.of(2022, 5, 23, 3, 30));
+        event.setEventTime(ZonedDateTime.of(2022, 5, 23, 1, 0, 0, 0, ZoneOffset.ofHours(2)));
+        assertThat(inKolkata.occurredAt(event)).isEqualTo(Instant.parse("2022-05-22T23:00:00Z"));
     }
 
     @Test
     void lateStepPutsLaterStepsAtRisk() {
-        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
-        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46).toInstant(ZoneOffset.UTC));
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46).toInstant(ZoneOffset.UTC));
         givenSteps(ship, deliver);
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
 
-        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 3, 0));
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 3, 0).toInstant(ZoneOffset.UTC));
 
         assertThat(ship.getTimeliness()).isEqualTo(Timeliness.LATE);
-        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 11, 0));
+        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 11, 0).toInstant(ZoneOffset.UTC));
         assertThat(deliver.getTimeliness()).isEqualTo(Timeliness.AT_RISK);
         verify(stepInstancePublisherService).publish(deliver, "AT_RISK");
         assertThat(registry.get("aktimetrix.steps.at.risk").counter().count()).isEqualTo(1);
@@ -392,26 +393,26 @@ class StepProgressServiceTest {
 
     @Test
     void completionWithinToleranceIsOnTime() {
-        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
-        ship.setLateAfter(LocalDateTime.of(2022, 5, 23, 2, 1));
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46).toInstant(ZoneOffset.UTC));
+        ship.setLateAfter(LocalDateTime.of(2022, 5, 23, 2, 1).toInstant(ZoneOffset.UTC));
         givenSteps(ship);
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
 
-        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 2, 0));
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 2, 0).toInstant(ZoneOffset.UTC));
 
         assertThat(ship.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
     }
 
     @Test
     void aStepCompletedWithinItsToleranceDelaysNothing() {
-        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
-        ship.setLateAfter(LocalDateTime.of(2022, 5, 23, 2, 1));
-        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46).toInstant(ZoneOffset.UTC));
+        ship.setLateAfter(LocalDateTime.of(2022, 5, 23, 2, 1).toInstant(ZoneOffset.UTC));
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46).toInstant(ZoneOffset.UTC));
         givenSteps(ship, deliver);
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
 
-        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 2, 0));
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 2, 0).toInstant(ZoneOffset.UTC));
 
         assertThat(ship.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
         assertThat(deliver.getExpectedAt()).isNull();
@@ -431,44 +432,44 @@ class StepProgressServiceTest {
 
         service.recordMilestone("ORDER_SHIPPED_EVENT", process, SHIPPED_AT);
 
-        assertThat(deliver.getPlannedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 9, 30));
-        assertThat(deliver.getLateAfter()).isEqualTo(LocalDateTime.of(2022, 5, 23, 9, 45));
+        assertThat(deliver.getPlannedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 9, 30).toInstant(ZoneOffset.UTC));
+        assertThat(deliver.getLateAfter()).isEqualTo(LocalDateTime.of(2022, 5, 23, 9, 45).toInstant(ZoneOffset.UTC));
         verify(stepInstancePublisherService).publish(deliver, "PLANNED");
     }
 
     @Test
     void overdueStepPutsLaterStepsAtRisk() {
-        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
-        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46).toInstant(ZoneOffset.UTC));
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46).toInstant(ZoneOffset.UTC));
         when(stepInstanceService.getStepInstancesByProcessInstanceId(TENANT, process.getId())).thenReturn(List.of(ship, deliver));
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
 
         when(processInstanceService.getProcessInstance(TENANT, process.getId())).thenReturn(process);
 
-        service.markOverdue(ship, LocalDateTime.of(2022, 5, 23, 4, 0));
+        service.markOverdue(ship, LocalDateTime.of(2022, 5, 23, 4, 0).toInstant(ZoneOffset.UTC));
 
         assertThat(ship.getTimeliness()).isEqualTo(Timeliness.OVERDUE);
         verify(stepInstancePublisherService).publish(ship, "OVERDUE");
         assertThat(deliver.getTimeliness()).isEqualTo(Timeliness.AT_RISK);
-        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 12, 0));
+        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 12, 0).toInstant(ZoneOffset.UTC));
         assertThat(registry.get("aktimetrix.steps.overdue").counter().count()).isEqualTo(1);
     }
 
     @Test
     void aStepAlreadyAtRiskKeepsItsLaterForecast() {
-        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46));
+        StepInstance ship = planned(step("SHIP", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 1, 46).toInstant(ZoneOffset.UTC));
         ship.setTimeliness(Timeliness.OVERDUE);
-        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46));
+        StepInstance deliver = planned(step("DELIVER", Constants.STATUS_CREATED), LocalDateTime.of(2022, 5, 23, 9, 46).toInstant(ZoneOffset.UTC));
         deliver.setTimeliness(Timeliness.AT_RISK);
-        deliver.setExpectedAt(LocalDateTime.of(2022, 5, 23, 9, 47));
+        deliver.setExpectedAt(LocalDateTime.of(2022, 5, 23, 9, 47).toInstant(ZoneOffset.UTC));
         givenSteps(ship, deliver);
         givenDefinition("SHIP", List.of("ORDER_SHIPPED_EVENT"), List.of());
         givenDefinition("DELIVER", List.of("ORDER_DELIVERED_EVENT"), List.of());
 
-        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 3, 0));
+        service.recordMilestone("ORDER_SHIPPED_EVENT", process, LocalDateTime.of(2022, 5, 23, 3, 0).toInstant(ZoneOffset.UTC));
 
-        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 11, 0));
+        assertThat(deliver.getExpectedAt()).isEqualTo(LocalDateTime.of(2022, 5, 23, 11, 0).toInstant(ZoneOffset.UTC));
         verify(stepInstanceService).save(deliver);
         verify(stepInstancePublisherService).publish(deliver, "AT_RISK");
         assertThat(registry.find("aktimetrix.steps.at.risk").counter()).isNull();
@@ -476,23 +477,23 @@ class StepProgressServiceTest {
 
     @Test
     void aRepeatableStepRecordsEachFurtherAttemptWithoutBeingJudgedAgain() {
-        StepInstance inspect = planned(step("INSPECT", Constants.STATUS_CREATED), SHIPPED_AT.plusHours(1));
+        StepInstance inspect = planned(step("INSPECT", Constants.STATUS_CREATED), SHIPPED_AT.plus(Duration.ofHours(1)));
         givenSteps(inspect);
         givenDefinition("INSPECT", List.of("INSPECTED_EVENT"), List.of()).setRepeatable(true);
 
         service.recordMilestone("INSPECTED_EVENT", process, SHIPPED_AT);
-        List<MeasurementInstance> again = service.recordMilestone("INSPECTED_EVENT", process, SHIPPED_AT.plusHours(5));
+        List<MeasurementInstance> again = service.recordMilestone("INSPECTED_EVENT", process, SHIPPED_AT.plus(Duration.ofHours(5)));
 
         assertThat(inspect.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
         assertThat(inspect.getAttempts()).isEqualTo(2);
         assertThat(inspect.getActualAt()).as("judged on its first attempt").isEqualTo(SHIPPED_AT);
-        assertThat(inspect.getLastAttemptAt()).isEqualTo(SHIPPED_AT.plusHours(5));
+        assertThat(inspect.getLastAttemptAt()).isEqualTo(SHIPPED_AT.plus(Duration.ofHours(5)));
         assertThat(inspect.getTimeliness()).isEqualTo(Timeliness.ON_TIME);
         verify(stepInstancePublisherService).publish(inspect, "COMPLETED");
         verify(stepInstancePublisherService).publish(inspect, "REPEATED");
         assertThat(again).singleElement().satisfies(time -> {
             assertThat(time.getCode()).isEqualTo("TIME");
-            assertThat(time.getValue()).isEqualTo(String.valueOf(SHIPPED_AT.plusHours(5)));
+            assertThat(time.getValue()).isEqualTo(String.valueOf(SHIPPED_AT.plus(Duration.ofHours(5))));
             assertThat(time.getPlannedValue()).as("the plan was for the first attempt").isNull();
         });
     }
@@ -504,15 +505,15 @@ class StepProgressServiceTest {
         givenDefinition("REPAIR", List.of("REPAIR_STARTED"), List.of("REPAIR_DONE")).setRepeatable(true);
 
         service.recordMilestone("REPAIR_STARTED", process, SHIPPED_AT);
-        service.recordMilestone("REPAIR_DONE", process, SHIPPED_AT.plusHours(1));
-        service.recordMilestone("REPAIR_STARTED", process, SHIPPED_AT.plusHours(2));
+        service.recordMilestone("REPAIR_DONE", process, SHIPPED_AT.plus(Duration.ofHours(1)));
+        service.recordMilestone("REPAIR_STARTED", process, SHIPPED_AT.plus(Duration.ofHours(2)));
         assertThat(repair.getStatus()).isEqualTo(Constants.STATUS_STARTED);
         assertThat(repair.getAttempts()).isEqualTo(1);
 
-        service.recordMilestone("REPAIR_DONE", process, SHIPPED_AT.plusHours(3));
+        service.recordMilestone("REPAIR_DONE", process, SHIPPED_AT.plus(Duration.ofHours(3)));
         assertThat(repair.getStatus()).isEqualTo(Constants.STATUS_COMPLETED);
         assertThat(repair.getAttempts()).isEqualTo(2);
-        assertThat(repair.getActualAt()).isEqualTo(SHIPPED_AT.plusHours(1));
+        assertThat(repair.getActualAt()).isEqualTo(SHIPPED_AT.plus(Duration.ofHours(1)));
         assertThat(repair.isStartMissing()).isFalse();
     }
 
@@ -532,7 +533,7 @@ class StepProgressServiceTest {
         verify(stepInstancePublisherService).publish(door, "SKIPPED");
         assertThat(process.isComplete()).isTrue();
 
-        assertThat(service.recordMilestone("DELIVERED_AT_DOOR", process, SHIPPED_AT.plusHours(1)))
+        assertThat(service.recordMilestone("DELIVERED_AT_DOOR", process, SHIPPED_AT.plus(Duration.ofHours(1))))
                 .as("a branch not taken stays skipped").isEmpty();
         assertThat(door.getStatus()).isEqualTo(Constants.STATUS_SKIPPED);
     }
@@ -552,7 +553,7 @@ class StepProgressServiceTest {
         assertThat(process.isComplete()).isFalse();
     }
 
-    private static StepInstance planned(StepInstance step, LocalDateTime plannedAt) {
+    private static StepInstance planned(StepInstance step, Instant plannedAt) {
         step.setPlannedAt(plannedAt);
         step.setLateAfter(plannedAt);
         return step;
@@ -565,7 +566,7 @@ class StepProgressServiceTest {
 
     private StepInstance step(String code, String status) {
         StepInstance step = new StepInstance(TENANT, code, process.getId(), null, null, "1.0.0", status,
-                LocalDateTime.now());
+                Instant.now());
         step.setId(UUID.randomUUID().toString());
         step.setSequence(nextSequence++);
         return step;
