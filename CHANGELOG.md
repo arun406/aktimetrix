@@ -27,6 +27,10 @@ version may change the public API.
   (`/v3/api-docs/aktimetrix`); Swagger UI is available by adding `springdoc-openapi-starter-webmvc-ui`.
 - An invalid definition is answered with a documented `DefinitionProblems` body.
 
+**Changed: build and test tools**
+- Maven 3.10.0 and Maven Wrapper 3.3.4; GitHub Actions `checkout` v7 and `setup-java` v6; the Central publishing
+  plugin 0.11.0; `json-schema-validator` 3, which reads Jackson 3 trees, for the tests of the published events.
+
 **Added**
 - A documentation site on GitHub Pages, built from the repository's Markdown by `.github/workflows/docs.yml`: the
   guides, the white paper and the changelog, with the Java API (Javadoc) and REST API (OpenAPI) references.
