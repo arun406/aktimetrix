@@ -20,7 +20,7 @@ class AktimetrixDefaultPropertiesTest {
 
         new AktimetrixDefaultProperties().postProcessEnvironment(environment, new SpringApplication());
 
-        assertThat(environment.getProperty("spring.cloud.stream.function.definition")).isEqualTo("processor");
+        assertThat(environment.getProperty("spring.cloud.function.definition")).isEqualTo("processor");
         assertThat(environment.getProperty("spring.cloud.stream.bindings.processor-in-0.destination"))
                 .isEqualTo("order-events");
         assertThat(environment.getProperty("spring.cloud.stream.bindings.processor-in-0.group")).isEqualTo("monitors");

@@ -13,7 +13,7 @@
 
 <p align="center">
   <b>An open-source engine for plan-versus-actual monitoring of long-running business processes, in any dimension, derived from the events your systems already emit.</b><br>
-  <sub>Open-source library · <a href="./docs/white-paper.md">white paper</a> · <a href="https://github.com/arun406/aktimetrix-reference-project-order-monitor">reference application</a></sub>
+  <sub>Open-source library · <a href="https://arun406.github.io/aktimetrix/">documentation</a> · <a href="./docs/white-paper.md">white paper</a> · <a href="https://github.com/arun406/aktimetrix-reference-project-order-monitor">reference application</a></sub>
 </p>
 
 <p align="center">
@@ -193,6 +193,9 @@ try it on your own status messages, please [open an issue](https://github.com/ar
 the author. Aktimetrix is independent and not affiliated with IATA or Cargo iQ.
 
 ## Documentation
+
+Everything below, with the Java API (Javadoc) and the REST API (OpenAPI) references, is published as a searchable site
+at **[arun406.github.io/aktimetrix](https://arun406.github.io/aktimetrix/)**.
 
 | Document | Contents |
 |---|---|

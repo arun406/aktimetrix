@@ -1,0 +1,84 @@
+# The documentation site, published to GitHub Pages by .github/workflows/docs.yml.
+# The pages are the repository's own Markdown, assembled into target/site-src by site/prepare.py:
+#   python3 site/prepare.py && mkdocs serve
+site_name: Aktimetrix
+site_description: Plan-versus-actual monitoring of business processes, from the events your systems already publish.
+site_url: https://arun406.github.io/aktimetrix/
+repo_url: https://github.com/arun406/aktimetrix
+repo_name: arun406/aktimetrix
+edit_uri: ""
+copyright: Apache License 2.0
+
+docs_dir: target/site-src
+site_dir: target/site
+
+nav:
+  - Home: index.md
+  - White paper: white-paper.md
+  - Guides:
+      - Getting started: getting-started.md
+      - Core concepts: concepts.md
+      - Architecture: architecture.md
+      - Extending Aktimetrix: extending.md
+      - Configuration: configuration.md
+  - Reference:
+      - Java API: api/index.html
+      - REST API: rest-api/index.html
+      - Changelog: changelog.md
+      - Releasing: releasing.md
+
+theme:
+  name: material
+  icon:
+    logo: material/timeline-clock-outline
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.details
+  # the Markdown is written for GitHub, which nests lists by two spaces
+  - mdx_truly_sane_lists:
+      nested_indent: 2
+
+validation:
+  nav:
+    omitted_files: ignore
+    not_found: ignore
+  links:
+    not_found: warn
+    anchors: warn
+    unrecognized_links: ignore
+
+plugins:
+  - search

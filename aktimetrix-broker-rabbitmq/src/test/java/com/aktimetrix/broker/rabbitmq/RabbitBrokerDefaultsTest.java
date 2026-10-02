@@ -1,5 +1,6 @@
 package com.aktimetrix.broker.rabbitmq;
 
+import com.aktimetrix.autoconfigure.AktimetrixDefaultProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
@@ -33,35 +34,48 @@ class RabbitBrokerDefaultsTest {
     }
 
     @Test
-    void partitionsTheEventsQueueWhenAskedTo() {
+    void routesTheEventsToPartitionsWhenAskedTo() {
         StandardEnvironment environment = new StandardEnvironment();
         environment.getPropertySources().addFirst(new MapPropertySource("application",
-                Map.of("aktimetrix.events.partitions", "4", "aktimetrix.events.partition", "2")));
+                Map.of("aktimetrix.events.topic", "order-events", "aktimetrix.events.partitions", "4",
+                        "aktimetrix.events.partition", "2")));
+        new AktimetrixDefaultProperties().postProcessEnvironment(environment, new SpringApplication());
 
         new RabbitBrokerDefaults().postProcessEnvironment(environment, new SpringApplication());
 
-        String consumer = "spring.cloud.stream.bindings.processor-in-0.consumer.";
-        assertThat(environment.getProperty(consumer + "partitioned")).isEqualTo("true");
-        assertThat(environment.getProperty(consumer + "instanceCount")).isEqualTo("4");
-        assertThat(environment.getProperty(consumer + "instanceIndex")).isEqualTo("2");
+        assertThat(environment.getProperty("spring.cloud.function.definition")).isEqualTo("eventRouter;processor");
+        String bindings = "spring.cloud.stream.bindings.";
+        // the router consumes the queue the sources already publish to, in order and in a transaction
+        assertThat(environment.getProperty(bindings + "eventRouter-in-0.destination")).isEqualTo("order-events");
+        assertThat(environment.getProperty(bindings + "eventRouter-in-0.group")).isEqualTo("aktimetrix");
+        String router = "spring.cloud.stream.rabbit.bindings.eventRouter-";
+        assertThat(environment.getProperty(router + "in-0.consumer.singleActiveConsumer")).isEqualTo("true");
+        assertThat(environment.getProperty(router + "in-0.consumer.transacted")).isEqualTo("true");
+        assertThat(environment.getProperty(router + "out-0.producer.transacted")).isEqualTo("true");
+        // and republishes by entity to the partitions, all declared up front
+        assertThat(environment.getProperty(bindings + "eventRouter-out-0.destination"))
+                .isEqualTo("order-events.partitioned");
+        assertThat(environment.getProperty(bindings + "eventRouter-out-0.producer.partitionKeyExpression"))
+                .isEqualTo("headers['aktimetrixPartitionKey']");
+        assertThat(environment.getProperty(bindings + "eventRouter-out-0.producer.partitionCount")).isEqualTo("4");
+        assertThat(environment.getProperty(bindings + "eventRouter-out-0.producer.requiredGroups"))
+                .isEqualTo("aktimetrix");
+        // each instance processes its partition, overriding the broker-neutral default destination
+        assertThat(environment.getProperty(bindings + "processor-in-0.destination")).isEqualTo("order-events.partitioned");
+        assertThat(environment.getProperty(bindings + "processor-in-0.consumer.partitioned")).isEqualTo("true");
+        assertThat(environment.getProperty(bindings + "processor-in-0.consumer.instanceCount")).isEqualTo("4");
+        assertThat(environment.getProperty(bindings + "processor-in-0.consumer.instanceIndex")).isEqualTo("2");
     }
 
     @Test
     void oneQueueByDefault() {
         StandardEnvironment environment = new StandardEnvironment();
+        new AktimetrixDefaultProperties().postProcessEnvironment(environment, new SpringApplication());
 
         new RabbitBrokerDefaults().postProcessEnvironment(environment, new SpringApplication());
 
+        assertThat(environment.getProperty("spring.cloud.function.definition")).isEqualTo("processor");
         assertThat(environment.getProperty("spring.cloud.stream.bindings.processor-in-0.consumer.partitioned")).isNull();
-    }
-
-    @Test
-    void everyEventOfAnEntityGoesToTheSamePartition() {
-        assertThat(RabbitEventPartitions.partition("1234", 4)).isEqualTo(RabbitEventPartitions.partition("1234", 4))
-                .isBetween(0, 3);
-        // CRC-32 of "1234" is 0x9BE3E0A3 (2615402659): partition 2615402659 % 4 = 3
-        assertThat(RabbitEventPartitions.routingKey("order-events", "1234", 4)).isEqualTo("order-events-3");
-        assertThat(RabbitEventPartitions.partition("1234", 1)).isZero();
     }
 
     @Test

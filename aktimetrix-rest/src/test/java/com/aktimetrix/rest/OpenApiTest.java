@@ -16,6 +16,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -49,7 +52,7 @@ class OpenApiTest {
 
     @Test
     void theAktimetrixGroupDescribesEveryEndpoint() throws Exception {
-        mvc.perform(get("/v3/api-docs/" + AktimetrixRestAutoConfiguration.API_GROUP))
+        final String document = mvc.perform(get("/v3/api-docs/" + AktimetrixRestAutoConfiguration.API_GROUP))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title").value("Aktimetrix API"))
                 .andExpect(jsonPath("$.paths['/process-instances'].get").exists())
@@ -61,6 +64,11 @@ class OpenApiTest {
                 .andExpect(jsonPath("$.paths['/reference-data/measurement-type-definitions'].get").exists())
                 .andExpect(jsonPath("$.components.schemas.ProcessDefinition").exists())
                 .andExpect(jsonPath("$.components.schemas.StepDefinition").exists())
-                .andExpect(jsonPath("$.components.schemas.DefinitionProblems.properties.problems").exists());
+                .andExpect(jsonPath("$.components.schemas.DefinitionProblems.properties.problems").exists())
+                .andReturn().getResponse().getContentAsString();
+        // kept for the documentation site, which publishes it as the REST API reference
+        final Path published = Path.of("target", "openapi", "aktimetrix.json");
+        Files.createDirectories(published.getParent());
+        Files.writeString(published, document);
     }
 }

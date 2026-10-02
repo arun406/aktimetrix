@@ -108,6 +108,35 @@ class ProcessConfigTest {
         verify(metrics).eventReceived(null, null, "invalid");
     }
 
+    @Test
+    void theRouterKeysEachEventByItsEntityAndPassesItOnUnchanged() {
+        EventMapper shopEvents = (payload, headers) -> Event.of("AA", "ORDER_SHIPPED_EVENT", "com.ecom.order", "1234",
+                ZonedDateTime.now());
+        ProcessConfig config = new ProcessConfig();
+        ReflectionTestUtils.setField(config, "eventMapper", shopEvents);
+        byte[] payload = "{\"id\":\"1234\",\"status\":\"SHIPPED\"}".getBytes(StandardCharsets.UTF_8);
+
+        org.springframework.messaging.Message<byte[]> routed = config.eventRouter()
+                .apply(MessageBuilder.withPayload(payload).setHeader("source", "shop").build());
+
+        assertThat(routed.getPayload()).isEqualTo(payload);
+        assertThat(routed.getHeaders()).containsEntry("source", "shop")
+                .containsEntry(ProcessConfig.PARTITION_KEY_HEADER, "1234");
+    }
+
+    @Test
+    void theRouterPassesOnAnEventItCannotReadToBeRejectedLater() {
+        ProcessConfig config = new ProcessConfig();
+        ReflectionTestUtils.setField(config, "eventMapper", (EventMapper) (payload, headers) -> {
+            throw new IllegalArgumentException("not JSON");
+        });
+
+        org.springframework.messaging.Message<byte[]> routed = config.eventRouter()
+                .apply(MessageBuilder.withPayload("garbage".getBytes(StandardCharsets.UTF_8)).build());
+
+        assertThat(routed.getHeaders()).containsEntry(ProcessConfig.PARTITION_KEY_HEADER, "");
+    }
+
     private Consumer<org.springframework.messaging.Message<?>> processor(EventMapper mapper) {
         ProcessConfig config = new ProcessConfig();
         ReflectionTestUtils.setField(config, "eventMapper", mapper);
